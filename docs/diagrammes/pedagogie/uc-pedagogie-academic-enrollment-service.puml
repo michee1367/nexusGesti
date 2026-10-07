@@ -1,0 +1,157 @@
+@startuml uc-pedagogie-academic-enrollment-service
+skinparam packageStyle rectangle
+skinparam actorStyle stickman
+left to right direction
+
+title Diagramme des Cas d'Utilisation - Service Inscriptions et Enrolements (academic-enrollment-service)
+
+actor "Etudiant" as ETU
+actor "Scolarité universitaire" as SCO
+actor "Directeur / Proviseur" as DIR
+actor "Enseignant" as ENS
+actor "Secretaire Academique" as SEC
+actor "Systeme Examens" as EXA
+
+rectangle "Plateforme NexusGesti" {
+  rectangle "academic-enrollment-service" {
+
+    ' ---- Inscription universitaire ----
+    usecase "Ouvrir l inscription" as UC_OuvrirInscription
+    usecase "Choisir son parcours" as UC_Parcours
+    usecase "S inscrire a une UE" as UC_InscrireUE
+    usecase "Verifier l eligibilite" as UC_Eligibilite
+    usecase "Placer en liste d attente" as UC_ListeAttente
+    usecase "Valider une inscription" as UC_ValiderInscription
+    usecase "Refuser une inscription" as UC_RefuserInscription
+    usecase "Changer d option" as UC_ChangerOption
+    usecase "Annuler une inscription" as UC_AnnulerInscription
+    usecase "Consulter son parcours" as UC_ConsulterParcours
+    usecase "Connaitre ses credits" as UC_Credits
+
+    ' ---- Groupes TD / TP ----
+    usecase "Creer un groupe TD ou TP" as UC_CreerGroupe
+    usecase "Ouvrir les inscriptions au groupe" as UC_OuvrirGroupe
+    usecase "Choisir son groupe" as UC_ChoisirGroupe
+    usecase "Affecter un membre a un groupe" as UC_AffecterMembre
+    usecase "Changer de groupe" as UC_ChangerGroupe
+    usecase "Clore un groupe" as UC_CloreGroupe
+
+    ' ---- Enrolement aux examens ----
+    usecase "Enroler a une epreuve" as UC_Enroler
+    usecase "Verifier l obligation d enrolement" as UC_ObligationEnrolement
+    usecase "Deposer une demande de dispense" as UC_DemanderDispense
+    usecase "Accorder une dispense" as UC_AccorderDispense
+    usecase "Refuser une dispense" as UC_RefuserDispense
+    usecase "Enroler automatiquement a une epreuve obligatoire" as UC_EnrolementAuto
+    usecase "Constater la presence a l examen" as UC_Presence
+    usecase "Constater une absence a l examen" as UC_Absence
+
+    ' ---- Pre-requis et equivalences ----
+    usecase "Definir un cours pre-requis" as UC_DefinirPrerequis
+    usecase "Verifier les pre-requis" as UC_VerifierPrerequis
+    usecase "Definir une equivalence d UE" as UC_DefinirEquivalence
+    usecase "Valider une equivalence" as UC_ValiderEquivalence
+    usecase "Rattacher un rattrapage par equivalence" as UC_RattrapageEquiv
+
+    ' ---- Transfert ----
+    usecase "Demander un transfert de programme" as UC_DemanderTransfert
+    usecase "Traiter un transfert" as UC_TraiterTransfert
+    usecase "Reporter les credits" as UC_ReporterCredits
+
+    ' ---- Relations ----
+    UC_OuvrirInscription .> UC_Parcours : <<include>>
+    UC_Parcours .> UC_ChoisirGroupe : <<include>>
+    UC_InscrireUE .> UC_Eligibilite : <<include>>
+    UC_Eligibilite .> UC_VerifierPrerequis : <<include>>
+    UC_Eligibilite .> UC_Credits : <<include>>
+    UC_ValiderInscription .> UC_OuvrirGroupe : <<include>>
+    UC_ListeAttente .> UC_AnnulerInscription : <<extend>>
+    UC_CreerGroupe .> UC_OuvrirGroupe : <<include>>
+    UC_Enroler .> UC_ObligationEnrolement : <<include>>
+    UC_DemanderDispense .> UC_AccorderDispense : <<extend>>
+    UC_DemanderDispense .> UC_RefuserDispense : <<extend>>
+    UC_EnrolementAuto .> UC_Enroler : <<extend>>
+    UC_RattrapageEquiv .> UC_DefinirEquivalence : <<include>>
+    UC_TraiterTransfert .> UC_ReporterCredits : <<include>>
+    UC_ConsulterParcours .> UC_Credits : <<include>>
+  }
+}
+
+ETU --> UC_OuvrirInscription
+ETU --> UC_Parcours
+ETU --> UC_InscrireUE
+ETU --> UC_ChoisirGroupe
+ETU --> UC_ChangerGroupe
+ETU --> UC_ChangerOption
+ETU --> UC_AnnulerInscription
+ETU --> UC_ConsulterParcours
+ETU --> UC_Credits
+ETU --> UC_Enroler
+ETU --> UC_DemanderDispense
+ETU --> UC_DemanderTransfert
+SCO --> UC_OuvrirInscription
+SCO --> UC_InscrireUE
+SCO --> UC_ValiderInscription
+SCO --> UC_RefuserInscription
+SCO --> UC_ListeAttente
+SCO --> UC_CreerGroupe
+SCO --> UC_AffecterMembre
+SCO --> UC_CloreGroupe
+SCO --> UC_Enroler
+SCO --> UC_EnrolementAuto
+SCO --> UC_DefinirPrerequis
+SCO --> UC_DefinirEquivalence
+SCO --> UC_ValiderEquivalence
+SCO --> UC_DemanderTransfert
+SCO --> UC_TraiterTransfert
+DIR --> UC_ValiderInscription
+DIR --> UC_RefuserInscription
+DIR --> UC_AccorderDispense
+DIR --> UC_RefuserDispense
+DIR --> UC_DefinirPrerequis
+DIR --> UC_ValiderEquivalence
+DIR --> UC_TraiterTransfert
+ENS --> UC_CreerGroupe
+ENS --> UC_OuvrirGroupe
+ENS --> UC_AffecterMembre
+ENS --> UC_CloreGroupe
+SEC --> UC_OuvrirInscription
+SEC --> UC_ReporterCredits
+EXA --> UC_Presence
+EXA --> UC_Absence
+EXA --> UC_ObligationEnrolement
+
+note bottom of UC_EnrolementAuto
+  <b>REGLE D ENROLEMENT OBLIGATOIRE</b>
+  Si une ObligationEnrolement declare
+  l epreuve obligatoire, l inscription
+  est creee automatiquement a la
+  publication de la session.
+
+  L etudiant est notifie et peut
+  contester dans un delai parametre.
+end note
+
+note bottom of UC_DefinirEquivalence
+  <b>CAS DU RATTRAPAGE PAR EQUIVALENCE</b>
+  L etudiant rate UE-X dans le
+  Programme A. S il valide UE-Y,
+  declaree equivalente dans le
+  Programme B, les credits de UE-Y
+  sont imputes sur UE-X.
+
+  La validation est une decision
+  humaine tracee (valideePar,
+  dateValidation).
+end note
+
+note bottom of UC_VerifierPrerequis
+  UE-INFO-301 (Licence 2) exige la
+  validation de UE-INFO-201 (Licence 1).
+
+  Credits requis et moyenne minimale
+  sont des donnees du referentiel :
+  aucune valeur en dur.
+end note
+
+@enduml

@@ -1,0 +1,159 @@
+@startuml uc-hopital-consultation-service
+skinparam packageStyle rectangle
+skinparam actorStyle stickman
+left to right direction
+
+title Diagramme des Cas d'Utilisation - hopital-consultation-service
+
+actor "Medecin" as MED
+actor "Infirmier" as INF
+actor "Secretaire medical" as MEDSEC
+actor "Patient" as PAT
+actor "Pharmacien" as PHA
+actor "Laboratoire" as LAB
+actor "Service demandeur" as SRV
+
+rectangle "Plateforme NexusGesti" {
+  rectangle "hopital-consultation-service" {
+
+    ' ---- Admission ----
+    usecase "Enregistrer une admission" as UC_Admettre
+    usecase "Verifier les allergies avant acte" as UC_VerifierAllergies
+    usecase "Ouvrir un dossier de consultation" as UC_OuvrirDossier
+    usecase "Definir le motif de venue" as UC_Motif
+
+    ' ---- Consultation ----
+    usecase "Realiser un examen clinique" as UC_ExamenClinique
+    usecase "Saisir les constantes" as UC_Constantes
+    usecase "Consulter le dossier medical" as UC_ConsulterDossier
+    usecase "Consulter les resultats d analyses" as UC_ConsulterAnalyses
+
+    ' ---- Diagnostic ----
+    usecase "Poser un diagnostic" as UC_Diagnostic
+    usecase "Coder un diagnostic" as UC_CoderDiagnostic
+    usecase "Verifier la coherence du diagnostic" as UC_CoherenceDiagnostic
+
+    ' ---- Prescription ----
+    usecase "Prescrire un medicament" as UC_PrescrireMedicament
+    usecase "Prescrire un examen" as UC_PrescrireExamen
+    usecase "Prescrire une imagerie" as UC_PrescrireImagerie
+    usecase "Verifier la posologie" as UC_VerifierPosologie
+    usecase "Signer une ordonnance" as UC_SignerOrdonnance
+    usecase "Envoyer l ordonnance a la pharmacie" as UC_EnvoyerPharmacie
+    usecase "Annuler une ordonnance" as UC_AnnulerOrdonnance
+
+    ' ---- Suites et orientation ----
+    usecase "Orienter vers un specialiste" as UC_Orienter
+    usecase "Prescrire une hospitalisation" as UC_PrescrireHospitalisation
+    usecase "Prescrire une kinesthesie" as UC_PrescrireKine
+
+    ' ---- Cloture et documents ----
+    usecase "Cloturer la consultation" as UC_Cloturer
+    usecase "Definir le motif de terminaison" as UC_MotifTerminaison
+    usecase "Rediger un compte rendu" as UC_CompteRendu
+    usecase "Delivrer un certificat medical" as UC_Certificat
+    usecase "Modifier une consultation cloturee" as UC_Reouvrir
+
+    ' ---- Relations ----
+    UC_OuvrirDossier .> UC_Admettre : <<include>>
+    UC_OuvrirDossier .> UC_Motif : <<include>>
+    UC_OuvrirDossier .> UC_VerifierAllergies : <<include>>
+    UC_VerifierAllergies .> UC_ConsulterDossier : <<require>>
+    UC_ExamenClinique .> UC_Constantes : <<include>>
+    UC_Diagnostic .> UC_CoderDiagnostic : <<include>>
+    UC_Diagnostic .> UC_CoherenceDiagnostic : <<include>>
+    UC_CoherenceDiagnostic .> UC_ConsulterDossier : <<require>>
+    UC_PrescrireMedicament .> UC_VerifierPosologie : <<include>>
+    UC_PrescrireExamen .> UC_EnvoyerPharmacie : <<extend>>
+    UC_PrescrireImagerie .> UC_EnvoyerPharmacie : <<extend>>
+    UC_PrescrireKine .> UC_EnvoyerPharmacie : <<extend>>
+    UC_EnvoyerPharmacie .> UC_SignerOrdonnance : <<require>>
+    UC_SignerOrdonnance .> UC_PrescrireMedicament : <<require>>
+    UC_AnnulerOrdonnance .> UC_SignerOrdonnance : <<extend>>
+    UC_Cloturer .> UC_MotifTerminaison : <<include>>
+    UC_Cloturer .> UC_CompteRendu : <<include>>
+    UC_CoherenceDiagnostic .> UC_Cloturer : <<include>>
+    UC_Certificat .> UC_CompteRendu : <<extend>>
+    UC_Reouvrir .> UC_CompteRendu : <<extend>>
+    UC_Orienter .> UC_EnvoyerPharmacie : <<extend>>
+    UC_ConsulterAnalyses .> UC_ConsulterDossier : <<require>>
+  }
+}
+
+MED --> UC_OuvrirDossier
+MED --> UC_ExamenClinique
+MED --> UC_Constantes
+MED --> UC_ConsulterDossier
+MED --> UC_ConsulterAnalyses
+MED --> UC_Diagnostic
+MED --> UC_CoderDiagnostic
+MED --> UC_PrescrireMedicament
+MED --> UC_PrescrireExamen
+MED --> UC_PrescrireImagerie
+MED --> UC_VerifierPosologie
+MED --> UC_Orienter
+MED --> UC_PrescrireHospitalisation
+MED --> UC_PrescrireKine
+MED --> UC_MotifTerminaison
+MED --> UC_CompteRendu
+MED --> UC_Reouvrir
+MED --> UC_Certificat
+INF --> UC_Admettre
+INF --> UC_OuvrirDossier
+INF --> UC_Motif
+INF --> UC_VerifierAllergies
+INF --> UC_Constantes
+INF --> UC_ConsulterDossier
+MEDSEC --> UC_Admettre
+MEDSEC --> UC_ConsulterDossier
+MEDSEC --> UC_Certificat
+PAT --> UC_ConsulterDossier
+PAT --> UC_ConsulterAnalyses
+PHA --> UC_EnvoyerPharmacie
+LAB --> UC_ConsulterAnalyses
+LAB --> UC_PrescrireExamen
+SRV --> UC_PrescrireHospitalisation
+SRV --> UC_Orienter
+
+note bottom of UC_VerifierAllergies
+  <b>CONTROLE OBLIGATOIRE</b>
+  Si une allergie connue est
+  incompatible avec le produit prescrit,
+  la prescription est bloquee.
+  Seule une prescription portant un
+  controle specifique declenchee par
+  le praticien permet de passer outre,
+  et l evenement est trace.
+end note
+
+note bottom of UC_Cloturer
+  La cloture est possible meme sans
+  prescription. Si un diagnostic est
+  renseigne sans aucune prescription,
+  la consultation est classee
+  TERMINEE_PARTIELLE et le dossier
+  remonte dans la file de validation.
+end note
+
+note bottom of UC_PrescrireMedicament
+  <b>ANTICIPATION PHARMACIE</B>
+  A la signature de l ordonnance,
+  hopital-pharmacie-service est
+  notifie et evalue la disponibilite
+  selon ses regles de stock.
+  Le praticien est alerte si le stock
+  est insuffisant pour une quantite
+  entiere.
+end note
+
+note bottom of UC_Reouvrir
+  <b>REOUVERTURE EN AUTO-TEST</b>
+  Modifier une consultation cloturee
+  declenche un controle bloquant
+  des actes derives deja factures.
+  Tant que la coherence n est pas
+  retablie, la facturation est
+  suspendue.
+end note
+
+@enduml

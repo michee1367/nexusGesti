@@ -1,0 +1,281 @@
+@startuml modele-reporting-service
+title Diagramme de Classes - Service Production de Documents (reporting-service)
+skinparam classAttributeIconSize 0
+hide empty members
+
+' ============================================================
+' ENUMS
+' ============================================================
+
+enum TypeDocument {
+  BULLETIN
+  COUPON_NOTES
+  RELEVE_NOTES
+  ATTESTATION_SCOLARITE
+  ATTESTATION_REUSSITE
+  CERTIFICAT_SCOLARITE
+  CARTE_ELEVE
+  CARD_ELEVE
+  PROCES_VERBAL
+  LISTE_EMARGEMENT
+  CONVOCATION
+  COUPON_PAIEMENT
+  RECU_PAIEMENT
+  FACTURE
+  TICKET_CAISSE
+  ORDONNANCE
+  ETAT_FINANCIER
+  BILAN
+  COMPTE_RESULTAT
+  BALANCE
+  JOURNAL_GENERAL
+  GRAND_LIVRE
+  FICHIER_FEC
+  DECLARATION_TVA
+  ETIQUETTE_PHARMACIE
+  ETAT_STOCK
+  AUTRE
+}
+
+enum StatutGeneration {
+  EN_ATTENTE
+  EN_COURS
+  GENEREE
+  EN_ERREUR
+  EXPIREE
+  ANNULEE
+}
+enum FormatDocument {
+  PDF
+  HTML
+  XLSX
+  CSV
+  DOCX
+  JSON
+  ZIP
+}
+enum TypeLot {
+  UNITAIRE
+  MASSE
+  PERIODIQUE
+}
+
+' ============================================================
+' AGREGAT : GENERATION
+' ============================================================
+
+class Generation {
+  - idGeneration : UUID
+  - typeDocument : TypeDocument
+  - statut : StatutGeneration
+  - format : FormatDocument
+  - etablissement : UUID
+  - parametres : Map<String,String>
+  - demandeur : UUID
+  - dateCreation : Instant
+  - dateGeneration : Instant?
+  - dateExpiration : Instant?
+  - nombreDocuments : Integer
+  - fichierArchive : String?
+  - empreinte : String?
+  - erreur : String?
+  - versionModele : Integer
+  + generer() : Generation
+  + telecharger() : Fichier
+  + annuler(motif : String) : Generation
+  + regenereer() : Generation
+  + estExpiree(date : Instant) : Boolean
+}
+
+class Fichier {
+  - nom : String
+  - taille : Long
+  - typeMime : String
+  - uri : String
+  - uriArchive : String?
+  - dateGeneration : Instant
+  - empreinte : String
+  - confidentiel : Boolean
+  - dateSuppression : Instant?
+}
+
+' ============================================================
+' GABARITS ET RENDU
+' ============================================================
+
+class ModeleDocument {
+  - idModele : UUID
+  - code : String
+  - libelle : String
+  - typeDocument : TypeDocument
+  - version : Integer
+  - moteur : MoteurRendu
+  - gabarit : String
+  - sections : List<SectionModele>
+  - variables : List<VariableDocument>
+  - marges : Marges
+  - orientation : Orientation
+  - piedDePage : String?
+  - enTete : String?
+  - actif : Boolean
+  + valider() : List<String>
+  + versionner(gabarit : String) : ModeleDocument
+}
+
+enum MoteurRendu {
+  THYMELEAF
+  FREEMARKER
+  OPENPDF
+  ITEXT
+  JASPER
+  POI
+  CUSTOM
+}
+enum Orientation {
+  PORTRAIT
+  PAYSAGE
+}
+
+class SectionModele {
+  - nom : String
+  - type : TypeSection
+  - ordre : Integer
+  - repetition : Boolean
+  - contenu : String
+}
+
+enum TypeSection {
+  ENTETE
+  TITRE
+  CORPS
+  TABLEAU
+  LIGNE_DETAIL
+  SIGNATURE
+  FILIGRANE
+  SAUT_PAGE
+  TOTAL
+  QR_CODE
+}
+
+class VariableDocument {
+  - nom : String
+  - type : TypeVariable
+  - obligatoire : Boolean
+  - defaut : String?
+  - cheminSource : String
+  - format : String?
+}
+
+enum TypeVariable {
+  TEXTE
+  NOMBRE
+  MONTANT
+  DATE
+  DATE_HEURE
+  BOOLEEN
+  IMAGE
+  QR_CODE
+  BARRE_CODE
+  TABLEAU
+  LISTE
+}
+
+class Marges {
+  - haut : Integer
+  - bas : Integer
+  - gauche : Integer
+  - droite : Integer
+}
+
+class SourceDonnees {
+  - service : String
+  - ressource : String
+  - methode : String
+  - parametres : Map<String,String>
+  - delaiMax : Integer
+}
+
+' ============================================================
+' SIGNATURE ET DISTRIBUTION
+' ============================================================
+
+class SignatureDocument {
+  - id : UUID
+  - generation : UUID
+  - signataire : UUID
+  - role : String
+  - statut : StatutSignature
+  - dateSignature : Instant?
+  - empreinte : String?
+  - empreinteDocument : String?
+}
+
+enum StatutSignature {
+  EN_ATTENTE
+  SIGNE
+  REFUSE
+  EXPIRE
+}
+
+class LotGeneration {
+  - idLot : UUID
+  - code : String
+  - type : TypeLot
+  - typeDocument : TypeDocument
+  - etablissement : UUID
+  - critere : String
+  - dateLancement : Instant
+  - dateFin : Instant?
+  - total : Integer
+  - succes : Integer
+  - echecs : Integer
+  - archive : String?
+  +Progresser(succes : Integer, echecs : Integer) : LotGeneration
+  + estTermine() : Boolean
+}
+
+class DiffusionDocument {
+  - id : UUID
+  - generation : UUID
+  - canal : Canal
+  - destinataire : UUID
+  - adresse : String
+  - dateEnvoi : Instant?
+  - statut : String
+  + estDelivre() : Boolean
+}
+
+enum Canal {
+  EMAIL
+  SMS
+  WHATSAPP
+  IN_APP
+  TELECHARGE
+}
+
+' ============================================================
+' RELATIONS ET CARDINALITES
+' ============================================================
+
+Generation "1" *-- "1" Fichier : produit >
+Generation "1" o-- "1" ModeleDocument : rend par >
+Generation "1" *-- "0..*" SourceDonnees : collecte >
+Generation "1" *-- "0..*" SignatureDocument : fait signer >
+Generation "1" o-- "0..1" LotGeneration : appartient >
+Generation "1" *-- "0..*" DiffusionDocument : distribue >
+ModeleDocument "1" *-- "1..*" SectionModele : compose >
+ModeleDocument "1" o-- "1..*" VariableDocument : expose >
+ModeleDocument "1" o-- "1" Marges : formate >
+ModeleDocument "1" -- "0..*" SourceDonnees : alimente >
+LotGeneration "1" *-- "0..*" Generation : regroupe >
+SignatureDocument "1" -- "0..1" Fichier : scelle >
+ModeleDocument ..> TypeDocument : rend >
+SectionModele ..> TypeSection : type >
+VariableDocument ..> TypeVariable : type >
+Generation ..> StatutGeneration : suit >
+Generation ..> TypeDocument : produit >
+SignatureDocument ..> StatutSignature : suit >
+DiffusionDocument ..> Canal : utilise >
+ModeleDocument ..> MoteurRendu : execute avec >
+
+@enduml

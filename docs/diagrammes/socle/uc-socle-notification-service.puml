@@ -1,0 +1,85 @@
+@startuml uc-socle-notification-service
+skinparam packageStyle rectangle
+skinparam actorStyle stickman
+left to right direction
+
+title Diagramme des Cas d'Utilisation - Service Notifications (notification-service)
+
+actor "Utilisateur" as USR
+actor "Administrateur" as ADM
+actor "Service Metier" as MET
+actor "Systeme" as SYS
+actor "Operateur SMS / WhatsApp" as OPS
+
+rectangle "Plateforme NexusGesti" {
+  rectangle "notification-service" {
+
+    ' ---- Emission ----
+    usecase "Emettre une notification" as UC_Emettre
+    usecase "Planifier une notification" as UC_Planifier
+    usecase "Notifier un groupe de destinataires" as UC_Groupe
+    usecase "Annuler une notification" as UC_Annuler
+    usecase "Renvoyer un echec d envoi" as UC_Renvoyer
+
+    ' ---- Gabarits ----
+    usecase "Creer un gabarit de message" as UC_Gabarit
+    usecase "Modifier un gabarit" as UC_ModifierGabarit
+    usecase "Versionner un gabarit" as UC_Versionner
+    usecase "Tester un gabarit" as UC_Tester
+    usecase "Configurer la langue d un gabarit" as UC_Langue
+
+    ' ---- Regles et preferences ----
+    usecase "Definir une regle de diffusion" as UC_Regle
+    usecase "Consulter ses preferences de notification" as UC_Preferences
+    usecase "Modifier ses preferences" as UC_ModifierPref
+    usecase "Desactiver une categorie" as UC_DesactiverCat
+    usecase "Definir une plage de silence" as UC_Silence
+
+    ' ---- Suivi ----
+    usecase "Consulter le historique des envois" as UC_Historique
+    usecase "Consulter les echecs" as UC_Echecs
+    usecase "Consulter la consommation par canal" as UC_Consommation
+
+    ' ---- Relations ----
+    UC_Emettre .> UC_Gabarit : <<include>>
+    UC_Emettre .> UC_Regle : <<include>>
+    UC_Groupe .> UC_Regle : <<include>>
+    UC_Emettre .> UC_Historique : <<include>>
+    UC_Versionner .> UC_Tester : <<include>>
+    UC_ModifierPref .> UC_DesactiverCat : <<include>>
+    UC_ModifierPref .> UC_Silence : <<include>>
+    UC_Renvoyer .> UC_Echecs : <<include>>
+    UC_Planifier .> UC_Emettre : <<extend>>
+  }
+}
+
+USR --> UC_Preferences
+USR --> UC_ModifierPref
+USR --> UC_DesactiverCat
+USR --> UC_Historique
+ADM --> UC_Gabarit
+ADM --> UC_ModifierGabarit
+ADM --> UC_Versionner
+ADM --> UC_Tester
+ADM --> UC_Langue
+ADM --> UC_Regle
+ADM --> UC_Echecs
+ADM --> UC_Consommation
+MET --> UC_Emettre
+MET --> UC_Groupe
+MET --> UC_Planifier
+SYS --> UC_Emettre
+SYS --> UC_Groupe
+SYS --> UC_Annuler
+OPS --> UC_Consommation
+
+note bottom of UC_Regle
+  Une regle de diffusion declare :
+  canaux autorises, types de destinataires,
+  delai d envoi et plages horaires.
+  Le silence est gele en base : si une
+  notification arrive hors plage, elle
+  reste EN_ATTENTE.
+end note
+
+@enduml

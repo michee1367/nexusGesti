@@ -1,0 +1,129 @@
+@startuml uc-hopital-patient-service
+skinparam packageStyle rectangle
+skinparam actorStyle stickman
+left to right direction
+
+title Diagramme des Cas d'Utilisation - hopital-patient-service
+
+actor "Agent d'accueil" as ACC
+actor "Medecin" as MED
+actor "Infirmier" as INF
+actor "Patient" as PAT
+actor "Parent / Tuteur" as PAR
+actor "Administrateur" as ADM
+actor "Systeme Identite" as IDN
+
+rectangle "Plateforme NexusGesti" {
+  rectangle "hopital-patient-service" {
+
+    ' ---- Creation et identification ----
+    usecase "Creer un dossier patient" as UC_CreerDossier
+    usecase "Rechercher un patient" as UC_Rechercher
+    usecase "Verifier l identite du patient" as UC_VerifierIdentite
+    usecase "Attribuer un code patient" as UC_CodePatient
+    usecase "Enregistrer une piece d identite" as UC_PieceIdentite
+    usecase "Corriger une erreur d identite" as UC_CorrigerIdentite
+
+    ' ---- Donnees administratives ----
+    usecase "Renseigner l adresse" as UC_Adresse
+    usecase "Renseigner la garantie d assurance" as UC_Assurance
+    usecase "Ajouter un contact d urgence" as UC_ContactUrgence
+    usecase "Mettre a jour la demographics" as UC_Demographics
+
+    ' ---- Donnees medicales ----
+    usecase "Saisir les antecedents" as UC_Antecedents
+    usecase "Verifier les allergies" as UC_Allergies
+    usecase "Enregistrer le groupe sanguin" as UC_GroupeSanguin
+
+    ' ---- Consentement ----
+    usecase "Recueillir un consentement" as UC_Consentement
+    usecase "Retirer un consentement" as UC_RetirerConsentement
+    usecase "Exporter les donnees du patient" as UC_ExportDonnees
+
+    ' ---- Cycle de vie ----
+    usecase "Archiver un dossier" as UC_Archiver
+    usecase "Fusionner deux dossiers" as UC_Fusionner
+    usecase "Consulter l historique de fusion" as UC_HistoriqueFusion
+
+    ' ---- Acces ----
+    usecase "Restreindre l acces au dossier" as UC_Restriction
+    usecase "Consulter le dossier medical" as UC_ConsulterDossier
+    usecase "Tracer un acces" as UC_TracerAcces
+
+    ' ---- Relations ----
+    UC_CreerDossier .> UC_PieceIdentite : <<include>>
+    UC_CreerDossier .> UC_Consentement : <<include>>
+    UC_CreerDossier .> UC_VerifierIdentite : <<include>>
+    UC_CreerDossier .> UC_CodePatient : <<include>>
+    UC_VerifierIdentite .> UC_Rechercher : <<include>>
+    UC_Demographics .> UC_CorrigerIdentite : <<extend>>
+    UC_ConsulterDossier .> UC_TracerAcces : <<include>>
+    UC_ConsulterDossier .> UC_Restriction : <<include>>
+    UC_Allergies .> UC_ConsulterDossier : <<require>>
+    UC_Fusionner .> UC_Archiver : <<include>>
+    UC_Fusionner .> UC_HistoriqueFusion : <<include>>
+    UC_ExportDonnees .> UC_Consentement : <<require>>
+    UC_RetirerConsentement .> UC_Consentement : <<include>>
+  }
+}
+
+ACC --> UC_CreerDossier
+ACC --> UC_Rechercher
+ACC --> UC_CodePatient
+ACC --> UC_PieceIdentite
+ACC --> UC_Adresse
+ACC --> UC_Assurance
+ACC --> UC_ContactUrgence
+ACC --> UC_ConsulterDossier
+INF --> UC_Rechercher
+INF --> UC_ConsulterDossier
+INF --> UC_Allergies
+INF --> UC_Antecedents
+INF --> UC_Consentement
+MED --> UC_CreerDossier
+MED --> UC_Rechercher
+MED --> UC_ConsulterDossier
+MED --> UC_Antecedents
+MED --> UC_Allergies
+MED --> UC_GroupeSanguin
+MED --> UC_CorrigerIdentite
+PAT --> UC_Consentement
+PAT --> UC_ConsulterDossier
+PAT --> UC_ExportDonnees
+PAR --> UC_Consentement
+PAR --> UC_ConsulterDossier
+ADM --> UC_Archiver
+ADM --> UC_Fusionner
+ADM --> UC_HistoriqueFusion
+ADM --> UC_Restriction
+ADM --> UC_ExportDonnees
+IDN --> UC_VerifierIdentite
+
+note bottom of UC_CreerDossier
+  Le numero de telephone est la cle
+  de recherche prioritaire : la
+  saisie est en mode non bloquant.
+  Les champs obligatoires d identite
+  et les consents necessaires sont
+  verifies par une regle declaree,
+  jamais codees en dur.
+end note
+
+note bottom of UC_Fusionner
+  La fusion est irreversible en
+  operation : le dossier source est
+  archive, pas supprime. Un
+  controle de coherence des donnees
+  opposees est obligatoire avant
+  validation.
+end note
+
+note bottom of UC_TracerAcces
+  Toute consultation du dossier genere
+  une trace d acces : lecteur,
+  motif, horodatage, perimetre
+  consulte. C est la source unique
+  du registre d acces clinique.
+end note
+
+@enduml

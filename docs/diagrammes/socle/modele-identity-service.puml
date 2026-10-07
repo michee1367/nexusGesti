@@ -1,0 +1,209 @@
+@startuml modele-identity-service
+title Diagramme de Classes - Service Identite et Utilisateurs (identity-service)
+skinparam classAttributeIconSize 0
+hide empty members
+
+' ============================================================
+' ENUMS
+' ============================================================
+
+enum StatutUtilisateur {
+  INVITE
+  ACTIF
+  DESACTIF
+  SUSPENDU
+  SUPPRIME
+}
+enum TypePersonne {
+  ELEVE
+  ENSEIGNANT
+  PARENT
+  PERSONNEL
+  MEDECIN
+  INFIRMIER
+  PHARMACIEN
+  COMPTABLE
+  CAISSIER
+  AUDITEUR
+  ADMINISTRATEUR
+  TUTEUR_STAGE
+  AUTRE
+}
+enum TypeCompte {
+  LOCAL
+  KEYCLOAK
+  ANONYME
+}
+enum CategorieRole {
+  ADMINISTRATION
+  PEDAGOGIQUE
+  SCOLARITE
+  SANTE
+  FINANCE
+  SECURITE
+  SYSTEME
+  CONSULTATION
+}
+
+' ============================================================
+' AGREGAT : UTILISATEUR
+' ============================================================
+
+class Utilisateur {
+  - idUtilisateur : UUID
+  - identifiant : String
+  - email : String
+  - telephone : String
+  - nom : String
+  - postNom : String?
+  - prenom : String
+  - sexe : String?
+  - dateNaissance : Date?
+  - nationalite : String?
+  - photoUrl : String?
+  - statut : StatutUtilisateur
+  - typeCompte : TypeCompte
+  - doitChangerMotDePasse : Boolean
+  - derniereConnexion : Instant?
+  - delombok : Boolean
+  - languePreferee : String
+  + activer() : Utilisateur
+  + desactiver(motif : String) : Utilisateur
+  + suspendre(jusquau : Date) : Utilisateur
+  + attribuerRole(nomRole : String) : Utilisateur
+  + retirerRole(nomRole : String) : Utilisateur
+  + aRole(nomRole : String) : Boolean
+  + getRolesActifs() : List<Role>
+}
+
+class IdentifiantExterne {
+  - fournisseur : String
+  - identifiant : String
+  - dateLiaison : Instant
+}
+
+class MotifDesactivation {
+  - date : Date
+  - motif : String
+  - decideur : UUID
+}
+
+class Preference {
+  - cle : String
+  - valeur : String
+}
+
+class ProfilEtudiant {
+  - id : UUID
+  - situation : String
+  - profession : String?
+  - niveauInstruction : String?
+  - categorieSocioEconomique : String?
+}
+
+class Adresse {
+  - rue : String
+  - quartier : String
+  - commune : String
+  - ville : String
+  - province : String
+  - pays : String
+}
+
+' ============================================================
+' AGREGAT : ROLES ET PERMISSIONS
+' ============================================================
+
+class Role {
+  - idRole : UUID
+  - code : String
+  - libelle : String
+  - categorie : CategorieRole
+  - systeme : Boolean
+  - hierarchique : Integer
+  + estSysteme() : Boolean
+}
+
+class Permission {
+  - idPermission : UUID
+  - code : String
+  - libelle : String
+  - service : String
+  - ressource : String
+  - action : String
+  + correspondA(verbe : String, ressource : String) : Boolean
+}
+
+class RolePermission {
+  - grantedAt : Instant
+  - grantedBy : UUID
+  - expireLe : Date?
+  + estExpiree(date : Date) : Boolean
+}
+
+class RoleTemplate {
+  - code : String
+  - libelle : String
+  - profil : String
+  - permissions : List<String>
+  - roles : List<String>
+}
+
+' ============================================================
+' AGREGAT : PERSONNE DE LIEN (enseignant, eleve, medecin...)
+' ============================================================
+
+class PersonneLien {
+  - id : UUID
+  - type : TypePersonne
+  - reference : String
+  - matricule : String?
+  - etablissement : UUID
+  - dateDebut : Date
+  - dateFin : Date?
+  - actif : Boolean
+  + estActive(date : Date) : Boolean
+}
+
+' ============================================================
+' JOURNAL
+' ============================================================
+
+class JournalAccesUtilisateur {
+  - id : UUID
+  - utilisateur : UUID
+  - action : String
+  - cible : String
+  - details : Map<String,String>
+  - horodatage : Instant
+  - adresseIp : String
+  - resultat : String
+}
+
+' ============================================================
+' RELATIONS ET CARDINALITES
+' ============================================================
+
+Utilisateur "1" o-- "0..*" IdentifiantExterne : lie a >
+Utilisateur "1" *-- "0..*" MotifDesactivation : historique >
+Utilisateur "1" o-- "0..*" Preference : configure >
+Utilisateur "1" o-- "1" Adresse : reside a >
+Utilisateur "1" o-- "0..1" ProfilEtudiant : declare >
+Utilisateur "1" o-- "0..*" PersonneLien : correspond a >
+Utilisateur "1" -- "0..*" Role : porte >
+Utilisateur "1" -- "0..*" JournalAccesUtilisateur : trace >
+
+Role "1" o-- "0..*" Utilisateur : attribue a >
+Role "1" *-- "1..*" Permission : accorde >
+Permission "1" o-- "0..*" Role : portee par >
+
+Role "1" *-- "1..*" RolePermission : historique >
+RolePermission "1" -- "1..*" Permission : porte >
+
+RoleTemplate ..> Role : genere >
+RoleTemplate ..> Permission : liste >
+
+StatutUtilisateur ..> TypePersonne : restreint >
+Utilisateur "0..1" -- "0..*" TypePersonne : peut etre >
+
+@enduml

@@ -1,0 +1,113 @@
+@startuml uc-pedagogie-academic-structure-service
+skinparam packageStyle rectangle
+skinparam actorStyle stickman
+left to right direction
+
+title Diagramme des Cas d'Utilisation - Service Structure Pedagogique (academic-structure-service)
+
+actor "Proviseur / Directeur" as DIR
+actor "Secretaire Academique" as SEC
+actor "Censeur" as CEN
+actor "Enseignant" as ENS
+actor "Etudiant / Eleve" as ELE
+
+rectangle "Plateforme NexusGesti" {
+  rectangle "academic-structure-service" {
+
+    ' ---- Referentiel pedagogique ----
+    usecase "Definir les niveaux" as UC_Niveaux
+    usecase "Definir les cycles" as UC_Cycles
+    usecase "Ouvrir les classes" as UC_OuvrirClasse
+    usecase "Rouvrir une classe" as UC_Rouvrir
+    usecase "Cloturer une classe" as UC_CloturerClasse
+    usecase "Creer une promotion" as UC_Promotion
+
+    ' ---- Universite ----
+    usecase "Definir les filieres et programmes" as UC_Filiere
+    usecase "Decouper les semestres" as UC_Semestre
+    usecase "Definir les unites d enseignement (UE)" as UC_UE
+    usecase "Definir les cours (ECUE)" as UC_ECUE
+    usecase "Affecter les credits et coefficients" as UC_Credits
+    usecase "Definir les equivalences entre UE" as UC_Equivalence
+    usecase "Definir les cours pre-requis" as UC_Prerequis
+
+    ' ---- Salles ----
+    usecase "Administrer les salles" as UC_Salle
+    usecase "Definir les types de salle" as UC_TypeSalle
+    usecase "Verifier la compatibilite salle / effectif" as UC_Compatibilite
+
+    ' ---- Emploi du temps ----
+    usecase "Construire l emploi du temps" as UC_EDT
+    usecase "Publier l emploi du temps" as UC_PublierEDT
+    usecase "Detector les conflits" as UC_Conflits
+    usecase "Resoudre un conflit" as UC_ResoudreConflit
+    usecase "Definir le regime horaire" as UC_Regime
+    usecase "Reporter une seance" as UC_Reporter
+    usecase "Consulter l emploi du temps" as UC_ConsulterEDT
+
+    ' ---- Relations ----
+    UC_OuvrirClasse .> UC_Niveaux : <<require>>
+    UC_ECUE .> UC_UE : <<include>>
+    UC_UE .> UC_Semestre : <<include>>
+    UC_Semestre .> UC_Filiere : <<include>>
+    UC_Credits .> UC_ECUE : <<include>>
+    UC_EDT .> UC_Conflits : <<include>>
+    UC_Conflits .> UC_ResoudreConflit : <<extend>>
+    UC_PublierEDT .> UC_Conflits : <<require>>
+    UC_ECUE .> UC_Compatibilite : <<include>>
+    UC_Reporter .> UC_ConsulterEDT : <<extend>>
+  }
+}
+
+DIR --> UC_Niveaux
+DIR --> UC_Cycles
+DIR --> UC_OuvrirClasse
+DIR --> UC_CloturerClasse
+DIR --> UC_Filiere
+DIR --> UC_UE
+DIR --> UC_ECUE
+DIR --> UC_Credits
+DIR --> UC_Equivalence
+DIR --> UC_Prerequis
+DIR --> UC_TypeSalle
+DIR --> UC_PublierEDT
+DIR --> UC_Regime
+SEC --> UC_OuvrirClasse
+SEC --> UC_Rouvrir
+SEC --> UC_CloturerClasse
+SEC --> UC_Promotion
+SEC --> UC_Semestre
+SEC --> UC_Salle
+SEC --> UC_ECUE
+SEC --> UC_EDT
+SEC --> UC_ResoudreConflit
+SEC --> UC_Reporter
+CEN --> UC_EDT
+CEN --> UC_Conflits
+CEN --> UC_ConsulterEDT
+ENS --> UC_ConsulterEDT
+ENS --> UC_ECUE
+ELE --> UC_ConsulterEDT
+
+note bottom of UC_ECUE
+  Un ECUE peut etre rattache soit a
+  une UE (universitaire), soit
+  directement a une Classe
+  (primaire / secondaire).
+  Un seul objet, deux granularites,
+  porte par le champ niveauAcalcul.
+end note
+
+note bottom of UC_Conflits
+  Conflits detectes :
+   - salle doublee
+   - enseignant sur deux seances
+   - eleves attendu s deux endroits
+   - seance hors cycle horaire
+   - collision cours / examen
+  COINCIDENCE_COURS_EXAMEN est un
+  conflit BLOQUANT : il bloque la
+  publication de la session.
+end note
+
+@enduml

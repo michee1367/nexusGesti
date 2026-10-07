@@ -1,0 +1,223 @@
+@startuml modele-fin-immobilisation-service
+hide empty members
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+title Modele de classes - fin-immobilisation-service (Immobilisations, Amortissements et Cessions)
+package "fin-immobilisation-service" {
+  enum CategorieImmo {
+    IMMOBILISATION_INCORPORELLE
+    IMMOBILISATION_CORPORELLE
+    TERRAIN
+    CONSTRUCTION
+    MATERIEL_INFORMATIQUE
+    MATERIEL_BUREAU
+    MATERIEL_TRANSPORT
+    MATERIEL_INDUSTRIEL
+    MOBILIER
+    LOCAUX
+    OUTILLAGE
+  }
+  enum ModeAmortissement {
+    LINEAIRE
+    DEGRESSIF
+    AMORTISSEMENT_PAR_UNITE
+    NON_AMORTISSABLE
+  }
+  enum StatutImmo {
+    EN_SERVICE
+    HORS_SERVICE
+    EN_CESSION
+    CEDEE
+    DETRUITE
+    EN_REFORME
+  }
+  enum TypeMouvementImmo {
+    ACQUISITION
+    MISE_EN_SERVICE
+    TRANSFERT
+    CESSION
+    MISE_HORS_SERVICE
+    REFORME
+    DESTRUCTION
+    CORRECTION
+  }
+  enum StatutProjet {
+    PROJET
+    VALIDE
+    ENGAGE
+    REALISE
+    ABANDONNE
+  }
+  class Immobilisation <<aggregate root>> {
+    + id : UUID
+    + code : String
+    + libelle : String
+    + description : String
+    + categorie : CategorieImmo
+    + dateAcquisition : Date
+    + dateMiseService : Date
+    + coutAcquisition : Decimal
+    + valeurResiduelle : Decimal
+    + dureeAmortissement : Integer
+    + modeAmortissement : ModeAmortissement
+    + statut : StatutImmo
+    + compteImmo : String
+    + compteAmortissement : String
+    + compteDotations : String
+    + compteResultat : String
+    + centre : String
+    + immobilisationMere : String
+    + beneficiaire : String
+    + numSerie : String
+    + numFacture : String
+    + fournisseur : String
+    + dateSortie : Date
+    + dateMiseHorsService : Date
+    + cumulAmortissements : Decimal
+    + valeurNetteComptable : Decimal
+    + amortissementAnnuel : Decimal
+    + dotationAnnuelle : Decimal
+    + numeroLot : String
+    + pays : String
+    + contrepartie : String
+    + cumulDotations : Decimal
+    + valeurCession : Decimal
+    + plusValueCession : Decimal
+    + plusValue : Decimal
+    + amortissementCumule : Decimal
+    + nonAmortissable : Boolean
+    + statutCession : String
+    + dateCession : Date
+    + acquereur : String
+    + projetId : UUID
+    + quota : Decimal
+    + actif : Boolean
+    --
+    + calculerDotation() : Decimal
+    + calculerVNC() : Decimal
+    + estAmortie() : Boolean
+    + valeurMiseService() : Decimal
+  }
+  class PlanAmortissement {
+    + mode : ModeAmortissement
+    + dureeParDefaut : Integer
+    + valeurResiduellePct : Decimal
+    + dateApplication : Date
+    + syscohda : Boolean
+  }
+  class Amortissement {
+    + immobilisationId : UUID
+    + annee : Integer
+    + numero : Integer
+    + date : Date
+    + dotation : Decimal
+    + amortissementFixe : Decimal
+    + amortissementVariable : Decimal
+    + valeurBrute : Decimal
+    + vncFinAnnee : Decimal
+    + taux : Decimal
+    + pointA : Decimal
+    + journal : String
+    + compteDebit : String
+    + compteCredit : String
+    + comptabilise : Boolean
+    --
+    + estNul() : Boolean
+    + calculerDotation() : Decimal
+  }
+  class MouvementImmo {
+    + type : TypeMouvementImmo
+    + montant : Decimal
+    + valeurAvant : Decimal
+    + valeurApres : Decimal
+    + motif : String
+    + documentSource : String
+    + utilisateurId : UUID
+    + immoCedeeId : UUID
+  }
+  class ProduitCession {
+    + prixCession : Decimal
+    + vnc : Decimal
+    + moinsValue : Decimal
+    + controleFiscale : Boolean
+    + journalSource : String
+    --
+    + calculerPlusValue() : Decimal
+    + estFiscale() : Boolean
+  }
+  class BudgetInvestissement {
+    + montantAutorise : Decimal
+    + montantEngage : Decimal
+    + montantRealise : Decimal
+    + disponible : Decimal
+    + devise : String
+    + validePar : UUID
+    --
+    + estDepasse() : Boolean
+    + recalculer() : void
+  }
+  class ProjetInvestissement {
+    + dateDebut : Date
+    + dateFin : Date
+    + budget : Decimal
+    + engage : Decimal
+    + realise : Decimal
+    + responsable : UUID
+    + tauxRealisation : Decimal
+    --
+    + calculerRealisation() : Decimal
+  }
+  ' ---- Relations ----
+  Immobilisation "1" *-- "0..*" Amortissement : amortissements >
+  Immobilisation "1" o-- "0..*" MouvementImmo : mouvements >
+  Immobilisation "0..*" --> "0..1" Immobilisation : composante de >
+  Immobilisation "0..*" -- "1" PlanAmortissement : suit >
+  Immobilisation "0..1" -- "0..1" ProduitCession : cede en >
+  Immobilisation "0..*" -- "0..*" ProjetInvestissement : realise >
+  Immobilisation "0..*" -- "0..*" BudgetInvestissement : impute >
+  ProjetInvestissement "0..*" --> "0..1" BudgetInvestissement : budget >
+}
+note bottom of Immobilisation
+  <b>DOTATION ANNUELLE LINEAIRE</b>
+    dotation = (valeur du bien
+              - valeur residuelle)
+              / duree d amortissement
+  Exemple SYSCOHADA, materiel
+  informatique, cout 1 200 000 USD,
+  duree 5 ans, residuel 0 :
+    dotation annuelle = 240 000 USD
+    VNC fin annee 1   =   960 000 USD
+  Les Ministeres Congolaises
+  appliquent la grille de la
+  Loi n 004/02 : batiments 20 ans,
+  materiel informatique 5 ans,
+  vehicules 5 ans, mobilier 10 ans.
+end note
+note bottom of Immobilisation
+  <b>MISE EN SERVICE</b>
+  L amortissement ne demarre qu a la
+  date de mise en service effective,
+  pas a la date d acquisition.
+  Une immobilisation non mise en
+  service ne fait l objet d aucune
+  dotation.
+end note
+note bottom of ProduitCession
+  <b>PLUS OU MOINS-VALUE</b>
+    plus-value  = prix de cession
+                - VNC
+    moins-value = VNC
+                - prix de cession
+  La plus-value est exoneree de TVA
+  dans les conditions de l article
+  23 ter de la directive TVA OHADA.
+end note
+note bottom of Immobilisation
+  <b>IMMOBIUS</b>
+  Une immobilisation acquise pour le
+  compte d un tiers et livree sans
+  transfert de propriete reste au
+  compte 26 de l acquereur et
+  n est pas immobilisee.
+end note
+@enduml

@@ -1,0 +1,95 @@
+@startuml uc-socle-tenant-service
+skinparam packageStyle rectangle
+skinparam actorStyle stickman
+left to right direction
+
+title Diagramme des Cas d'Utilisation - Service Etablissements et Referentiels (tenant-service)
+
+actor "Super Administrateur Plateforme" as SA
+actor "Directeur / Proviseur" as DIR
+actor "Secretaire Academique" as SEC
+actor "Service Scolarité" as SCO
+actor "Comptable" as COM
+actor "Medecin / Directeur Hopital" as MED
+actor "Application Interne" as APP
+
+rectangle "Plateforme NexusGesti" {
+  rectangle "tenant-service" {
+
+    ' ---- Parametrage etabli ----
+    usecase "Creer un etablissement" as UC_CreerEtab
+    usecase "Activer / Suspendre un etablissement" as UC_StatutEtab
+    usecase "Configurer les sites" as UC_Sites
+    usecase "Definir les filieres et programmes" as UC_Filiere
+    usecase "Ouvrir une annee scolaire / academique" as UC_Annee
+    usecase "Definir les periodes (trimestres, semestres)" as UC_Periode
+    usecase "Cloturer une periode" as UC_CloturePeriode
+    usecase "Cloturer l annee" as UC_ClotureAnnee
+
+    ' ---- Regles de notation ----
+    usecase "Creer une grille de notation" as UC_CreerGrille
+    usecase "Definir les baremes" as UC_Bareme
+    usecase "Definir les regles de ponderation" as UC_ReglePonderation
+    usecase "Definir la cascade de calcul" as UC_Cascade
+    usecase "Definir les seuils de deliberation" as UC_Seuil
+    usecase "Definir les regles d assiduite" as UC_Assiduite
+    usecase "Definir les mentions et appreciations" as UC_Mention
+    usecase "Activer une version de grille" as UC_ActiverGrille
+    usecase "Figer une grille" as UC_FigerGrille
+    usecase "Dupliquer un modele de grille" as UC_DupliquerPreset
+
+    ' ---- Referentiels ----
+    usecase "Administrer les referentiels" as UC_Referentiel
+    usecase "Consulter la grille applicable" as UC_LireGrille
+
+    ' ---- Regles et inclusions ----
+    UC_Annee .> UC_Periode : <<include>>
+    UC_CreerGrille .> UC_Bareme : <<include>>
+    UC_CreerGrille .> UC_Cascade : <<include>>
+    UC_ActiverGrille .> UC_ReglePonderation : <<include>>
+    UC_ActiverGrille .> UC_Seuil : <<include>>
+    UC_ActiverGrille .> UC_Assiduite : <<include>>
+    UC_ActiverGrille .> UC_Mention : <<include>>
+    UC_FigerGrille .> UC_ActiverGrille : <<extend>>
+    UC_DupliquerPreset .> UC_CreerGrille : <<extend>>
+    UC_CreerEtab .> UC_Sites : <<include>>
+  }
+}
+
+' ---- Relations Acteurs -> Cas d utilisation ----
+SA --> UC_CreerEtab
+SA --> UC_StatutEtab
+SA --> UC_DupliquerPreset
+DIR --> UC_Sites
+DIR --> UC_Filiere
+DIR --> UC_CreerGrille
+DIR --> UC_ReglePonderation
+DIR --> UC_Cascade
+DIR --> UC_Seuil
+DIR --> UC_Assiduite
+DIR --> UC_Mention
+DIR --> UC_ActiverGrille
+DIR --> UC_FigerGrille
+DIR --> UC_StatutEtab
+SEC --> UC_Annee
+SEC --> UC_Periode
+SEC --> UC_CloturePeriode
+SEC --> UC_ClotureAnnee
+SEC --> UC_Bareme
+SCO --> UC_Referentiel
+SCO --> UC_LireGrille
+COM --> UC_LireGrille
+COM --> UC_Bareme
+MED --> UC_CreerGrille
+MED --> UC_Referentiel
+APP --> UC_LireGrille
+
+' ---- Regle de coherence : la grille est figee apres activation ----
+UC_FigerGrille ..> UC_ActiverGrille : <<require>>
+note bottom of UC_FigerGrille
+  Une grille figee ne peut plus etre modifiee.
+  Les bulletins deja edites conservent
+  la version de grille utilisee.
+end note
+
+@enduml

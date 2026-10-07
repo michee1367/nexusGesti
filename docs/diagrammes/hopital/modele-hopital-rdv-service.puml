@@ -1,0 +1,187 @@
+@startuml modele-hopital-rdv-service
+hide empty members
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+
+title Modele de classes - hopital-rdv-service (Agenda et Rendez-vous)
+
+package "hopital-rdv-service" {
+
+  enum StatutRendezVous {
+    PROVISOIRE
+    CONFIRME
+    HONORE
+    REPORTE
+    ANNULE
+    NON_HONORE
+    PRESENT_TARD
+  }
+
+  enum TypeRendezVous {
+    CONSULTATION
+    SUIVI
+    URGENCE
+    HOSPITALISATION
+    CHIRURGIE
+    EXAMEN_COMPLEMENTAIRE
+    TELECONSULTATION
+    PLATEAU_TECHNIQUE
+  }
+
+  enum StatutAgenda {
+    OUVERT
+    PAUSE
+    FERME
+  }
+
+  enum TypeAbsence {
+    CONGE
+    MALADIE
+    FORMATION
+    AUTRE
+  }
+
+  class Agenda {
+    + code : String
+    + nom : String
+    + typeConsultation : TypeRendezVous
+    + dureeParDefaut : Duration
+    + couleur : String
+    + actif : Boolean
+    + responsable : UUID
+    --
+    + dureeStandard() : Duration
+    + estOuvert() : Boolean
+  }
+
+  class PlageHoraire {
+    + id : UUID
+    + jourSemaine : DayOfWeek
+    + heureDebut : LocalTime
+    + heureFin : LocalTime
+    + ordre : Integer
+  }
+
+  class MotifIndisponibilite {
+    + id : UUID
+    + dateDebut : Date
+    + dateFin : Date
+    + heureDebut : LocalTime
+    + heureFin : LocalTime
+    + type : TypeAbsence
+    + motif : String
+    + recurrent : Boolean
+  }
+
+  class ModeleNotification {
+    + id : UUID
+    + canal : String
+    + delaiAvant : Duration
+    + template : String
+    + actif : Boolean
+  }
+
+  class RessourcePlanning {
+    + id : UUID
+    + nom : String
+    + specialite : String
+    + typeRessource : String
+    + actif : Boolean
+  }
+
+  class RendezVous <<aggregate root>> {
+    + id : UUID
+    + reference : String
+    + dateHeureDebut : DateTime
+    + dateHeureFin : DateTime
+    + statut : StatutRendezVous
+    + type : TypeRendezVous
+    + motif : String
+    + description : String
+    + patientId : UUID
+    + ressourceId : UUID
+    + serviceDemandeur : String
+    + dateCreation : DateTime
+    + dateAnnulation : DateTime
+    + motifAnnulation : String
+    + salleId : UUID
+    + parentId : UUID
+    + creneauReprise : Boolean
+    + relanceEffectuee : Boolean
+    --
+    + duree() : Duration
+    + estAnnule() : Boolean
+    + estHonore() : Boolean
+    + chevaucheAutre(rdv : RendezVous) : Boolean
+  }
+
+  class Relance {
+    + id : UUID
+    + canal : String
+    + dateEnvoi : DateTime
+    + statutEnvoi : String
+    + erreur : String
+  }
+
+  ' ---- Relations ----
+  Agenda "1" o-- "1..*" PlageHoraire : horaires >
+  Agenda "1" o-- "0..*" MotifIndisponibilite : fermetures >
+  Agenda "1" o-- "0..*" ModeleNotification : relances >
+  RendezVous "1" --> "1" Agenda : agenda >
+  RendezVous "1" --> "1" RessourcePlanning : pour >
+  RendezVous "0..1" -- "0..1" Patient : patient >
+  RendezVous "1" o-- "0..*" Relance : relance >
+  RendezVous "0..1" -- "0..*" RendezVous : suivi de >
+  Agenda "1" -- "1" Service : appartient a >
+
+  ' ---- Entites consommees, non possedees ----
+  class Patient <<external>> #transparent
+  class Service <<hopital-hospitalisation>> #transparent
+  class Salle <<hopital-hospitalisation>> #transparent
+}
+
+note right of Patient
+  Consomme par
+  hopital-patient-service
+  (pas de copie locale)
+end note
+
+note bottom of Service
+  <b>RESOLUTION DE LA REFERENCE</B>
+  Service etait declare <<external>>
+  sans qu aucun service du depot en
+  soit le proprietaire.
+
+  hopital-hospitalisation-service le
+  possede desormais. Les trois lectures
+  designent le meme objet :
+   - ici : le service d accueil du
+     rendez-vous
+   - consultation : le service demandeur
+     d une prescription
+   - pharmacie : un TypeDestination de
+     sortie de stock
+end note
+
+note bottom of RendezVous
+  <b>RESERVATION SANS CHEVAUCHEMENT</b>
+  Avant enregistrement, ce service
+  verifie :
+    1. ressource libre sur le creneau
+    2. salle libre sur le creneau
+    3. creneau dans une plage ouverte
+    4. creneau dans une plage de
+       PlanificationMedicale dediee
+
+  En cas de conflit, proposition
+  de creneaux alternatifs.
+end note
+
+note bottom of ModeleNotification
+  Les modeles de rappel sont des
+  donnees de configuration :
+  delai, canal et gabarit sont
+  parametres, jamais des constantes.
+end note
+
+@enduml

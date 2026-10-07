@@ -1,0 +1,132 @@
+@startuml uc-pedagogie-academic-attendance-service
+skinparam packageStyle rectangle
+skinparam actorStyle stickman
+left to right direction
+
+title Diagramme des Cas d'Utilisation - Service Presence et Assiduite (academic-attendance-service)
+
+actor "Enseignant" as ENS
+actor "Professeur titulaire" as TIT
+actor "Surveillant" as SUR
+actor "Secretaire Scolarité" as SCO
+actor "Parent / Tuteur" as PAR
+actor "Censeur" as CEN
+actor "Systeme" as SYS
+
+rectangle "Plateforme NexusGesti" {
+  rectangle "academic-attendance-service" {
+
+    ' ---- Saisie de presence ----
+    usecase "Ouvrir la feuille de presence" as UC_Ouvrir
+    usecase "Faire l appel" as UC_Appel
+    usecase "Pointer un eleve" as UC_Pointer
+    usecase "Faire l appel global" as UC_AppelGlobal
+    usecase "Pointer par code-barre" as UC_CodeBarre
+    usecase "Pointer par reconnaissance biometrique" as UC_Biometrie
+    usecase "Corriger une pointage" as UC_Corriger
+    usecase "Soumettre la feuille" as UC_Soumettre
+    usecase "Valider la feuille" as UC_Valider
+    usecase "Cloturer la feuille" as UC_CloturerFeuille
+
+    ' ---- Seances ----
+    usecase "Consulter les seances du jour" as UC_Seances
+    usecase "Demarrer une seance" as UC_Demarrer
+    usecase "Terminer une seance" as UC_Terminer
+    usecase "Annuler une seance" as UC_AnnulerSeance
+    usecase "Reporter une seance" as UC_Reporter
+
+    ' ---- Absences et justificatifs ----
+    usecase "Signaler une absence" as UC_Absence
+    usecase "Deposer un justificatif" as UC_DeposerJustificatif
+    usecase "Accepter un justificatif" as UC_AccepterJustificatif
+    usecase "Rejeter un justificatif" as UC_RejeterJustificatif
+    usecase "Exclure une absence du calcul" as UC_Exclure
+
+    ' ---- Retards ----
+    usecase "Enregistrer un retard" as UC_Retard
+    usecase "Convertir un retard en absence" as UC_RetardAbsence
+
+    ' ---- Consultation et suivi ----
+    usecase "Consulter le suivi d assiduite d un eleve" as UC_Suivi
+    usecase "Consulter le registre de presence" as UC_Registre
+    usecase "Consulter le taux de presence d une classe" as UC_TauxClasse
+    usecase "Etre alerte d une absence eleve" as UC_Alerte
+    usecase "Exporter le registre" as UC_Exporter
+
+    ' ---- Relations ----
+    UC_Appel .> UC_Ouvrir : <<include>>
+    UC_Appel .> UC_Pointer : <<include>>
+    UC_Pointer .> UC_Corriger : <<extend>>
+    UC_Corriger .> UC_Soumettre : <<require>>
+    UC_AppelGlobal .> UC_Soumettre : <<include>>
+    UC_Soumettre .> UC_Valider : <<include>>
+    UC_Valider .> UC_CloturerFeuille : <<include>>
+    UC_Seances .> UC_Demarrer : <<include>>
+    UC_Demarrer .> UC_Terminer : <<include>>
+    UC_Terminer .> UC_CloturerFeuille : <<include>>
+    UC_AnnulerSeance .> UC_Reporter : <<include>>
+    UC_Reporter .> UC_Seances : <<extend>>
+    UC_DeposerJustificatif .> UC_AccepterJustificatif : <<extend>>
+    UC_DeposerJustificatif .> UC_RejeterJustificatif : <<extend>>
+    UC_RejeterJustificatif .> UC_Exclure : <<include>>
+    UC_Retard .> UC_RetardAbsence : <<extend>>
+    UC_CloturerFeuille .> UC_Suivi : <<include>>
+    UC_TauxClasse .> UC_Suivi : <<include>>
+    UC_Absence .> UC_Alerte : <<include>>
+  }
+}
+
+ENS --> UC_Ouvrir
+ENS --> UC_Appel
+ENS --> UC_AppelGlobal
+ENS --> UC_CodeBarre
+ENS --> UC_Biometrie
+ENS --> UC_Pointer
+ENS --> UC_Corriger
+ENS --> UC_Soumettre
+ENS --> UC_Seances
+ENS --> UC_Demarrer
+ENS --> UC_Terminer
+ENS --> UC_Registre
+ENS --> UC_Exporter
+TIT --> UC_Valider
+TIT --> UC_Corriger
+SUR --> UC_Appel
+SUR --> UC_Pointer
+SCO --> UC_Absence
+SCO --> UC_AccepterJustificatif
+SCO --> UC_RejeterJustificatif
+SCO --> UC_Exporter
+SCO --> UC_TauxClasse
+SCO --> UC_Suivi
+SCO --> UC_Reporter
+SCO --> UC_AnnulerSeance
+SCO --> UC_DeposerJustificatif
+CEN --> UC_TauxClasse
+CEN --> UC_Suivi
+CEN --> UC_Registre
+CEN --> UC_Alerte
+PAR --> UC_DeposerJustificatif
+PAR --> UC_Suivi
+SYS --> UC_Suivi
+SYS --> UC_Alerte
+SYS --> UC_Seances
+
+note bottom of UC_Valider
+  La validation fige la feuille :
+  toute correction ulterieure est
+  tracee par audit-service et
+  marquee modifieeApresValidation
+  sur la ligne de presence.
+end note
+
+note bottom of UC_Suivi
+  Le suivi d assiduite est une
+  projection recalculee apres chaque
+  feuille validee. Les seuils viennent
+  de la RegleAssiduite de la
+  GrilleNotation : aucune valeur en
+  dur dans le service.
+end note
+
+@enduml

@@ -1,0 +1,35 @@
+# VillageSat Backend
+
+target/
+*.class
+*.jar
+*.war
+.idea/
+*.iml
+.vscode/
+.DS_Store
+*.log
+.env
+.env.*
+!.env.example
+node_modules/
+
+# Secrets — NEVER commit
+**/credentials.json
+**/secrets/
+*.pem
+*.key
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.backup
+.terraform.lock.hcl
+
+# Docker
+docker-compose.override.yml
+
+# Test
+coverage/
+.jacoco/
+venv

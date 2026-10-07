@@ -1,0 +1,207 @@
+@startuml uc-pedagogie-academic-exam-service
+skinparam packageStyle rectangle
+skinparam actorStyle stickman
+left to right direction
+
+title Diagramme des Cas d'Utilisation - Service Sessions d'Examens (academic-exam-service)
+
+actor "Proviseur / Directeur" as DIR
+actor "Censeur" as CEN
+actor "Secretaire Academique" as SEC
+actor "Professeur titulaire" as TIT
+actor "Enseignant surveillant" as ENS
+actor "Eleve" as ELE
+actor "Parent / Tuteur" as PAR
+actor "Jury" as JURY
+actor "Systeme Evaluation" as EVAL
+
+rectangle "Plateforme NexusGesti" {
+  rectangle "academic-exam-service" {
+
+    ' ---- Programmation ----
+    usecase "Creer une session d examen" as UC_CreerSession
+    usecase "Definir le type de session" as UC_TypeSession
+    usecase "Rattacher la session a une periode" as UC_RattacherPeriode
+    usecase "Creer les epreuves" as UC_CreerEpreuve
+    usecase "Definir le bareme et la coefficient" as UC_BaremeEpreuve
+    usecase "Declarer une epreuve hors moyenne" as UC_HorsMoyenne
+    usecase "Rattacher la note a une periode" as UC_ImputerPeriode
+    usecase "Lier la session a une evaluation" as UC_LierEvaluation
+    usecase "Anonymiser les copies" as UC_Anonymiser
+    usecase "Definir une note eliminatoire" as UC_NoteEliminatoire
+
+    ' ---- Planification ----
+    usecase "Definir les creneaux" as UC_Creneaux
+    usecase "Construire le plan de salle" as UC_PlanSalle
+    usecase "Affecter un candidat a une place" as UC_AffecterPlace
+    usecase "Assigner les surveillants" as UC_Surveillants
+    usecase "Accepter / refuser une surveillance" as UC_AcceptationSurveillance
+    usecase "Generer les convocations" as UC_Convocations
+    usecase "Publier le plan de salle" as UC_PublierPlan
+
+    ' ---- Tenue ----
+    usecase "Ouvrir la session" as UC_OuvrirSession
+    usecase "Pointer les candidats" as UC_Pointer
+    usecase "Constater une absence" as UC_AbsenceExamen
+    usecase "Enregistrer un incident" as UC_Incident
+    usecase "Cloturer la session" as UC_CloturerSession
+    usecase "Rediger le proces-verbal" as UC_PV
+    usecase "Signer le proces-verbal" as UC_SignerPV
+    usecase "Homologuer le PV" as UC_Homologuer
+
+    ' ---- Correction ----
+    usecase "Ouvrir la correction" as UC_OuvrirCorrection
+    usecase "Saisir les notes d examen" as UC_SaisirNoteExamen
+    usecase "Realiser la seconde correction" as UC_SecondeCorrection
+    usecase "Calculer les statistiques" as UC_Statistiques
+    usecase "Verifier l ecart significatif" as UC_Ecart
+    usecase "Cloturer la correction" as UC_CloturerCorrection
+    usecase "Verifier l enrolement avant saisie" as UC_VerifierEnrolement
+
+    ' ---- Deliberation et resultats ----
+    usecase "Planifier la deliberation" as UC_PlanifierDeliberation
+    usecase "Ouvrir la deliberation" as UC_OuvrirDeliberation
+    usecase "Deliberer par classe" as UC_DelibererClasse
+    usecase "Deliberer par unite d enseignement" as UC_DelibererUE
+    usecase "Prononcer les decisions" as UC_Decider
+    usecase "Cloturer la deliberation" as UC_CloturerDeliberation
+    usecase "Publier les resultats officiels" as UC_PublierResultats
+    usecase "Ouvrir une session de rattrapage" as UC_Rattrapage
+    usecase "Declarer une dispense" as UC_Dispense
+    usecase "Ouvrir un proces-verbal de rattrapage" as UC_PVRattrapage
+
+    ' ---- Relations ----
+    UC_CreerEpreuve .> UC_BaremeEpreuve : <<include>>
+    UC_HorsMoyenne .> UC_CreerEpreuve : <<extend>>
+    UC_ImputerPeriode .> UC_CreerEpreuve : <<extend>>
+    UC_LierEvaluation .> UC_CreerSession : <<extend>>
+    UC_PlanSalle .> UC_Creneaux : <<include>>
+    UC_PlanSalle .> UC_AffecterPlace : <<include>>
+    UC_Surveillants .> UC_AcceptationSurveillance : <<include>>
+    UC_Convocations .> UC_PlanSalle : <<include>>
+    UC_OuvrirSession .> UC_CloturerSession : <<include>>
+    UC_CloturerSession .> UC_PV : <<include>>
+    UC_SignerPV .> UC_PV : <<include>>
+    UC_Homologuer .> UC_SignerPV : <<include>>
+    UC_SaisirNoteExamen .> UC_VerifierEnrolement : <<include>>
+    UC_OuvrirCorrection .> UC_VerifierEnrolement : <<include>>
+    UC_SecondeCorrection .> UC_Ecart : <<include>>
+    UC_Statistiques .> UC_Ecart : <<include>>
+    UC_CloturerCorrection .> UC_Statistiques : <<include>>
+    UC_DelibererClasse .> UC_Decider : <<include>>
+    UC_DelibererUE .> UC_Decider : <<include>>
+    UC_Decider .> UC_PlanifierDeliberation : <<include>>
+    UC_CloturerDeliberation .> UC_PublierResultats : <<include>>
+    UC_Rattrapage .> UC_CreerSession : <<include>>
+    UC_Dispense .> UC_Rattrapage : <<extend>>
+    UC_CreerSession .> UC_TypeSession : <<include>>
+    UC_CreerSession .> UC_RattacherPeriode : <<include>>
+  }
+}
+
+DIR --> UC_CreerSession
+DIR --> UC_TypeSession
+DIR --> UC_CreerEpreuve
+DIR --> UC_HorsMoyenne
+DIR --> UC_ImputerPeriode
+DIR --> UC_PlanifierDeliberation
+DIR --> UC_OuvrirDeliberation
+DIR --> UC_PublierResultats
+DIR --> UC_Rattrapage
+DIR --> UC_Homologuer
+CEN --> UC_CreerSession
+CEN --> UC_Creneaux
+CEN --> UC_PlanSalle
+CEN --> UC_AffecterPlace
+CEN --> UC_Surveillants
+CEN --> UC_Convocations
+CEN --> UC_PublierPlan
+CEN --> UC_OuvrirSession
+CEN --> UC_DelibererClasse
+CEN --> UC_DelibererUE
+CEN --> UC_CloturerDeliberation
+SEC --> UC_Convocations
+SEC --> UC_AcceptationSurveillance
+SEC --> UC_Convocations
+SEC --> UC_AbsenceExamen
+SEC --> UC_Incident
+SEC --> UC_PV
+SEC --> UC_SignerPV
+TIT --> UC_CreerEpreuve
+TIT --> UC_NoteEliminatoire
+TIT --> UC_Anonymiser
+TIT --> UC_LierEvaluation
+ENS --> UC_AcceptationSurveillance
+ENS --> UC_Pointer
+ENS --> UC_AbsenceExamen
+ENS --> UC_Incident
+ENS --> UC_Anonymiser
+ENS --> UC_OuvrirCorrection
+ENS --> UC_SaisirNoteExamen
+ENS --> UC_SecondeCorrection
+JURY --> UC_OuvrirDeliberation
+JURY --> UC_DelibererClasse
+JURY --> UC_DelibererUE
+JURY --> UC_Decider
+JURY --> UC_CloturerDeliberation
+ELE --> UC_Convocations
+ELE --> UC_Pointer
+PAR --> UC_Convocations
+PAR --> UC_PublierResultats
+EVAL --> UC_VerifierEnrolement
+EVAL --> UC_Decider
+
+note bottom of UC_TypeSession
+  <b>SESSIONS MULTIPLES PAR ANNEE</b>
+  Le nombre et le type sont libres :
+
+   1 x SESSION_TRIMESTRIELLE ou
+       SESSION_SEMESTRIELLE par periode
+   1 x SESSION_RATTRAPAGE
+   1 x RESESSION_ANNUELLE
+   N x EXAMEN_BLANC ou
+       SESSION_EXTRAORDINAIRE
+
+  Periode renseignee = session de
+  periode.
+  Periode nulle = session annuelle.
+end note
+
+note bottom of UC_HorsMoyenne
+  <b>TROIS DRAPEAUX</b>
+
+  comptabiliseDansMoyenne = false
+    examen blanc, remede
+
+  periodeRattachement = null
+    note hors de toute moyenne
+
+  evaluationOrigine renseigne
+    session declenchee par une
+    Evaluation de type COMPOSITION
+end note
+
+note bottom of UC_VerifierEnrolement
+  Regle metier exigee :
+  une note d examen ne peut etre
+  enregistree que si l eleve a un
+  EnrolementExamen actif fourni par
+  academic-enrollment-service.
+
+  En cas de dispense, le service
+  lit l objet Dispense et trace
+  l imputation.
+end note
+
+note bottom of UC_DelibererUE
+  En universite, la deliberation
+  porte sur l UE, unite d examen.
+  Le resultat est une DecisionUE
+  par eleve et par UE.
+
+  La moyenne annuelle est une
+  consequence du parcours, pas une
+  decision de jury.
+end note
+
+@enduml

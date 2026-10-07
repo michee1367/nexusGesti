@@ -1,0 +1,919 @@
+@startuml modele-hopital-plateau-technique-service
+title Diagramme de Classes - hopital-plateau-technique-service (Laboratoire et Imagerie)
+skinparam classAttributeIconSize 0
+hide empty members
+skinparam packageStyle rectangle
+
+package "hopital-plateau-technique-service" {
+
+' ============================================================
+' ENUMS
+' ============================================================
+
+enum TypeExamenPlateau {
+  ANALYSE
+  IMAGERIE
+}
+
+enum StatutDemande {
+  BROUILLON
+  EN_ATTENTE_PAIEMENT
+  ACCEPTEE
+  REJETEE
+  PLANIFIEE
+  TERMINEE
+  ANNULEE
+}
+
+enum PrioriteDemande {
+  ROUTINE
+  URGENTE
+  CRITIQUE
+  C2
+}
+
+enum StatutExamenLaboratoire {
+  PRESCRIT
+  A_PRELEVER
+  PRELEVE
+  RECU_LABO
+  EN_TRAITEMENT
+  RESULTAT_SAISI
+  A_VALIDER
+  VALIDE
+  VALIDE_PARTIEL
+  REJETE
+  ANNULE
+}
+
+enum StatutPrelevement {
+  A_EFFECTUER
+  EFFECTUE
+  RECU
+  REJETE
+  REPRELEVE
+  ANNULE
+}
+
+enum StatutEchantillon {
+  ATTENDU
+  RECU
+  EN_TRAITEMENT
+  ARCHIVE
+  REJETE
+  DETRUIT
+}
+
+enum MotifRejetEchantillon {
+  HEMOLYSE
+  COAGULANT
+  VOLUME_INSUFFISANT
+  DELAI_DEPASSE
+  TUBE_NON_CONFORME
+  ETIQUETTE_ILLISIBLE
+  PATIENT_NON_IDENTIFIE
+  EXAMEN_INCOMPATIBLE
+}
+
+enum NormaliteResultat {
+  NORMAL
+  ANORMAL
+  CRITIQUE
+  INDETERMINE
+}
+
+enum StatutValidation {
+  EN_ATTENTE
+  VALIDE
+  VALIDE_PARTIEL
+  REFUSE
+  RELEVE_PAR_UN_TIERS
+}
+
+enum TypeExamenImagerie {
+  RADIOGRAPHIE
+  SCANNER
+  IRM
+  ECHOGRAPHIE
+  DENSITOMETRIE
+  MAMMOGRAPHIE
+  RADIOGRAPHIE_THORACIQUE
+  CORONAROGRAPHIE
+}
+
+enum StatutExamenImagerie {
+  PRESCRIT
+  A_PLANIFIER
+  PLANIFIE
+  EN_COURS
+  ACQUIS
+  A_INTERPRETER
+  INTERPRETE
+  VALIDE
+  ANNULE
+}
+
+enum StatutEquipement {
+  EN_SERVICE
+  INDISPONIBLE
+  MAINTENANCE
+  HORS_SERVICE
+  RETIRE
+}
+
+enum TypeMaintenance {
+  PREVENTIVE
+  CORRECTIVE
+  CALIBRATION
+  QUALIFICATION
+  CONTROLE_PERIODIQUE
+}
+
+enum StatutConsommation {
+  DEMANDEE
+  VALIDEE
+  REJETEE
+  ANNULEE
+}
+
+' ============================================================
+' AGREGAT : DEMANDE D EXAMEN COMPLEMENTAIRE
+' Point d entree unique. La consultation prescrit,
+' le service aiguille vers le laboratoire ou vers
+' l imagerie.
+' ============================================================
+
+class DemandeExamen <<aggregate root>> {
+  - id : UUID
+  - numero : String
+  - patient : UUID
+  - consultation : UUID
+  - prescripteur : UUID
+  - serviceDemandeur : UUID?
+  - sejour : UUID?
+  - dateDemande : Instant
+  - priorite : PrioriteDemande
+  - statut : StatutDemande
+  - motifClinique : String?
+  - grilleTarifaireVersion : Integer?
+  - dateAcceptation : Instant?
+  - motifRejet : String?
+  - empreinte : String?
+  + ajouterLigne(ligne : LigneDemande) : DemandeExamen
+  + accepter() : DemandeExamen
+  + rejeter(motif : String) : DemandeExamen
+  + annuler(motif : String) : DemandeExamen
+  + estUrgente() : Boolean
+  + estEcheancee() : Boolean
+  + getDelaiRestant() : Integer
+  + getMontantEstime(grille : GrilleTarifaire) : Decimal
+  + getExamensLignes() : List<ExamenTechnique>
+}
+
+class LigneDemande {
+  - id : UUID
+  - demande : UUID
+  - type : TypeExamenPlateau
+  - codeActe : String
+  - libelle : String
+  - indication : String?
+  - materielDemande : String?
+  - produitContraste : String?
+  - lateralite : String?
+  - dateRealisationVoulue : Date?
+  + estImagerie() : Boolean
+  + estAnalyse() : Boolean
+  + getCodeActe() : String
+}
+
+' ============================================================
+' POLYMORPHISME : tout ce qui se realise au plateau
+' ============================================================
+
+abstract class ExamenTechnique {
+  - id : UUID
+  - numero : String
+  - demande : UUID
+  - ligne : UUID
+  - patient : UUID
+  - prescripteur : UUID
+  - codeActe : String
+  - datePrescription : Instant
+  - dateRealisation : Instant?
+  - dateValidation : Instant?
+  - validateur : UUID?
+  - statut : String
+  - compteRenduId : UUID?
+  - montant : Decimal?
+  - grilleVersion : Integer?
+  + realiser() : Boolean
+  + valider() : Boolean
+  + estValide() : Boolean
+  + estFacturable() : Boolean
+  + getDateRealisation() : Instant?
+}
+
+' ============================================================
+' AGREGAT : LABORATOIRE
+' ============================================================
+
+class ExamenLaboratoire <<aggregate root>> {
+  - statut : StatutExamenLaboratoire
+  - prelevement : UUID?
+  - numeroEchantillon : String?
+  - technique : String?
+  - nbResultats : Integer
+  - nbResultatsCritiques : Integer
+  - nbResultatsAnormaux : Integer
+  - commentaire : String?
+  - delaiAttenduJours : Integer?
+  - dateReception : Instant?
+  - rejeter(motif : MotifRejetEchantillon) : ExamenLaboratoire
+  + enregistrerPrelevement(prelevement : UUID) : ExamenLaboratoire
+  + planifierTraitement() : ExamenLaboratoire
+  + saisirResultat(resultat : ResultatAnalyse) : ExamenLaboratoire
+  + estPrelevable() : Boolean
+  + estCompletSaisi() : Boolean
+  + aResultatCritique() : Boolean
+  + estValidable() : Boolean
+  + getDelaiDepasse() : Integer
+}
+
+class ExamenBiologique {
+  - code : String
+  - designation : String
+  - categorie : String
+  - methode : String?
+  - unite : String
+  - valeurMin : Decimal?
+  - valeurMax : Decimal?
+  - valeurCritiqueMin : Decimal?
+  - valeurCritiqueMax : Decimal?
+  - valeursReferenceEnfant : Boolean
+  - valeursReferenceFemme : Boolean
+  - tubesRequis : List<String>
+  - reactifsRequis : List<String>
+  - delaiStandardJours : Integer
+  - examenDifferencie : Boolean
+  - actif : Boolean
+  + estAnormal(valeur : Decimal, patient : Patient) : Boolean
+  + estCritique(valeur : Decimal, patient : Patient) : Boolean
+  + getDelaiStandard() : Integer
+  + getPlageReference(patient : Patient) : String
+}
+
+class Prelevement {
+  - id : UUID
+  - numero : String
+  - examen : UUID
+  - patient : UUID
+  - type : String
+  - site : String?
+  - statut : StatutPrelevement
+  - prelevePar : UUID
+  - datePrelevement : Instant?
+  - heure : String?
+  - conditions : String?
+  - jeun : Boolean
+  - motifRejet : MotifRejetEchantillon?
+  - dateReception : Instant?
+  - volumePreleve : Decimal?
+  - unidade : String?
+  + prelever() : Prelevement
+  + recevoir() : Prelevement
+  + rejeter(motif : MotifRejetEchantillon) : Prelevement
+  + reprendPrelevement() : Prelevement
+  + estRecevable() : Boolean
+  + getDelaiConservationRestant() : Integer
+}
+
+class Echantillon {
+  - id : UUID
+  - numero : String
+  - codeBarre : String
+  - prelevement : UUID
+  - patient : UUID
+  - tube : String
+  - typeTube : String
+  - volume : Decimal?
+  - unite : String?
+  - statut : StatutEchantillon
+  - dateReception : Instant?
+  - dateDestruction : Instant?
+  - motifRejet : MotifRejetEchantillon?
+  - datePeremption : Date?
+  - conservation : String?
+  - positionRangement : String?
+  + recevoir() : Echantillon
+  + traiter() : Echantillon
+  + rejeter(motif : MotifRejetEchantillon) : Echantillon
+  + archiver() : Echantillon
+  + detruire() : Echantillon
+  + estRecevable() : Boolean
+  + estExpire() : Boolean
+  + getDureeConservation() : Integer
+}
+
+class ResultatAnalyse {
+  - id : UUID
+  - examen : UUID
+  - codeActe : String
+  - designation : String
+  - valeur : Decimal?
+  - valeurTexte : String?
+  - unite : String
+  - normalite : NormaliteResultat
+  - valeurMin : Decimal?
+  - valeurMax : Decimal?
+  - plageReference : String?
+  - methode : String?
+  - techniqueAutomate : String?
+  - operateur : UUID
+  - dateSaisie : Instant
+  - commentaire : String?
+  - statut : StatutValidation
+  - dateValidation : Instant?
+  - validateur : UUID?
+  - motifRefus : String?
+  - declarationCritique : Instant?
+  + estAnormal() : Boolean
+  + estCritique() : Boolean
+  + declarerCritique() : ResultatAnalyse
+  + valider() : ResultatAnalyse
+  + refuser(motif : String) : ResultatAnalyse
+  + getValeurAffichee() : String
+  + estCorrigeable() : Boolean
+}
+
+class ValidationBiologique {
+  - id : UUID
+  - examen : UUID
+  - validateur : UUID
+  - dateValidation : Instant
+  - statut : StatutValidation
+  - nbResultats : Integer
+  - nbResultatsAnormaux : Integer
+  - nbResultatsCritiques : Integer
+  - motifRefus : String?
+  - valideeParBiologiste : Boolean
+  - empreinte : String?
+  - grilleConformiteVersion : Integer?
+  + valider() : ValidationBiologique
+  + validerPartiellement(motif : String) : ValidationBiologique
+  + refuser(motif : String) : ValidationBiologique
+  + estExhaustive() : Boolean
+  + aResultatCritique() : Boolean
+  + declencheNotificationCritique() : Boolean
+  + estArchivable(date : Date) : Boolean
+}
+
+class RegleValidationBiologique {
+  - idRegle : UUID
+  - code : String
+  - libelle : String
+  - categorie : String?
+  - codeActe : String?
+  - condition : String
+  - obligatoire : Boolean
+  - biologisteRequis : Boolean
+  - seuilAlerteCritique : Decimal?
+  - priorite : Integer
+  - active : Boolean
+  + estApplicable(examen : ExamenLaboratoire) : Boolean
+  + declencheCritique(resultat : ResultatAnalyse) : Boolean
+}
+
+' ============================================================
+' AGREGAT : IMAGERIE
+' ============================================================
+
+class ExamenImagerie <<aggregate root>> {
+  - type : TypeExamenImagerie
+  - statut : StatutExamenImagerie
+  - salle : UUID?
+  - equipement : UUID?
+  - operateur : UUID?
+  - radiologue : UUID?
+  - dateRendezVous : Instant?
+  - dateDebut : Instant?
+  - dateFin : Instant?
+  - produitContraste : String?
+  - doseContraste : Decimal?
+  - paramInjection : String?
+  - voie : String?
+  - radiation : String?
+  - nombreCoupes : Integer?
+  - acquisition : String?
+  - incident : String?
+  - interpretation : String?
+  - conclusion : String?
+  - recommandation : String?
+  - niveauPriorite : PrioriteDemande
+  + planifier(creneau : UUID, salle : UUID) : ExamenImagerie
+  + demarrer() : ExamenImagerie
+  + injecterContraste(produit : String, dose : Decimal) : ExamenImagerie
+  + acquerir() : ExamenImagerie
+  + interpreter(radiologue : UUID) : ExamenImagerie
+  + valider() : ExamenImagerie
+  + annuler(motif : String) : ExamenImagerie
+  + estRealisable(equipement : Equipement) : Boolean
+  + exigeContraste() : Boolean
+  + estUrgence() : Boolean
+  + getCoutContraste() : Decimal?
+}
+
+class ExamenImagerieReference {
+  - id : UUID
+  - code : String
+  - designation : String
+  - type : TypeExamenImagerie
+  - dureeMoyenne : Integer?
+  - preparation : String?
+  - produitsContraste : List<String>
+  - niveauRadiation : String?
+  - contreIndications : List<String>
+  - examenUrgent : Boolean
+  - seuilAge : Integer?
+  - actif : Boolean
+  + getDureeMoyenne() : Integer
+  + exigePreparation() : Boolean
+  + estContreIndique(patient : Patient) : Boolean
+}
+
+class SerieImagerie {
+  - id : UUID
+  - examen : UUID
+  - numero : Integer
+  - description : String
+  - nombreImages : Integer
+  - format : String
+  - stockageUri : String?
+  - empreinte : String?
+  - dateAcquisition : Instant
+  + getNombreImages() : Integer
+  + estArchiveable() : Boolean
+}
+
+' ============================================================
+' AGREGAT : EQUIPEMENT ET MAINTENANCE
+' Un scanner non calibre n est pas realisable.
+' ============================================================
+
+class Equipement {
+  - id : UUID
+  - code : String
+  - designation : String
+  - type : TypeExamenImagerie
+  - numeroSerie : String?
+  - service : UUID
+  - statut : StatutEquipement
+  - dateMiseService : Date
+  - dateMiseHorsService : Date?
+  - dateProchaineMaintenance : Date?
+  - dateDerniereCalibration : Date?
+  - periodiciteCalibrationJours : Integer?
+  - maintenanceDue : Boolean
+  - responsable : UUID?
+  - logicielVersion : String?
+  + mettreEnService() : Equipement
+  + mettreHorsService(motif : String) : Equipement
+  + planifierMaintenance(date : Date) : Equipement
+  + estCalibre() : Boolean
+  + estRealisable() : Boolean
+  + getJoursAvantMaintenance() : Integer
+}
+
+class MaintenanceEquipement {
+  - id : UUID
+  - equipement : UUID
+  - type : TypeMaintenance
+  - datePrevue : Date
+  - dateRealisation : Date?
+  - intervenant : String?
+  - organisme : String?
+  - rapport : String?
+  - resultat : String?
+  - conforme : Boolean
+  - prochainEcheance : Date?
+  + planifier() : MaintenanceEquipement
+  + cloturer(conforme : Boolean) : MaintenanceEquipement
+  + estConforme() : Boolean
+  + suspendreService() : Boolean
+}
+
+' ============================================================
+' CONSOMMABLES : REACTIFS ET PRODUITS DE CONTRASTE
+' Le stock physique appartient a hopital-pharmacie-service.
+' Ce service ne fait que declarer une consommation.
+' ============================================================
+
+class ConsommationPlateauTechnique {
+  - id : UUID
+  - examen : UUID
+  - nature : NatureProduit
+  - reference : String
+  - libelle : String
+  - lotNumero : String
+  - quantite : Decimal
+  - unite : String
+  - date : Instant
+  - statut : StatutConsommation
+  - motifRejet : String?
+  - demandePar : UUID
+  - serviceOrigine : UUID?
+  + valider() : ConsommationPlateauTechnique
+  + rejeter(motif : String) : ConsommationPlateauTechnique
+  + estReactive() : Boolean
+  + estContraste() : Boolean
+  + getReferenceExterne() : String
+}
+
+' ============================================================
+' ACTE FACTURABLE
+' L acte de sortie est la seule unite qui traverse
+' vers la comptabilite.
+' ============================================================
+
+class ActeFacturable {
+  - id : UUID
+  - numero : String
+  - patient : UUID
+  - tiers : UUID?
+  - codeActe : String
+  - libelle : String
+  - typeActe : String
+  - montantBrut : Decimal
+  - partAssurance : Decimal?
+  - partPatient : Decimal?
+  - tauxCouverture : Decimal?
+  - dateActe : Instant
+  - gridTarifaireVersion : Integer?
+  - emisLe : Instant?
+  - statut : String
+  - idempotencyKey : String
+  - sourceId : UUID
+  - empreinte : String?
+  + emettre() : ActeFacturable
+  + estEmis() : Boolean
+  + estAlreadyEmis() : Boolean
+  + getMontantDu() : Decimal
+  + getPartPatient() : Decimal
+  + getPartAssurance() : Decimal
+  + scinder(taux : Decimal) : ActeFacturable
+}
+
+' ============================================================
+' REFERENCES INTER-SERVICES
+' ============================================================
+
+class Patient <<hopital-patient>>
+class Praticien <<hopital-consultation>>
+class Consultation <<hopital-consultation>>
+class LignePrescription <<hopital-consultation>>
+class CompteRendu <<hopital-consultation>>
+class Sejour <<hopital-hospitalisation>>
+class Service <<hopital-hospitalisation>>
+class Salle <<hopital-rdv>>
+class Medicament <<hopital-pharmacie>>
+class Lot <<hopital-pharmacie>>
+class NatureProduit <<hopital-pharmacie>>
+class GrilleTarifaire <<academic-fees>>
+class GrilleStock <<tenant-service>>
+class GrilleConformite <<tenant-service>>
+class Tiers <<fin-facturation>>
+class Ecriture <<fin-compta-core>>
+
+}
+
+' ============================================================
+' RELATIONS ET CARDINALITES
+' ============================================================
+
+DemandeExamen "1" *-- "1..*" LigneDemande : porte >
+DemandeExamen "1" *-- "0..*" ExamenTechnique : produit >
+DemandeExamen "1" -- "1" Patient : concerne >
+DemandeExamen "1" -- "0..1" Consultation : faitPrescrire >
+DemandeExamen "1" -- "1" Praticien : prescripteur >
+DemandeExamen "0..*" -- "0..1" Sejour : realize pour >
+DemandeExamen ..> StatutDemande : evolue selon >
+DemandeExamen ..> PrioriteDemande : classe >
+DemandeExamen ..> GrilleTarifaire : fige sa version >
+
+LigneDemande "1" ..> TypeExamenPlateau : type >
+
+ExamenTechnique "0..*" -- "1" LigneDemande : realise >
+ExamenTechnique "0..*" -- "1" Patient : concerne >
+ExamenTechnique "0..*" -- "1" Praticien : prescrit par >
+ExamenTechnique "1" -- "0..1" CompteRendu : produit >
+ExamenTechnique "0..*" -- "1" ActeFacturable : facture >
+
+ExamenLaboratoire --|> ExamenTechnique
+ExamenImagerie --|> ExamenTechnique
+
+ExamenLaboratoire "1" *-- "0..1" Prelevement : exige >
+ExamenLaboratoire "1" *-- "0..*" ResultatAnalyse : porte >
+ExamenLaboratoire "1" *-- "0..*" ValidationBiologique : trace >
+ExamenLaboratoire "1" o-- "0..1" ValidationBiologique : validee par >
+ExamenLaboratoire "1" o-- "0..*" ConsommationPlateauTechnique : consomme >
+ExamenLaboratoire ..> StatutExamenLaboratoire : evolue selon >
+ExamenLaboratoire ..> RegleValidationBiologique : evalue >
+
+ExamenBiologique "1" -- "0..*" ResultatAnalyse : decrit >
+ExamenBiologique "0..*" -- "1" LigneDemande : cible >
+
+Prelevement "1" *-- "0..*" Echantillon : fournit >
+Prelevement ..> StatutPrelevement : evolue selon >
+Echantillon ..> StatutEchantillon : evolue selon >
+Echantillon "0..*" -- "0..1" ExamenLaboratoire : rattache >
+
+ResultatAnalyse ..> NormaliteResultat : classe >
+ResultatAnalyse ..> StatutValidation : evolue selon >
+ValidationBiologique ..> StatutValidation : evolue selon >
+RegleValidationBiologique ..> ResultatAnalyse : surveille >
+
+ExamenImagerie "1" o-- "0..*" SerieImagerie : produit >
+ExamenImagerie "1" o-- "0..*" ConsommationPlateauTechnique : consomme >
+ExamenImagerie "0..1" -- "0..1" Equipement : realise sur >
+ExamenImagerie "0..*" -- "1" Salle : occupe >
+ExamenImagerie "0..*" -- "1" Service : realise par >
+ExamenImagerie "0..*" -- "1" Praticien : interprete >
+ExamenImagerie ..> StatutExamenImagerie : evolue selon >
+ExamenImagerie ..> TypeExamenImagerie : type >
+
+ExamenImagerieReference "1" -- "0..*" LigneDemande : decrit >
+ExamenImagerieReference "1" -- "0..*" Equipement : requiert >
+
+Equipement "1" *-- "0..*" MaintenanceEquipement : subit >
+Equipement ..> StatutEquipement : evolue selon >
+MaintenanceEquipement ..> TypeMaintenance : type >
+
+ConsommationPlateauTechnique "1" -- "1" NatureProduit : est de nature >
+ConsommationPlateauTechnique "1" -- "1" Lot : preleve >
+ConsommationPlateauTechnique ..> StatutConsommation : evolue selon >
+ConsommationPlateauTechnique ..> Medicament : consomme >
+
+ActeFacturable "1" -- "1" Patient : concerne >
+ActeFacturable "1" -- "1" Tiers : facture >
+ActeFacturable "0..1" -- "0..1" Ecriture : comptabilise >
+ActeFacturable ..> GrilleTarifaire : lit la grille >
+ActeFacturable ..> GrilleConformite : applique la retention >
+
+note bottom of DemandeExamen
+  <b>POINT D ENTREE UNIQUE</b>
+  Une consultation prescrit une
+  LignePrescription de type ANALYSE,
+  IMAGERIE ou EXAMEN. Le
+  plateau technique la recoit sous
+  forme d une DemandeExamen, puis
+  l aiguille :
+   - ANALYSE vers ExamenLaboratoire
+   - IMAGERIE vers ExamenImagerie
+  Aucun des deux agregats ne se cree
+  directement. C est ce qui garantit
+  qu aucun examen ne tourne sans
+  prescription tracable.
+
+  <b>URGENCE</b>
+  priorite CRITIQUE court-circuite la
+  planification : l examen est
+  realise sans rendez-vous.
+  getDelaiRestant compare l echeance a
+  la GrilleConformite et non a une
+  duree ecrite ici.
+
+  <b>REJET AVEC MOTIF</b>
+  rejeter exige un motif code. Une
+  demande rejetee reste consultable :
+  elle justifie l absence de l examen
+  dans le dossier du patient.
+end note
+
+note bottom of ExamenLaboratoire
+  <b>LA CHAINE ININTERROMPUE</b>
+  PRESCRIT . A_PRELEVER . PRELEVE .
+  RECU_LABO . EN_TRAITEMENT .
+  RESULTAT_SAISI . A_VALIDER . VALIDE
+
+  Un resultat peut etre saisi avant
+  tous les autres : le statut passe
+  alors A_VALIDER et reste en attente
+  tant que estCompletSaisi est faux.
+  VALIDE_PARTIEL est un etat reel,
+  pas une tolerance : il signale au
+  prescripteur qu une partie de
+  l examen reste en attente.
+
+  <b>REJET AVEC MOTIF METIER</b>
+  rejeter refuse l examen entier et
+  exige un MotifRejetEchantillon. Un
+  echantillon hemolyse ne se
+  reintegrent pas : il se repreeleve.
+end note
+
+note bottom of ResultatAnalyse
+  <b>RIEN NE SORT AVANT VALIDATION</b>
+  Un ResultatAnalyse porte son propre
+  statut de validation, distinct de
+  celui de l examen. Un resultat saisi
+  mais non valide :
+   - n est pas lisible du prescripteur
+   - ne declenche aucun acte facturable
+   - ne figure sur aucun compte rendu
+  C est la seule garantie qu une
+  valeur erronee ne se transforme
+  jamais en prescription.
+
+  <b>VALEUR CRITIQUE</b>
+  un resultat critique est declare par
+  declarerCritique, jamais deduit
+  silencieusement. Le seuil vient de
+  ExamenBiologique.valeurCritiqueMin
+  ou valeurCritiqueMax, jamais
+  compare en dur ici.
+end note
+
+note bottom of ValidationBiologique
+  <b>DEUX NIVEAUX DE VALIDATION</b>
+  validation par l operateur :
+  autorise a corriger sa propre saisie
+  tant que l examen n est pas valide
+  validation biologique :
+  obligatoire avant tout usage clinique
+  et toute facturation. Le niveau
+  requis est decide par
+  RegleValidationBiologique.
+
+  <b>RELEVE PAR UN TIERS</b>
+  STATUT RELEVE_PAR_UN_TIERS
+  materialise le cas de l analyste qui
+  valide le travail d un autre
+  operateur, courant en laboratoire
+  de nuit. La trace reste nominative.
+
+  <b>RESULTAT CRITIQUE</b>
+  declencheNotificationCritique ne
+  depend pas d une comparaison de
+  valeur : un resultat critique non
+  declare est traite comme une
+  anomalie de processus, pas comme un
+  resultat normal.
+end note
+
+note bottom of Echantillon
+  <b>DEUX DURIES DIFFERENTES</b>
+  duree de conservation de l
+  echantillon : depend de la
+  GrilleConformite
+  duree de validite du reactif
+  utilise : depend de la GrilleStock et
+  du lot du produit de contraste
+
+  Confondre les deux fait valider un
+  dosage sur un reactif perime, ou
+  jetter un echantillon encore
+  exploitable. Elles sont portees par
+  deux grilles distinctes, donc par
+  deux versions distinctes.
+
+  <b>IDENTIFICATION</b>
+  codeBarre est porte du
+  prelevement jusqu a l archivage.
+  Un echantillon sans codeBarre
+  lisible part en motifRejet
+  ETIQUETTE_ILLISIBLE : on ne devine
+  jamais l identite d un echantillon.
+end note
+
+note bottom of ExamenImagerie
+  <b>ACQUISITION PUIS INTERPRETATION</b>
+  acquerir() clot la production
+  d images, interpreter() clot la
+  lecture. Les deux sont distincts :
+  une serie peut etre acquise et
+  rejetee a l interpretation sans que
+  l examen soit refait.
+
+  <b>COMPTE RENDU</b>
+  ExamenImagerie ne red eclare pas
+  CompteRendu : la classe appartient a
+  hopital-consultation-service, qui
+  la possede deja. L examen y
+  rattache son compteRenduId. C est
+  ce qui evite deux definitions
+  divergentes du compte rendu.
+
+  <b>CONRASTE</b>
+  exigeContraste depend de
+  ExamenImagerieReference. Le produit
+  injecte est trace en
+  ConsommationPlateauTechnique avec
+  son numero de lot, donc rappele
+  comme un produit de pharmacie.
+end note
+
+note bottom of Equipement
+  <b>PAS D EXAMEN SANS CALIBRATION</b>
+  estRealisable() refuse un
+  equipement :
+   - au statut HORS_SERVICE ou RETIRE
+   - dont dateDerniereCalibration est
+     depassee de la periodicite
+   - bloque par une Maintenance non
+     conforme et non soldee
+  Un scanner hors calibration ne peut
+  produire aucun examen facturable.
+
+  <b>MAINTENANCE ET DISPONIBILITE</b>
+  une MaintenanceEquipement CALIBRATION
+  cloturee non conforme laisse
+  l equipement en MAINTENANCE. Il
+  redevient EN_SERVICE seulement a la
+  cloture d une maintenance conforme.
+
+  Le parc d equipements releve de
+  fin-immobilisation-service. Ce service
+  n en tient que la projection
+  technique necessaire a la
+  realisation d un acte.
+end note
+
+note bottom of ConsommationPlateauTechnique
+  <b>LE STOCK N EST PAS ICI</b>
+  Ce service ne possede aucun stock. Il
+  declare une consommation que
+  hopital-pharmacie-service transforme
+  en MouvementStock :
+   - serviceOrigine vaut PLATEAU
+     TECHNIQUE
+   - referenceExterne vaut le numero de
+     l examen
+   - lotNumero est celui du reactif ou
+     du produit de contraste
+
+  <b>TRACE DE LOT</b>
+  estContraste couvre les produits de
+  contraste injectes. Le lien
+  ConsommationPlateauTechnique . Lot
+  est ce qui permet, en cas de rappel
+  de lot, de remonter du lot aux
+  patients injectes sans passer par
+  une synthese de dispensations.
+
+  <b>NATURE</b>
+  NatureProduit distingue
+  MEDICAMENT, REACTIF et CONTRASTE.
+  Un produit de contraste n est pas un
+  medicament : la confusion serait
+  source d erreur de stock.
+end note
+
+note bottom of ActeFacturable
+  <b>CONTRAT AVEC LA COMPTABILITE</b>
+  Un ActeFacturable n est produit que
+  par un ExamenTechnique valide, ou a
+  la cloture d un Sejour.
+
+  emettre() publie
+  hopital.acte.facturable sur le
+  topic hopital.events.
+  fin-compta-core consomme et produit
+  l ecriture.
+
+  <b>IDEMPOTENCE</b>
+  idempotencyKey est calculee sur
+  sourceId et codeActe. Deux emissions
+  du meme acte ne creent qu une seule
+  entree et une seule ecriture.
+
+  <b>SCINDEMENT</b>
+  scinder applique le taux issu du
+  dossier patient :
+   partAssurance + partPatient =
+  montantBrut
+  Le taux vient de
+  AssuranceMaladie.tauxCouverture, pas
+  de ce service.
+
+  <b>CE QUI N EST PAS DANS CE MODELE</b>
+  aucun encaissement. Le module
+  hospitalier n encaisse rien : il
+  emet un acte facturable. La
+  comptabilite et le recouvrement
+  restent dans fin-compta-core et
+  fin-facturation-service.
+end note
+
+note bottom of DemandeExamen
+  <b>DEPENDANCE GRILLE TARIFAIRE</b>
+  getMontantEstime lit la
+  GrilleTarifaire versionnee.
+  Aucun code acte, aucun prix, aucun
+  seuil n est ecrit dans ce diagramme.
+  Les valeurs de reference
+  biologiques (valeurMin, valeurMax,
+  valeurCritique) sont des donnees du
+  referentiel ExamenBiologique, pas
+  des constantes du modele.
+end note
+
+@enduml

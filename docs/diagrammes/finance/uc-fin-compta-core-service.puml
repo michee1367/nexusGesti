@@ -1,0 +1,138 @@
+@startuml uc-fin-compta-core-service
+skinparam packageStyle rectangle
+skinparam actorStyle stickman
+left to right direction
+
+title Diagramme des Cas d'Utilisation - fin-compta-core-service
+
+actor "Directeur financier" as DAF
+actor "Comptable general" as CG
+actor "Comptable" as COM
+actor "Auditeur" as AUD
+actor "Controleur de gestion" as CGEST
+actor "Systeme" as SYS
+
+rectangle "Plateforme NexusGesti" {
+  rectangle "fin-compta-core-service" {
+
+    ' ---- Referentiels ----
+    usecase "Importer le plan SYSCOHADA" as UC_ImportSYSCOHADA
+    usecase "Creer ou modifier un compte" as UC_CreerCompte
+    usecase "Verifier le plan de comptes" as UC_VerifierPlan
+    usecase "Creer un journal" as UC_CreerJournal
+    usecase "Definir les axes analytiques" as UC_AxeAnalytique
+    usecase "Paramétrer le plan de comptes" as UC_ParamCompte
+
+    ' ---- Exercice ----
+    usecase "Ouvrir un exercice" as UC_OuvrirExercice
+    usecase "Cloturer un exercice" as UC_CloturerExercice
+    usecase "Lancer la cloture des caisses" as UC_ClotureCaisses
+    usecase "Arreter les ecritures" as UC_ArretComptable
+    usecase "Consulter l etat d un exercice" as UC_EtatExercice
+
+    ' ---- Monetaire ----
+    usecase "Enregistrer un taux de change" as UC_TauxChange
+    usecase "Importer les taux BCPC" as UC_ImportTaux
+    usecase "Valider un taux de change" as UC_ValiderTaux
+    usecase "Verifier la coherence des devises" as UC_CoherenceDevises
+    usecase "Definir le taux moyen pondere" as UC_TauxMoyen
+    usecase "Convertir un montant" as UC_Convertir
+    usecase "Parametrer les arrondis" as UC_Arrondi
+
+    ' ---- Tresorerie ----
+    usecase "Rapprocher un releve bancaire" as UC_Rapprocher
+    usecase "Lettrer une operation" as UC_Lettrer
+    usecase "Saisir un releve de caisse" as UC_ReleveCaisse
+    usecase "Verifier la tresorerie" as UC_VerifierTresorerie
+
+    ' ---- Relations ----
+    UC_ImportSYSCOHADA .> UC_VerifierPlan : <<include>>
+    UC_CreerCompte .> UC_VerifierPlan : <<include>>
+    UC_CreerCompte .> UC_ParamCompte : <<include>>
+    UC_OuvrirExercice .> UC_VerifierPlan : <<require>>
+    UC_CloturerExercice .> UC_ClotureCaisses : <<include>>
+    UC_CloturerExercice .> UC_TauxMoyen : <<include>>
+    UC_ArretComptable .> UC_VerifierTresorerie : <<include>>
+    UC_TauxChange .> UC_CoherenceDevises : <<include>>
+    UC_ImportTaux .> UC_TauxChange : <<include>>
+    UC_ValiderTaux .> UC_CoherenceDevises : <<require>>
+    UC_Convertir .> UC_TauxChange : <<include>>
+    UC_Convertir .> UC_Arrondi : <<require>>
+    UC_TauxMoyen .> UC_ValiderTaux : <<require>>
+    UC_Rapprocher .> UC_Lettrer : <<include>>
+    UC_ReleveCaisse .> UC_Lettrer : <<include>>
+    UC_Lettrer .> UC_VerifierTresorerie : <<include>>
+  }
+}
+
+DAF --> UC_OuvrirExercice
+DAF --> UC_CloturerExercice
+DAF --> UC_ImportSYSCOHADA
+DAF --> UC_AxeAnalytique
+DAF --> UC_ParamCompte
+DAF --> UC_Arrondi
+DAF --> UC_VerifierTresorerie
+CG --> UC_CreerCompte
+CG --> UC_CreerJournal
+CG --> UC_ImportSYSCOHADA
+CG --> UC_VerifierPlan
+CG --> UC_ImportTaux
+CG --> UC_ValiderTaux
+CG --> UC_TauxMoyen
+CG --> UC_ClotureCaisses
+CG --> UC_ArretComptable
+CG --> UC_Rapprocher
+CG --> UC_Lettrer
+COM --> UC_TauxChange
+COM --> UC_ReleveCaisse
+COM --> UC_Lettrer
+COM --> UC_Convertir
+COM --> UC_VerifierTresorerie
+CGEST --> UC_EtatExercice
+CGEST --> UC_VerifierTresorerie
+CGEST --> UC_CoherenceDevises
+AUD --> UC_EtatExercice
+AUD --> UC_VerifierPlan
+AUD --> UC_VerifierTresorerie
+SYS --> UC_CoherenceDevises
+SYS --> UC_ArretComptable
+
+note bottom of UC_TauxMoyen
+  <b>TAUX MOYEN PONDERE</B>
+  Formule :
+    (total achats devise
+     + total ventes devise)
+    / volumes
+
+  Le taux moyen est fige a la
+  cloture et s applique aux
+  valorisations de cloture.
+end note
+
+note bottom of UC_CoherenceDevises
+  Controles :
+   - valeur devise inferieure a 1
+   - taux absent pour la date
+   - devise non declaree
+   - total debits different du
+     total credits apres conversion
+end note
+
+note bottom of UC_ArretComptable
+  <b>BLOCAGE DE L EXERCICE</B>
+  Apres arret comptable, plus aucune
+  ecriture n est acceptee sans
+  regularisation d un senior
+  comptable, avec justificatif.
+end note
+
+note bottom of UC_ImportSYSCOHADA
+  L import du plan SYSCOHADA est
+  idempotent et retrace les
+  versions :
+   - plan modifie : ecarts journaliers ;
+   - nouveau compte : sans impact ;
+   - compte desactive : signale.
+end note
+
+@enduml

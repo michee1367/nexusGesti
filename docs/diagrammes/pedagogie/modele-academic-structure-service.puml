@@ -1,0 +1,345 @@
+@startuml modele-academic-structure-service
+title Diagramme de Classes - Service Structure Pedagogique (academic-structure-service)
+skinparam classAttributeIconSize 0
+hide empty members
+
+' ============================================================
+' ENUMS
+' ============================================================
+
+enum TypeCycle {
+  PRIMAIRE
+  SECONDAIRE
+  SUPERIEUR
+  LICENCE
+  MASTER
+  DOCTORAT
+}
+enum StatutClasse {
+  OUVERTE
+  EN_COURS
+  CLOTUREE
+  ARCHIVEE
+}
+enum TypeEvaluation {
+  INTERROGATION
+  TP
+  TD
+  PROJET
+  DEVOIR
+  COMPOSITION
+  ORAL
+  EXAMEN_BLANC
+  CONCOURS
+}
+enum TypeSalle {
+  COURS
+  TP
+  LABORATOIRE
+  EXAMEN
+  AMPHITHEATRE
+  BUREAU
+  DIRECTION
+  MEDICALE
+  CHAMBRE
+  BLOC_OPERATOIRE
+  AUTRE
+}
+enum TypeMatiere {
+  OBLIGATOIRE
+  OPTION
+  CHOIX
+  LIBRE
+  RENFORCEMENT
+}
+enum StatutProgramme {
+  ACTIF
+  INACTIF
+  ARCHIVE
+}
+
+' ============================================================
+' AGREGAT : ARBRE PEDAGOGIQUE
+' ============================================================
+
+class Niveau {
+  - code : String
+  - libelle : String
+  - rang : Integer
+  - cycle : TypeCycle
+  - ordre : Integer
+  - niveauSuperieur : Niveau
+  + estPremierDuCycle() : Boolean
+  + getProchaineClasse() : Niveau
+}
+
+class Classe {
+  - idClasse : UUID
+  - code : String
+  - libelle : String
+  - niveau : Niveau
+  - annee : UUID
+  - site : UUID
+  - capacite : Integer
+  - effectifReel : Integer
+  - statut : StatutClasse
+  - salleAttitree : UUID
+  - regimeHoraire : String?
+  + ouvrir() : Classe
+  + cloturer() : Classe
+  + getTauxRemplissage() : Decimal
+  + estPlein() : Boolean
+}
+
+class Promotion {
+  - idPromotion : UUID
+  - code : String
+  - libelle : String
+  - programme : Programme
+  - semestre : Semestre
+  - annee : UUID
+  - capacite : Integer
+  - effectifReel : Integer
+  - statut : StatutClasse
+  + getNiveauAcalcul() : NiveauAcalcul
+}
+
+' ============================================================
+' UNIVERSITE : FILIERE > PROGRAMME > SEMESTRE > UE > COURS
+' ============================================================
+
+class Filiere {
+  - idFiliere : UUID
+  - code : String
+  - libelle : String
+  - departement : String
+  - diplome : String
+  - dureeAnnees : Integer
+  - totalCredits : Decimal?
+  - active : Boolean
+}
+
+class Programme {
+  - idProgramme : UUID
+  - code : String
+  - libelle : String
+  - filiere : Filiere
+  - parcours : List<String>
+  - statut : StatutProgramme
+  + getUe() : List<UE>
+  + getCreditsTotal() : Decimal
+}
+
+class Semestre {
+  - idSemestre : UUID
+  - code : String
+  - libelle : String
+  - rang : Integer
+  - periode : UUID
+  - totalCreditsAttendu : Decimal?
+  + estVide() : Boolean
+}
+
+class UE {
+  - idUE : UUID
+  - code : String
+  - libelle : String
+  - semestre : Semestre
+  - credits : Decimal?
+  - coefficient : Decimal?
+  - volumeHoraire : Decimal?
+  - obligatoire : Boolean
+  - niveauAcalcul : NiveauAcalcul
+  + getCours() : List<CoursECUE>
+  + getCredits() : Decimal
+  + estValidee(moyenne : Decimal) : Boolean
+}
+
+class CoursECUE {
+  - idCours : UUID
+  - code : String
+  - libelle : String
+  - ue : UE?
+  - classe : UUID?
+  - matiere : Matiere
+  - type : TypeEvaluation
+  - volumeHoraire : Decimal?
+  - credits : Decimal?
+  - coefficient : Decimal?
+  - hebdomadaire : Boolean
+  - regroupement : String?
+  + estECUE() : Boolean
+  + estMatiere() : Boolean
+  + getParent() : UE
+}
+
+' Un ECUE et une matiere sont le meme objet, vu a deux niveaux.
+class Matiere {
+  - idMatiere : UUID
+  - code : String
+  - libelle : String
+  - discipline : String
+  - type : TypeMatiere
+  - couleur : String?
+  - active : Boolean
+}
+
+' ============================================================
+' SALLES ET EMPLOI DU TEMPS
+' ============================================================
+
+class Salle {
+  - idSalle : UUID
+  - code : String
+  - libelle : String
+  - type : TypeSalle
+  - site : UUID
+  - capacite : Integer
+  - equipements : List<String>
+  - accessible : Boolean
+  - disponible : Boolean
+  + estCompatible(typeExige : TypeSalle, effectif : Integer) : Boolean
+}
+
+class Creneau {
+  - idCreneau : UUID
+  - jour : JourSemaine
+  - heureDebut : Time
+  - heureFin : Time
+  - ordre : Integer
+  + getDureeMinutes() : Integer
+}
+
+enum JourSemaine {
+  LUNDI
+  MARDI
+  MERCREDI
+  JEUDI
+  VENDREDI
+  SAMEDI
+  DIMANCHE
+}
+
+class EmploiDuTemps {
+  - idEmploi : UUID
+  - annee : UUID
+  - classe : UUID
+  - version : Integer
+  - dateActivation : Date
+  - active : Boolean
+  - publie : Boolean
+  + publier() : EmploiDuTemps
+  + deplacer(creneau : Creneau, salle : UUID) : EmploiDuTemps
+  + detecterConflits() : List<ConflitEmploi>
+  + getVolumeHebdomadaire(cours : UUID) : Decimal
+}
+
+class PlageEmploi {
+  - cours : UUID
+  - creneau : Creneau
+  - salle : UUID
+  - enseignant : UUID
+  + getJour() : JourSemaine
+}
+
+class ConflitEmploi {
+  - type : TypeConflit
+  - plageA : PlageEmploi
+  - plageB : PlageEmploi
+  + estBloquant() : Boolean
+}
+
+enum TypeConflit {
+  SALL_DOUBLEE
+  ENSEIGNANT_DOUBLE
+  ELEVES_DOUBLE
+  HORS_CYCLE
+  COINCIDENCE_COURS_EXAMEN
+  HORAIRE_INSUFFISANT
+}
+
+class RegimeHoraire {
+  - code : String
+  - libelle : String
+  - jours : List<JourSemaine>
+  - creneauxParJour : Integer
+  - dureeCreneau : Integer
+  - pauseMatinale : Integer
+  - pauseMeridienne : Integer
+  + getVolumeHebdomadaire() : Decimal
+}
+
+' ============================================================
+' REFERENCES INTER-SERVICES (non detenues par ce service)
+' ============================================================
+
+class AnneeScolaire <<tenant-service>>
+class Site <<tenant-service>>
+class NiveauAcalcul <<tenant-service>>
+class Bareme <<tenant-service>>
+class Enseignant <<academic-people>>
+class AffectationEnseignant <<academic-people>>
+
+' ============================================================
+' RELATIONS ET CARDINALITES
+' ============================================================
+
+Filiere "1" *-- "1..*" Programme : propose >
+Programme "1" *-- "1..*" Semestre : decoupe >
+Programme "1" o-- "0..*" Promotion : forme >
+Semestre "1" o-- "1..*" Promotion : constitue >
+Semestre "1" *-- "0..*" UE : regroupe >
+UE "1" *-- "1..*" CoursECUE : decompose >
+Matiere "1" -- "0..*" CoursECUE : identifie >
+CoursECUE "0..*" -- "0..1" UE : appartient a >
+CoursECUE "0..*" -- "0..1" Classe : porte >
+
+Niveau "0..1" -- "0..1" Niveau : precedede >
+Niveau "1" -- "0..*" Niveau : contient >
+Niveau "1" -- "0..*" Classe : definit >
+Classe "0..1" -- "1" Niveau : situe >
+Classe "1" o-- "0..1" Salle : attribue >
+Classe "1" o-- "1" AnneeScolaire : ouvre >
+Classe "1" o-- "0..1" Site : occupe >
+
+Salle "1" -- "0..*" EmploiDuTemps : utilise >
+EmploiDuTemps "1" *-- "1..*" PlageEmploi : contient >
+PlageEmploi "1" -- "1" Creneau : occupe >
+PlageEmploi "1" -- "1" Salle : reserve >
+PlageEmploi "1" -- "1" CoursECUE : porte >
+PlageEmploi "1" -- "0..1" Enseignant : affecte >
+EmploiDuTemps "1" *-- "0..*" ConflitEmploi : detecte >
+ConflitEmploi "1" -- "2" PlageEmploi : oppose >
+RegimeHoraire "1" -- "0..*" Classe : regle >
+Creneau ..> JourSemaine : positionne >
+Classe ..> StatutClasse : evolue selon >
+Promotion ..> StatutClasse : evolue selon >
+Salle ..> TypeSalle : type >
+CoursECUE ..> TypeEvaluation : type >
+Matiere ..> TypeMatiere : type >
+Niveau ..> TypeCycle : rattache >
+
+UE ..> NiveauAcalcul : niveau >
+CoursECUE ..> NiveauAcalcul : niveau >
+Promotion ..> NiveauAcalcul : niveau >
+
+note right of CoursECUE
+  ECUE et Matiere sont le meme objet
+  pedagogique a deux granularites :
+   - PRIMAIRE / SECONDAIRE : CoursECUE
+     rattache directement a une Classe
+     et porte une Matiere.
+   - UNIVERSITAIRE : CoursECUE
+     rattache a une UE.
+  Le champ "niveauAcalcul" porte le
+  palier de ponderation.
+end note
+
+note bottom of ConflitEmploi
+  Regle PRIMARY/SECONDARY : 1 seul
+  enseignant titulaire par classe.
+  Regle detectee par academic-people
+  (AffectationEnseignant.titulaire).
+end note
+
+@enduml

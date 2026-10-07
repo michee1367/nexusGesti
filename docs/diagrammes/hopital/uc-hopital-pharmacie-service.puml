@@ -1,0 +1,190 @@
+@startuml uc-hopital-pharmacie-service
+skinparam packageStyle rectangle
+skinparam actorStyle stickman
+left to right direction
+
+title Diagramme des Cas d'Utilisation - hopital-pharmacie-service
+
+actor "Pharmacien" as PHA
+actor "Preparateur" as PRE
+actor "Medecin" as MED
+actor "Infirmier" as INF
+actor "Patient" as PAT
+actor "Magasinier" as MAG
+actor "Fournisseur" as FOUR
+actor "Systeme Comptable" as CPT
+
+rectangle "Plateforme NexusGesti" {
+  rectangle "hopital-pharmacie-service" {
+
+    ' ---- Referentiel ----
+    usecase "Creer un medicament" as UC_CreerMedicament
+    usecase "Verifier la conformite du medicament" as UC_ConformiteMedicament
+    usecase "Consulter le referentiel" as UC_ConsulterMedicament
+    usecase "Gerer les formes galeniques" as UC_Formes
+    usecase "Gerer les voies d administration" as UC_Voies
+    usecase "Signaler un produit de rupture" as UC_Rupture
+    usecase "Signaler un rappel de lot" as UC_RappelLot
+
+    ' ---- Approvisionnement ----
+    usecase "Referencer un fournisseur" as UC_ReferencerFournisseur
+    usecase "Creer une commande" as UC_Commande
+    usecase "Valider une commande" as UC_ValiderCommande
+    usecase "Recevoir une livraison" as UC_Recevoir
+    usecase "Controler la conformite a la reception" as UC_ControlerReception
+    usecase "Mettre un lot en quarantaine" as UC_Quarantaine
+    usecase "Liberer un lot" as UC_LibererLot
+    usecase "Retirer un lot du circuit" as UC_RetirerLot
+    usecase "Verifier la date de peremption" as UC_VerifierPeremption
+    usecase "Alerter sur seuil bas" as UC_AlerteSeuil
+
+    ' ---- Stock ----
+    usecase "Consulter le stock" as UC_ConsulterStock
+    usecase "Inventorier" as UC_Inventorier
+    usecase "Valider un inventaire" as UC_ValiderInventaire
+    usecase "Ajuster le stock" as UC_AjusterStock
+    usecase "Enregistrer une perte" as UC_Perte
+    usecase "Valoriser le stock" as UC_ValoriserStock
+    usecase "Transférer entre emplacements" as UC_Transfert
+
+    ' ---- Dispensation ----
+    usecase "Reserver un medicament" as UC_Reserver
+    usecase "Preparer une dispensation" as UC_Preparer
+    usecase "Verifier la prescription" as UC_VerifierPrescription
+    usecase "Verifier les allergies du patient" as UC_VerifierAllergies
+    usecase "Verifier le stock" as UC_VerifierStock
+    usecase "Dispenser au patient" as UC_Dispenser
+    usecase "Signer la remise" as UC_Signer
+    usecase "Generer l etiquette" as UC_Etiquette
+    usecase "Rejeter une dispensation" as UC_RejeterDispensation
+    usecase "Retourner un medicament" as UC_Retour
+    usecase "Annuler une dispensation" as UC_AnnulerDispensation
+
+    ' ---- Relations ----
+    UC_CreerMedicament .> UC_ConformiteMedicament : <<include>>
+    UC_CreerMedicament .> UC_Formes : <<include>>
+    UC_CreerMedicament .> UC_Voies : <<include>>
+    UC_Recevoir .> UC_ControlerReception : <<include>>
+    UC_ControlerReception .> UC_Quarantaine : <<include>>
+    UC_LibererLot .> UC_ControlerReception : <<require>>
+    UC_RetirerLot .> UC_LibererLot : <<include>>
+    UC_VerifierPeremption .> UC_ConsulterStock : <<include>>
+    UC_AlerteSeuil .> UC_VerifierPeremption : <<include>>
+    UC_Commande .> UC_ValiderCommande : <<include>>
+    UC_ValiderCommande .> UC_ConsulterStock : <<require>>
+    UC_Inventorier .> UC_AjusterStock : <<include>>
+    UC_ValiderInventaire .> UC_AjusterStock : <<include>>
+    UC_AjusterStock .> UC_ValoriserStock : <<include>>
+    UC_Dispenser .> UC_VerifierPrescription : <<include>>
+    UC_Dispenser .> UC_VerifierAllergies : <<include>>
+    UC_Dispenser .> UC_VerifierStock : <<include>>
+    UC_VerifierPrescription .> UC_Reserver : <<require>>
+    UC_Preparer .> UC_Etiquette : <<include>>
+    UC_Dispenser .> UC_Signer : <<include>>
+    UC_Dispenser .> UC_Preparer : <<require>>
+    UC_RejeterDispensation .> UC_VerifierPrescription : <<require>>
+    UC_Retour .> UC_Dispenser : <<include>>
+    UC_AnnulerDispensation .> UC_Signer : <<extend>>
+    UC_VerifierPeremption .> UC_Quarantaine : <<extend>>
+    UC_Transfert .> UC_AjusterStock : <<include>>
+  }
+}
+
+PHA --> UC_CreerMedicament
+PHA --> UC_ConsulterMedicament
+PHA --> UC_ConsulterStock
+PHA --> UC_VerifierPeremption
+PHA --> UC_VerifierPrescription
+PHA --> UC_VerifierAllergies
+PHA --> UC_VerifierStock
+PHA --> UC_Dispenser
+PHA --> UC_Signer
+PHA --> UC_RejeterDispensation
+PHA --> UC_Retour
+PHA --> UC_AnnulerDispensation
+PHA --> UC_Inventorier
+PHA --> UC_ValiderInventaire
+PHA --> UC_ValoriserStock
+PHA --> UC_RappelLot
+PHA --> UC_Rupture
+PHA --> UC_AjusterStock
+PRE --> UC_Preparer
+PRE --> UC_Etiquette
+PRE --> UC_Reserver
+PRE --> UC_ConsulterStock
+PRE --> UC_Transfert
+PRE --> UC_Perte
+MAG --> UC_ReferencerFournisseur
+MAG --> UC_Commande
+MAG --> UC_Recevoir
+MAG --> UC_ControlerReception
+MAG --> UC_Quarantaine
+MAG --> UC_LibererLot
+MAG --> UC_RetirerLot
+MAG --> UC_AjusterStock
+MAG --> UC_Perte
+MED --> UC_ConsulterMedicament
+MED --> UC_ConsulterStock
+MED --> UC_Rupture
+INF --> UC_ConsulterStock
+INF --> UC_Dispenser
+PAT --> UC_Signer
+FOUR --> UC_ReferencerFournisseur
+FOUR --> UC_Commande
+CPT --> UC_ValoriserStock
+CPT --> UC_AjusterStock
+
+note bottom of UC_ConformiteMedicament
+  <b>CONTROLE BLOQUANT</b>
+  A la creation du medicament, le
+  service refuse l enregistrement si
+  une de ces donnees manque :
+   - DCI ou nom commercial ;
+   - forme galenique ;
+   - dosage ;
+   - voie d administration.
+
+  La meme regle est reappliquee au
+  moment de la dispensation.
+end note
+
+note bottom of UC_VerifierStock
+  <b>QUANTITE ET PEREMPTION</b>
+  La verification porte simultanement
+  sur la quantite disponible et sur
+  la date de peremption du lot.
+
+  A defaut de quantite suffisante,
+  le systeme propose :
+   - un lot equivalent disponible ;
+   - une commande d urgence.
+  Il ne substitue jamais un produit
+  different sans accord explicite.
+end note
+
+note bottom of UC_AnnulerDispensation
+  <b>REMISE CONTROLEE</B>
+  Aucun retrait apres remise sans
+  double validation. La note de
+  retour et l identite du receveur
+  sont tracees.
+end note
+
+note bottom of UC_RappelLot
+  <b>PROCESSUS RAPPEL</b>
+  1. le lot est bloque immediatement
+     sur toutes les references ;
+  2. les dispensations concernees
+     sont recherchees via l
+     historique des mouvements ;
+  3. les patients sont localises via
+     la dispense ;
+  4. le prescripteur est alerte ;
+  5. un PV de rappel est produit.
+
+  Ce meme scenario couvre les
+  rappels de lot du module
+  pedagogie.
+end note
+
+@enduml

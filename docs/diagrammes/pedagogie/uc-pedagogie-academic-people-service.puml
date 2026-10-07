@@ -1,0 +1,151 @@
+@startuml uc-pedagogie-academic-people-service
+skinparam packageStyle rectangle
+skinparam actorStyle stickman
+left to right direction
+
+title Diagramme des Cas d'Utilisation - Service Personnes et Inscriptions (academic-people-service)
+
+actor "Secretaire Scolarité" as SCO
+actor "Directeur / Proviseur" as DIR
+actor "Parent / Tuteur" as PAR
+actor "Eleve" as ELE
+actor "Enseignant" as ENS
+actor "RH" as RH
+actor "Systeme Comptable" as CPT
+
+rectangle "Plateforme NexusGesti" {
+  rectangle "academic-people-service" {
+
+    ' ---- Inscription ----
+    usecase "Preinscrire un eleve" as UC_Preinscrire
+    usecase "Inscrire un eleve a l annee" as UC_Inscrire
+    usecase "Reinscrire un eleve" as UC_Reinscrire
+    usecase "Transferer un eleve" as UC_Transferer
+    usecase "Abandonner les etudes" as UC_Abandonner
+    usecase "Obtenir le diplome" as UC_Diplome
+    usecase "Radier un eleve" as UC_Radier
+    usecase "Ouvrir un conge d etude" as UC_Conge
+    usecase "Reprendre apres conge" as UC_Reprise
+
+    ' ---- Dossier et documents ----
+    usecase "Ouvrir le dossier de l eleve" as UC_Dossier
+    usecase "Deposer une piece du dossier" as UC_Deposer
+    usecase "Verifier la completude du dossier" as UC_Completude
+    usecase "Archiver le dossier" as UC_ArchiverDossier
+    usecase "Accepter / rejeter un justificatif" as UC_Justificatif
+
+    ' ---- Responsables ----
+    usecase "Enregistrer un parent ou tuteur" as UC_Parent
+    usecase "Rattacher un responsable a un eleve" as UC_Lien
+    usecase "Designer le payeur" as UC_Payeur
+    usecase "Gerer les contacts prioritaires" as UC_Contact
+
+    ' ---- Sanctions ----
+    usecase "Prononcer une sanction" as UC_Sanction
+    usecase "Lever une sanction" as UC_LeverSanction
+
+    ' ---- Personnel ----
+    usecase "Enregistrer un enseignant" as UC_Enseignant
+    usecase "Enregistrer un agent" as UC_Agent
+    usecase "Creer un service / direction" as UC_Service
+    usecase "Gerer les statuts du personnel" as UC_StatutPersonnel
+    usecase "Consulter le dossier individuel" as UC_DossierAgent
+
+    ' ---- Affectations ----
+    usecase "Affecter un enseignant a une classe" as UC_Affecter
+    usecase "Designer le professeur titulaire" as UC_Titulaire
+    usecase "Ceder la titularite" as UC_Ceder
+    usecase "Retirer une affectation" as UC_RetirerAffectation
+    usecase "Verifier la regle primaire / secondaire" as UC_RegleAffectation
+
+    ' ---- Annuaire ----
+    usecase "Consulter l annuaire" as UC_Annuaire
+    usecase "Rechercher un enseignant" as UC_RechercherEns
+    usecase "Consulter la charge horaire" as UC_Charge
+
+    ' ---- Relations ----
+    UC_Inscrire .> UC_Dossier : <<include>>
+    UC_Dossier .> UC_Completude : <<include>>
+    UC_Inscrire .> UC_Lien : <<include>>
+    UC_Lien .> UC_Parent : <<include>>
+    UC_Reinscrire .> UC_Completude : <<include>>
+    UC_Affecter .> UC_RegleAffectation : <<include>>
+    UC_Titulaire .> UC_RegleAffectation : <<include>>
+    UC_Ceder .> UC_Titulaire : <<extend>>
+    UC_Conge .> UC_Justificatif : <<include>>
+    UC_Reprise .> UC_Conge : <<include>>
+    UC_Sanction .> UC_Dossier : <<include>>
+    UC_Diplome .> UC_Completude : <<include>>
+    UC_Charge .> UC_Affecter : <<include>>
+  }
+}
+
+SCO --> UC_Preinscrire
+SCO --> UC_Inscrire
+SCO --> UC_Reinscrire
+SCO --> UC_Transferer
+SCO --> UC_Abandonner
+SCO --> UC_Dossier
+SCO --> UC_Deposer
+SCO --> UC_Completude
+SCO --> UC_Justificatif
+SCO --> UC_Parent
+SCO --> UC_Lien
+SCO --> UC_Payeur
+SCO --> UC_Conge
+SCO --> UC_Reprise
+SCO --> UC_Sanction
+SCO --> UC_Annuaire
+DIR --> UC_Inscrire
+DIR --> UC_Radier
+DIR --> UC_Diplome
+DIR --> UC_Sanction
+DIR --> UC_Service
+DIR --> UC_Affecter
+DIR --> UC_Titulaire
+DIR --> UC_Ceder
+DIR --> UC_RetirerAffectation
+DIR --> UC_StatutPersonnel
+PAR --> UC_Deposer
+PAR --> UC_Conge
+ELE --> UC_Deposer
+ENS --> UC_Charge
+ENS --> UC_Annuaire
+RH --> UC_Enseignant
+RH --> UC_Agent
+RH --> UC_StatutPersonnel
+RH --> UC_DossierAgent
+RH --> UC_RechercherEns
+CPT --> UC_Annuaire
+
+note bottom of UC_RegleAffectation
+  <b>REGLE BLOQUANTE PAR PROFIL</b>
+
+  PRIMAIRE
+    exactement 1 AffectationEnseignant,
+    et elle porte titulaire = true
+
+  SECONDAIRE
+    1 a N AffectationEnseignant,
+    exactement 1 avec titulaire = true
+
+  UNIVERSITAIRE
+    pas de titulaire : le responsable
+    porte sur l UE, pas sur la classe
+
+  Sans titulaire designe, la classe
+  ne peut pas cloturer sa periode :
+  le cas d utilisation echoue.
+end note
+
+note bottom of UC_Inscrire
+  A l inscription, cet service publie
+  l evenement eleve.inscrit.
+  academic-fees-service le consomme
+  pour emettre l avis de paiement,
+  academic-notification-service pour
+  prevoyer la carte d eleve et
+  notifier la famille.
+end note
+
+@enduml

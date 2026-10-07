@@ -1,0 +1,349 @@
+@startuml modele-fin-compta-core-service
+hide empty members
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+
+title Modele de classes - fin-compta-core-service (Referentiels SYSCOHADA et multi-devises)
+
+package "fin-compta-core-service" {
+
+  ' ================= REFERENTIELS =================
+  package "referentiels" {
+
+    enum TypeActivite {
+      COMMERCE
+      INDUSTRIE
+      SERVICES
+      AGROINDUSTRIE
+      TRANSPORT
+      AGRICULTURE
+      ARTISANAT
+      LIBERAL
+    }
+
+    enum StatutExercice {
+      OUVERT
+      CLOTURE_CAISSES
+      INVENTAIRE
+      ARRET_COMPTABLE
+      CLOTURE
+      ARCHIVE
+    }
+
+    enum TypeCompte {
+      CLASSE_1
+      CLASSE_2
+      CLASSE_3
+      CLASSE_4
+      CLASSE_5
+      CLASSE_6
+      CLASSE_7
+    }
+
+    enum NatureCompte {
+      DEBIT
+      CREDIT
+      MIXTE
+    }
+
+    enum TypeJournal {
+      ACHATS
+      VENTES
+      BANQUE
+      CAISSE
+      OPERATIONS_DIVERSES
+      TRESORERIE_GENERALE
+      CONVERTION
+    }
+
+    class Exercice {
+      + id : UUID
+      + libelle : String
+      + dateDebut : Date
+      + dateFin : Date
+      + statut : StatutExercice
+      + dateCloture : DateTime
+      + cloturePar : UUID
+      + locked : Boolean
+      --
+      + estCloture() : Boolean
+      + accepterEcriture() : Boolean
+    }
+
+    class PlanComptable {
+      + id : UUID
+      + code : String
+      + nom : String
+      + version : String
+      + syscohada : Boolean
+      + dateActivation : Date
+    }
+
+    class Compte {
+      + numero : String
+      + libelle : String
+      + typeCompte : TypeCompte
+      + nature : NatureCompte
+      + parent : String
+      + imputable : Boolean
+      + actif : Boolean
+      + analytique : Boolean
+      + tresorerie : Boolean
+    }
+
+    class Journal {
+      + code : String
+      + libelle : String
+      + type : TypeJournal
+      + banque : String
+      + imputable : Boolean
+      + actif : Boolean
+    }
+
+    class AxeAnalytique {
+      + code : String
+      + libelle : String
+      + obligatoire : Boolean
+    }
+
+    class CompteAnalytique {
+      + compte : String
+      + axe : String
+      + plan : String
+    }
+
+    class Entreprise {
+      + code : String
+      + denomination : String
+      + typeActivite : TypeActivite
+      + formeJuridique : String
+      + adresse : String
+      + niu : String
+      + rccm : String
+      + idNational : String
+      + exerciceCourant : UUID
+      + deviseLocale : String
+    }
+  }
+
+  ' ================= ECRITURES =================
+  package "ecritures" {
+
+    enum StatutEcriture {
+      BROUILLON
+      VALIDE
+      COMPTABILISEE
+      REGULARISEE
+      ANNULEE
+      REFUSEE
+    }
+
+    enum OrigineEcriture {
+      SAISIE_MANUELLE
+      FACTURATION
+      STOCK
+      TRESORERIE
+      PAIE
+      AMORTISSEMENT
+      INVENTAIRE
+      OD
+      IMPORT
+    }
+
+    class Ecriture {
+      + id : UUID
+      + numero : String
+      + date : Date
+      + libelle : String
+      + journalCode : String
+      + statut : StatutEcriture
+      + origine : OrigineEcriture
+      + modeleCode : String
+      + pieceId : UUID
+      + exerciceId : UUID
+      + devise : String
+      + tauxChange : Decimal
+      + totalDebit : Decimal
+      + totalCredit : Decimal
+      + equilibre : Boolean
+      + dateComptabilisation : DateTime
+      + saisiePar : UUID
+      + validePar : UUID
+      + pieceJustificative : String
+      --
+      + estEquilibree() : Boolean
+      + recalculerTotaux() : void
+      + verifierTVA() : Boolean
+    }
+  }
+
+  ' ================= MULTI-DEVISE =================
+  package "monetaire" {
+
+    enum StatutTaux {
+      BROUILLON
+      VALIDE
+      ARCHIVE
+    }
+
+    enum StatutConversion {
+      A_CONVERTIR
+      CONVERTI
+      REJETE
+    }
+
+    enum ModeArrondi {
+      AUCUN
+      SUPERIEUR
+      INFERIEUR
+      PROCHE
+    }
+
+    class Devise {
+      + code : String
+      + nom : String
+      + devisePivot : Boolean
+      + decimales : Integer
+      + active : Boolean
+    }
+
+    class TauxChange {
+      + id : UUID
+      + deviseSource : String
+      + deviseCible : String
+      + date : Date
+      + taux : Decimal
+      + statut : StatutTaux
+      + source : String
+      + saisiPar : UUID
+      + validePar : UUID
+      --
+      + convertir(montant : Decimal) : Decimal
+    }
+
+    class ParametreMonetaire {
+      + deviseLocale : String
+      + deviseFonctionnelle : String
+      + devisePresentation : String
+      + modeArrondi : ModeArrondi
+      + precisionArrondi : Integer
+      + tauxMoyenPondere : Boolean
+      + calculTauxMoyen : Boolean
+      + dateApplication : Date
+    }
+
+    class OperationChange {
+      + id : UUID
+      + date : Date
+      + montantSource : Decimal
+      + deviseSource : String
+      + tauxUtilise : Decimal
+      + montantDevise : Decimal
+      + statut : StatutConversion
+      + ecart : Decimal
+    }
+
+    class TauxMoyenExercice {
+      + devise : String
+      + exercice : UUID
+      + tauxMoyen : Decimal
+      + cumulAchatUsd : Decimal
+      + cumulAchatCdf : Decimal
+      + cumulVenteUsd : Decimal
+      + cumulVenteCdf : Decimal
+      --
+
+      + calculer() : Decimal
+    }
+
+    class CompteTresorerie {
+      + numero : String
+      + devise : String
+      + banque : String
+      + rib : String
+      + swift : String
+    }
+
+    class ReleveBancaire {
+      + id : UUID
+      + compte : String
+      + dateReleve : Date
+      + devise : String
+      + solde : Decimal
+      + soldePrive : Decimal
+      + dateImport : DateTime
+    }
+  }
+
+  ' ================= Relations =================
+  Ecriture "1" --> "1" Journal : enregistre >
+  Ecriture "1" --> "1" Exercice : impute >
+  Entreprise "1" *-- "1" ParametreMonetaire : parametre >
+  Entreprise "1" o-- "0..*" Exercice : exercices >
+  Entreprise "1" *-- "1" PlanComptable : plan >
+  Entreprise "1" o-- "0..*" Journal : journaux >
+  Entreprise "1" o-- "0..*" AxeAnalytique : axes >
+  PlanComptable "1" *-- "0..*" Compte : comptes >
+  Compte "0..*" --> "0..1" Compte : parent de >
+  Compte "0..*" -- "0..*" CompteAnalytique : analytique >
+  AxeAnalytique "1" -- "0..*" CompteAnalytique : porte >
+  TauxChange "0..*" --> "1" Devise : source >
+  TauxChange "0..*" --> "1" Devise : cible >
+  OperationChange "0..*" --> "1" TauxChange : taux >
+  ReleveBancaire "0..*" --> "1" CompteTresorerie : releve >
+  CompteTresorerie "0..1" --> "0..1" Compte : tresorerie >
+  TauxMoyenExercice "0..*" --> "1" Devise : devise >
+}
+
+note bottom of TauxChange
+  <b>DEVISE PIVOT : USD</b>
+  Le syscohada RDC impose le dollar
+  americain comme devise de reference
+  fonctionnelle. Le franc congolais
+  est la devise legale d affichage.
+
+  Toute ecriture conserve sa devise
+  d origine ET sa conversion. Aucun
+  montant n est stocke converti sans
+  son taux d origine.
+end note
+
+note bottom of TauxMoyenExercice
+  <b>TAUX MOYEN PONDERE</b>
+  Formule :
+    (total achats devise + total
+     ventes devise) / volumes
+
+  Le taux moyen est fige a la cloture
+  de l exercice et s applique aux
+  valorisations de cloture.
+
+  Ecart de conversion = ecart de
+  tresorerie entre le taux moyen et
+  le taux de cloture. Il est isole au
+  compte de resultat.
+end note
+
+note bottom of Compte
+  Les comptes de tresorerie sont
+  les comptes de classe 5.
+
+  Un compte est imputable s il peut
+  recevoir une ecriture directe.
+  Seul un compte imputable porte un
+  solde dans le grand livre.
+end note
+
+note bottom of Exercice
+  <b>CYCLE DE CLOTURE OHADA</b>
+  OUVERT -> CLOTURE_CAISSES ->
+  INVENTAIRE -> ARRET_COMPTABLE ->
+  CLOTURE -> ARCHIVE
+
+  L arret comptable est bloquant :
+  plus aucune ecriture n est acceptee
+  sans regularisation d un senior
+  comptable.
+end note
+
+@enduml

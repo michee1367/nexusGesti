@@ -1,0 +1,83 @@
+@startuml uc-socle-auth-service
+skinparam packageStyle rectangle
+skinparam actorStyle stickman
+left to right direction
+
+title Diagramme des Cas d'Utilisation - Service Authentification et Sessions (auth-service)
+
+actor "Utilisateur" as USR
+actor "Administrateur" as ADM
+actor "Keycloak" as KC
+actor "Systeme" as SYS
+actor "Service Interne" as SRV
+
+rectangle "Plateforme NexusGesti" {
+  rectangle "auth-service" {
+
+    ' ---- Connexion ----
+    usecase "S authentifier" as UC_Login
+    usecase "S authentifier par code OTP" as UC_Otp
+    usecase "Valider le second facteur MFA" as UC_Mfa
+    usecase "Renvoyer le code de verification" as UC_RenvoyerCode
+    usecase "Demander la reinitialisation du mot de passe" as UC_Oubli
+
+    ' ---- Session ----
+    usecase "Renouveler le jeton" as UC_Renouveler
+    usecase "Fermer la session" as UC_Logout
+    usecase "Fermer toutes les sessions" as UC_LogoutAll
+    usecase "Consulter la session courante" as UC_Session
+    usecase "Lister les sessions actives" as UC_Sessions
+
+    ' ---- Securite ----
+    usecase "Enregistrer la connexion" as UC_Journaliser
+    usecase "Detecter une tentative de brute force" as UC_Bruteforce
+    usecase "Verrouiller un compte" as UC_Verrouiller
+    usecase "Lever un verrouillage" as UC_LeverVerrou
+    usecase "Revoquer un jeton" as UC_Revoquer
+    usecase "Configurer les regles anti-bruteforce" as UC_Regles
+    usecase "Activer la double authentification" as UC_ActiverMfa
+
+    ' ---- Relations ----
+    UC_Login .> UC_Journaliser : <<include>>
+    UC_Login .> UC_Bruteforce : <<include>>
+    UC_Login .> UC_Verrouiller : <<include>>
+    UC_Login .> UC_Mfa : <<include>>
+    UC_Otp .> UC_Login : <<extend>>
+    UC_Mfa .> UC_RenvoyerCode : <<extend>>
+    UC_Renouveler .> UC_Revoquer : <<include>>
+    UC_LogoutAll .> UC_Revoquer : <<include>>
+    UC_Oubli .> UC_ActiverMfa : <<extend>>
+    UC_Regles .> UC_Bruteforce : <<include>>
+  }
+}
+
+USR --> UC_Login
+USR --> UC_Otp
+USR --> UC_Mfa
+USR --> UC_RenvoyerCode
+USR --> UC_Oubli
+USR --> UC_Renouveler
+USR --> UC_Logout
+USR --> UC_Session
+USR --> UC_ActiverMfa
+ADM --> UC_Regles
+ADM --> UC_Verrouiller
+ADM --> UC_LeverVerrou
+ADM --> UC_Revoquer
+ADM --> UC_Sessions
+ADM --> UC_LogoutAll
+SYS --> UC_Journaliser
+SYS --> UC_Bruteforce
+SRV --> UC_Login
+SRV --> UC_Revoquer
+KC --> UC_Login
+KC --> UC_Renouveler
+
+note bottom of UC_Bruteforce
+  Fenetre glissante de tentatives par
+  identifiant et par adresse IP.
+  Au-dela du seuil : VerrouillageCompte
+  dont la duree est parametree.
+end note
+
+@enduml

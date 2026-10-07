@@ -1,0 +1,163 @@
+@startuml sq-hopital-sejour
+title Sequence - Parcours d hospitalisation, de la decision a la cloture du sejour
+autonumber
+skinparam sequenceMessageAlign center
+
+actor "Medecin prescripteur" as MED
+actor "Infirmier" as INF
+actor "Medecin-chef" as MEDSEC
+participant "hop-consultation-service" as CONS
+participant "hop-hospitalisation-service" as HOSP
+participant "hop-rdv-service" as RDV
+participant "hop-pharmacie-service" as PHA
+participant "hop-patient-service" as PAT
+participant "notification-service" as NOTIF
+participant "audit-service" as AUD
+database "Lits & Sejours" as DB
+
+== Etape 1 : Decision d hospitaliser ==
+
+MED -> CONS : MotifTerminaison = HOSPITALISE
+CONS -> HOSP : nouvelle demande d hospitalisation
+
+activate HOSP
+
+HOSP -> DB : select Service\nwhere accepteTransfert
+DB --> HOSP : services compatibles\navec le type d admission
+HOSP -> HOSP : Verification des trois criteres\n(1) lit libre (2) type de chambre\n(3) absence de BlocAdmission
+
+alt Aucun service ne peut accueillir le patient
+  HOSP -> MED : liste des services indisponibles
+  MED -> MEDSEC : arbitrage de l affectation
+  MEDSEC -> HOSP : impose le service d accueil
+else Service accepte
+  HOSP -> DB : creation du Sejour\nstatut = EN_ATTENTE\ncapture de la version de grille
+  HOSP -> NOTIF : reservation de lit,\ndelai d admission
+end
+
+note right of HOSP
+  <b>LE LIT N EST PAS ENCORE AFFECTE</b>
+  A ce stade le sejour existe mais le
+  patient n entre pas. Le service
+  garde un lit en attente, ce qui est
+  visible du pilotage.
+end note
+
+== Etape 2 : Admission ==
+
+alt Patient se presente
+  MED -> MED : pre-sortie programmee\npresortir()
+  INF -> PAT : verifie l identite du patient
+  PAT --> INF : piece d identite
+  INF -> PAT : obtenir le consentement de soins
+  PAT --> INF : consentement
+else Patient en urgence
+  INF -> HOSP : admission type URGENCE
+  HOSP -> PAT : consentement de soins urgence
+  PAT --> HOSP : consentement
+end
+
+INF -> HOSP : admettre()\nmotif code du referentiel
+HOSP -> PAT : creation ou resolution\ndu dossier patient
+PAT --> HOSP : patient, tiers, taux de couverture
+
+HOSP -> HOSP : affecterLit(lit)\ncontrole de compatibilite
+HOSP -> DB : lit.occuper(sejour)
+HOSP -> DB : sejour.statut = ADMIS\npuis EN_COURS
+HOSP -> NOTIF : bon d admission
+
+HOSP -> AUD : evenement sejour.admis\n{sejour, lit, service}
+AUD --> HOSP : trace
+
+== Etape 3 : Prescription et soins pendant le sejour ==
+
+loop Chaque prescription
+  MED -> CONS : LignePrescription\n(MEDICAMENT, EXAMEN, ANALYSE,\nIMAGERIE, CHIRURGIE)
+  CONS -> PHA : stock reserve pour\nl ordonnance
+  PHA -> PHA : controle disponibilite,\nchoix du lot par FEFO
+  PHA --> CONS : reservation effectuee
+end
+
+note over MED, INF
+  Les examens ne sont pas prescrits
+  directement au plateau technique.
+  Une LignePrescription de type
+  ANALYSE ou IMAGERIE devient une
+  DemandeExamen, qui aiguille vers
+  le laboratoire ou l imagerie.
+end note
+
+INF -> HOSP : consigner un transfert interne
+
+alt Soins realises au lit, hors plateau technique
+  INF -> HOSP : MouvementInterne\ntype = MAINTENANCE
+  HOSP -> HOSP : pas d acte facturable propre\n(le soin est facture avec la journee)
+else Besoins d une surveillance Renforcee
+  INF -> HOSP : MouvementInterne\ntype = ESCALADE
+  HOSP -> MEDSEC : escalade de soins
+  MEDSEC --> HOSP : service cible accepte
+end
+
+HOSP -> DB : mouvement interne trace\nle numero de sejour ne change pas
+HOSP -> NOTIF : patient et nouveau service informes
+
+== Etape 4 : Sortie ==
+
+MED -> HOSP : presortir(datePrevue)
+HOSP -> DB : dateSortiePrevue enregistree
+
+MED -> HOSP : enregistrer sortie\n(destination, motif code)
+HOSP -> HOSP : exiger compte rendu\nselon TypeCompteRenduSortie
+
+alt Sortie clinique
+  MED -> HOSP : compte rendu du sejour
+  HOSP -> HOSP : signer() puis figer()\nempreinte SHA-256
+else Sortie deces
+  MED -> HOSP : sortie destination DECES
+  HOSP -> NOTIF : information reglementaire
+  note right of HOSP
+    Un deces n est jamais un effet de bord
+    d un evenement technique. C est un
+    acte humain nominatif qui bloque la
+    cloture automatique.
+  end note
+else Sortie contre avis du patient
+  INF -> HOSP : sortie involontaire
+  HOSP -> HOSP : validation du medecin-chef\net information reglementaire
+end
+
+HOSP -> DB : dateSortieEffective,\nsejour.statut = SORTI
+
+HOSP -> HOSP : cloturer()
+
+alt Sortie refusee ou compte rendu manquant
+  HOSP -> HOSP : REFUS DE CLOTURE
+  HOSP -> MED : sejour bloque,\nstatut SORTI
+  note right of HOSP
+    Le sejour reste visible du pilotage.
+    Aucun montant n est calcule avant la
+    levee du blocage.
+  end note
+else Cloture acceptee
+  HOSP -> DB : sejour.statut = CLOTURE
+  HOSP -> HOSP : getDureeSejourJours()\npuis valoriser(grille)
+  HOSP -> DB : LigneTarification x N\n(version de grille figee sur chaque ligne)
+end
+
+== Etape 5 : Trace et sauvegarde ==
+
+HOSP -> AUD : evenement sejour.cloture\n{sejour, duree, valorisation}
+AUD --> HOSP : trace
+HOSP -> NOTIF : dossier du patient mis a jour
+
+note over HOSP
+  <b>CE QUI EST VOLONTAIREMENT ABSENT</B>
+  Ce flux ne porte ni les observations
+  quotidiennes, ni les transmissions, ni
+  les prescriptions continues. Ce perimetre
+  reste celui du sejour et de sa valorisation.
+  La facturation proprement dite est
+  traitee par sq-hopital-acte-facturation.
+end note
+
+@enduml

@@ -1,0 +1,205 @@
+@startuml uc-fin-facturation-service
+skinparam packageStyle rectangle
+skinparam actorStyle stickman
+left to right direction
+
+title Diagramme des Cas d'Utilisation - fin-facturation-service
+
+actor "Vendeur" as VEN
+actor "Caissier" as CAIS
+actor "Client" as CLI
+actor "Fournisseur" as FOUR
+actor "Comptable" as COM
+actor "Directeur financier" as DAF
+actor "Systeme Stock" as STK
+actor "Systeme Tresorerie" as TRE
+
+rectangle "Plateforme NexusGesti" {
+  rectangle "fin-facturation-service" {
+
+    ' ---- Tiers ----
+    usecase "Creer un client" as UC_CreerClient
+    usecase "Creer un fournisseur" as UC_CreerFournisseur
+    usecase "Verifier un tiers" as UC_VerifierTiers
+    usecase "Suspendre un tiers" as UC_SuspendreTiers
+    usecase "Definir un plafond de credit" as UC_Plafond
+    usecase "Consulter un encours" as UC_Encours
+
+    ' ---- Catalogue et prix ----
+    usecase "Definir un tarif" as UC_Tarif
+    usecase "Definir un prix de vente" as UC_PrixVente
+    usecase "Consulter le prix applicable" as UC_PrixApplicable
+
+    ' ---- Commande ----
+    usecase "Saisir une commande" as UC_SaisirCommande
+    usecase "Valider une commande" as UC_ValiderCommande
+    usecase "Verifier la disponibilite" as UC_VerifierDispo
+    usecase "Preparer une livraison" as UC_PreparerLivraison
+    usecase "Enregistrer une livraison" as UC_EnregistrerLivraison
+
+    ' ---- Facturation ----
+    usecase "Saisir une facture" as UC_SaisirFacture
+    usecase "Editer une facture" as UC_EditerFacture
+    usecase "Valider une facture" as UC_ValiderFacture
+    usecase "Facturer une livraison" as UC_FacturerLivraison
+    usecase "Emettre une facture proforma" as UC_Proforma
+    usecase "Appliquer une remise" as UC_Remise
+    usecase "Calculer la TVA" as UC_TVA
+    usecase "Etablir les echeances" as UC_Echeances
+    usecase "Verifier l encours avant facturation" as UC_ControleEncours
+    usecase "Generer une facture en devise" as UC_FactureDevise
+    usecase "Imprimer ou exporter une facture" as UC_ImprimerFacture
+
+    ' ---- Annulation et avoir ----
+    usecase "Annuler une facture" as UC_AnnulerFacture
+    usecase "Emettre un avoir" as UC_Avoir
+    usecase "Realiser un avoir sur facture" as UC_AvoirFacture
+    usecase "Justifier un avoir" as UC_JustifierAvoir
+
+    ' ---- Reglement ----
+    usecase "Enregistrer un reglement" as UC_EnregistrerReglement
+    usecase "Encaisser un paiement espece" as UC_EncaisserEspece
+    usecase "Enregistrer un cheque" as UC_EncaisserCheque
+    usecase "Enregistrer un virement" as UC_EncaisserVirement
+    usecase "Rapprocher un reglement" as UC_RapprocherReglement
+    usecase "Lettrer une echeance" as UC_LettrerEcheance
+    usecase "Constater un retard de paiement" as UC_Retard
+    usecase "Relancer un client" as UC_Relancer
+
+    ' ---- Relations ----
+    UC_CreerClient .> UC_VerifierTiers : <<include>>
+    UC_CreerFournisseur .> UC_VerifierTiers : <<include>>
+    UC_SaisirCommande .> UC_VerifierDispo : <<include>>
+    UC_PreparerLivraison .> UC_VerifierDispo : <<include>>
+    UC_ValiderCommande .> UC_VerifierDispo : <<include>>
+    UC_FacturerLivraison .> UC_ValiderFacture : <<include>>
+    UC_FacturerLivraison .> UC_VerifierDispo : <<require>>
+    UC_SaisirFacture .> UC_TVA : <<include>>
+    UC_SaisirFacture .> UC_Echeances : <<include>>
+    UC_SaisirFacture .> UC_ControleEncours : <<include>>
+    UC_EditerFacture .> UC_Proforma : <<include>>
+    UC_Proforma .> UC_ValiderFacture : <<extend>>
+    UC_ValiderFacture .> UC_VerifierTiers : <<include>>
+    UC_ValiderFacture .> UC_Remise : <<include>>
+    UC_ValiderFacture .> UC_ControleEncours : <<require>>
+    UC_ValiderFacture .> UC_VerifierDispo : <<require>>
+    UC_FactureDevise .> UC_TVA : <<include>>
+    UC_ImprimerFacture .> UC_ValiderFacture : <<require>>
+    UC_AnnulerFacture .> UC_JustifierAvoir : <<include>>
+    UC_AvoirFacture .> UC_Avoir : <<include>>
+    UC_Avoir .> UC_JustifierAvoir : <<require>>
+    UC_EnregistrerReglement .> UC_RapprocherReglement : <<include>>
+    UC_EncaisserEspece .> UC_EnregistrerReglement : <<extend>>
+    UC_EncaisserCheque .> UC_EnregistrerReglement : <<extend>>
+    UC_EncaisserVirement .> UC_EnregistrerReglement : <<extend>>
+    UC_LettrerEcheance .> UC_RapprocherReglement : <<include>>
+    UC_Retard .> UC_Relancer : <<include>>
+    UC_Retard .> UC_Encours : <<include>>
+  }
+}
+
+VEN --> UC_SaisirCommande
+VEN --> UC_CreerClient
+VEN --> UC_Tarif
+VEN --> UC_PrixVente
+VEN --> UC_ValiderCommande
+VEN --> UC_Avoir
+VEN --> UC_Relancer
+CAIS --> UC_SaisirFacture
+CAIS --> UC_EditerFacture
+CAIS --> UC_Proforma
+CAIS --> UC_ImprimerFacture
+CAIS --> UC_EncaisserEspece
+CAIS --> UC_EncaisserCheque
+CAIS --> UC_PrixApplicable
+CLI --> UC_EncaisserEspece
+CLI --> UC_EncaisserCheque
+CLI --> UC_EncaisserVirement
+CLI --> UC_Encours
+FOUR --> UC_CreerFournisseur
+COM --> UC_SaisirFacture
+COM --> UC_ValiderFacture
+COM --> UC_FacturerLivraison
+COM --> UC_TVA
+COM --> UC_Echeances
+COM --> UC_ControleEncours
+COM --> UC_FactureDevise
+COM --> UC_AnnulerFacture
+COM --> UC_AvoirFacture
+COM --> UC_EnregistrerReglement
+COM --> UC_LettrerEcheance
+COM --> UC_RapprocherReglement
+COM --> UC_PrixApplicable
+DAF --> UC_VerifierTiers
+DAF --> UC_SuspendreTiers
+DAF --> UC_Plafond
+DAF --> UC_Encours
+DAF --> UC_Remise
+DAF --> UC_JustifierAvoir
+DAF --> UC_Retard
+STK --> UC_VerifierDispo
+TRE --> UC_RapprocherReglement
+TRE --> UC_EncaisserVirement
+TRE --> UC_LettrerEcheance
+
+note bottom of UC_VerifierTiers
+  <b>IDENTITE ET REGLEMENTATION</b>
+  Un tiers est enregistre avec :
+   - raison sociale ou nom ;
+   - adresse et ville ;
+   - telephone ;
+   - nif et rccm si professionnel ;
+   - conditions de reglement.
+
+  Un tiers sans identite complete ne
+  peut pas etre livre.
+end note
+
+note bottom of UC_TVA
+  Taux applicables :
+   - 0 % : exonere
+   - 5 % : produits de base
+   - 10 % : produits intermediaires
+   - 16 % : produits de luxe
+
+  La TVA est calculee par ligne puis
+  totalisee : un taux different
+  par ligne est normal.
+
+  Auto-liquidation du credit :
+  les achats donnent droit a credit
+  de TVA dans la limite des
+  prestations taxees.
+end note
+
+note bottom of UC_AnnulerFacture
+  L annulation est une operation
+  metier, pas une suppression :
+   - la facture reste tracee ;
+   - le motif est obligatoire ;
+   - l annulation est journalisee ;
+   - une facture comptabilisee ne
+     peut etre annulee, elle doit
+     faire l objet d un avoir.
+end note
+
+note bottom of UC_ControleEncours
+  <b>REGLE DE PLAFOND</b>
+    encours + montant TTC
+    <= plafond de credit
+
+  Le depassement est bloque, sauf
+  accord cadre signe par le
+  directeur financier.
+end note
+
+note bottom of UC_VerifierDispo
+  La disponibilite est interrogee
+  auprès de fin-stock-service en
+  temps reel. Une vente de commodite
+  non stockee est signalee : le
+  systeme ne bloque pas la vente,
+  il alerte.
+end note
+
+@enduml

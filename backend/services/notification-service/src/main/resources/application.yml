@@ -1,0 +1,62 @@
+spring:
+  application:
+    name: notification-service
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5433}/${DB_NAME:nexusgesti}
+    username: ${DB_USER:nexusgesti_app}
+    password: ${DB_PASSWORD:nexusgesti_secret}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        default_schema: notifications
+  flyway:
+    enabled: true
+    # Sans url, Spring Boot derive le DataSource de migration du datasource
+    # applicatif par reflection : il ne voit plus getUrl() une fois celui-ci
+    # enveloppe par TenantAwareDataSource et plante au boot.
+    url: ${FLYWAY_URL:jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5433}/${DB_NAME:nexusgesti}}
+    user: ${FLYWAY_USER:nexusgesti}
+    password: ${FLYWAY_PASSWORD:nexusgesti_secret}
+    schemas: notifications
+    default-schema: notifications
+    table: flyway_notification_history
+    locations: classpath:db/migration
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:redis_secret}
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP:localhost:9092}
+    consumer:
+      group-id: notification-service
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${KEYCLOAK_ISSUER:http://localhost:8180/realms/nexusgesti}
+
+server:
+  port: ${NOTIFICATION_SERVICE_PORT:8104}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,prometheus,metrics
+
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+
+nexusgesti:
+  internal-service-token: ${INTERNAL_SERVICE_TOKEN:dev-internal-token}

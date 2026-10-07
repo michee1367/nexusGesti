@@ -1,0 +1,37 @@
+# Maven
+target/
+*.jar
+*.war
+!.mvn/wrapper/maven-wrapper.jar
+.mvn/timing.properties
+
+# IDE
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+.settings/
+.project
+.classpath
+
+# JVM
+*.log
+hs_err_pid*
+replay_pid*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Outils locaux
+plantuml.jar
+plantuml-*.jar
+
+# Docker
+.docker-data/
+
+# Environments
+.env
+.env.local
+application-local.yml

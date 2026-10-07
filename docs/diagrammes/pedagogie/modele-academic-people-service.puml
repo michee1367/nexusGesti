@@ -1,0 +1,453 @@
+@startuml modele-academic-people-service
+title Diagramme de Classes - Service Personnes et Inscriptions (academic-people-service)
+skinparam classAttributeIconSize 0
+hide empty members
+
+' ============================================================
+' ENUMS
+' ============================================================
+
+enum StatutEleve {
+  PREINSCRIT
+  INSCRIT
+  REINSCRIT
+  TRANSFERE
+  ABANDON
+  CONGE
+  OBTEN_DIPLOME
+  RADIE
+  ARCHIVE
+}
+enum Sexe {
+  M
+  F
+  AUTRE
+  NON_PRECISE
+}
+enum StatutEnseignant {
+  ACTIF
+  CONGE
+  DETACHE
+  RETRAITE
+  INACTIF
+  A_PUBLIER
+}
+enum Fonction {
+  TITULAIRE
+  REMPLAÇANT
+  VACATAIRE
+  CONTRACTUEL
+  STAGIAIRE
+  CHERCHEUR
+  ASSISTANT
+}
+enum TypeAffection {
+  TITULAIRE
+  CO_TITULAIRE
+  ADJOINT
+  REMPLAÇANT
+  VISITEUR
+}
+enum StatutDossier {
+  EN_COURS
+  COMPLET
+  INCOMPLET
+  VERIFIE
+  ARCHIVE
+}
+enum StatutInscription {
+  EN_ATTENTE
+  VALIDE
+  ANNULEE
+  SUSPENDUE
+}
+
+' ============================================================
+' AGREGAT : ELEVE
+' ============================================================
+
+class Eleve {
+  - idEleve : UUID
+  - matricule : String
+  - nom : String
+  - postNom : String?
+  - prenom : String
+  - sexe : Sexe
+  - dateNaissance : Date
+  - lieuNaissance : String?
+  - nationalite : String
+  - adresse : Adresse
+  - photo : String?
+  - statut : StatutEleve
+  - dateInscription : Date
+  - dateSortie : Date?
+  - etablissementOrigine : String?
+  - motifTransfert : String?
+  - statutDossier : StatutDossier
+  + estInscrit(date : Date) : Boolean
+  + getAge(date : Date) : Integer
+  + transferer(destination : String, motif : String) : Eleve
+  + radier(motif : String) : Eleve
+  + obtenirDossier() : DossierEleve
+  + getClasseCourante(date : Date) : UUID
+}
+
+class Inscription {
+  - idInscription : UUID
+  - eleve : UUID
+  - annee : UUID
+  - classe : UUID
+  - dateInscription : Date
+  - statut : StatutInscription
+  - redoublant : Boolean
+  - nouveau : Boolean
+  - ecoleOrigine : String?
+  - moyenneAnneePrecedente : Decimal?
+  - classementAnneePrecedente : Integer?
+  - fraisRegles : Boolean
+  + valider() : Inscription
+  + annuler(motif : String) : Inscription
+  + estEffectivementInscrit() : Boolean
+}
+
+class DossierEleve {
+  - id : UUID
+  - eleve : UUID
+  - reference : String
+  - dateOuverture : Date
+  - statut : StatutDossier
+  - photoIdentite : FichierJoint?
+  - acteNaissance : FichierJoint?
+  - bulletinAnterior : FichierJoint?
+  - certificatScolarite : FichierJoint?
+  - pieceSupplementaire : List<FichierJoint>
+  + estComplet() : Boolean
+  + getPiecesManquantes() : List<String>
+  + ajouterPiece(fichier : FichierJoint) : DossierEleve
+  + archiver() : DossierEleve
+}
+
+class FichierJoint {
+  - nom : String
+  - typeMime : String
+  - taille : Long
+  - uri : String
+  - dateDepot : Instant
+  - deposePar : UUID
+  - documentOfficiel : Boolean
+  + estValide(documentsAttendus : List<String>) : Boolean
+}
+
+class CongeEtude {
+  - id : UUID
+  - eleve : UUID
+  - type : TypeConge
+  - dateDebut : Date
+  - dateFin : Date
+  - motif : String
+  - justificatif : FichierJoint?
+  - reprisePrevue : Date?
+  + estEnCours(date : Date) : Boolean
+  + estEcheance(date : Date) : Boolean
+}
+
+enum TypeConge {
+  MEDICAL
+  FAMILIAL
+  SCOLAIRE
+  FINANCIER
+  DISCIPLINAIRE
+  AUTRE
+}
+
+class SanctionDisciplinaire {
+  - id : UUID
+  - eleve : UUID
+  - date : Date
+  - type : TypeSanction
+  - motif : String
+  - dureeJours : Integer?
+  - dateFin : Date?
+  - decidePar : UUID
+  - instance : String?
+  + estActive(date : Date) : Boolean
+  + getPeriodeRestant(date : Date) : Integer
+}
+
+enum TypeSanction {
+  AVERTISSEMENT
+  BLAME
+  EXCLUSION_TEMPORAIRE
+  EXCLUSION_DEFINITIVE
+  RETARD_SANCTIONNE
+}
+
+' ============================================================
+' AGREGAT : RESPONSABLES
+' ============================================================
+
+class Parent {
+  - id : UUID
+  - matricule : String?
+  - nom : String
+  - postNom : String?
+  - prenom : String
+  - sexe : Sexe
+  - telephone : String
+  - telephoneSecondaire : String?
+  - email : String?
+  - adresse : Adresse
+  - profession : String
+  - statut : String
+  + getContactPrioritaire() : String
+}
+
+class LienParentalite {
+  - type : TypeLien
+  - principal : Boolean
+  - payeur : Boolean
+  - receveurNotifications : Boolean
+  - dateDebut : Date
+  + estContactPrioritaire() : Boolean
+  + estPayeur() : Boolean
+}
+
+enum TypeLien {
+  PERE
+  MERE
+  TUTEUR
+  TUTEUR_LEGAL
+  GRAND_PARENT
+  FRERE
+  SOEUR
+  TUTEUR_AFFECTATIF
+  AUTRE
+}
+
+class Adresse {
+  - rue : String
+  - quartier : String
+  - commune : String
+  - ville : String
+  - province : String
+  - pays : String
+  - telephone : String?
+}
+
+' ============================================================
+' AGREGAT : PERSONNEL
+' ============================================================
+
+class Agent {
+  - id : UUID
+  - matricule : String
+  - nom : String
+  - postNom : String?
+  - prenom : String
+  - sexe : Sexe
+  - dateNaissance : Date
+  - telephone : String
+  - email : String
+  - adresse : Adresse
+  - fonctionOfficielle : String
+  - dateRecrutement : Date
+  - statut : String
+  - serviceRattachement : UUID
+}
+
+class ServiceEtablissement {
+  - id : UUID
+  - code : String
+  - libelle : String
+  - type : TypeService
+  - parent : UUID?
+  - responsable : UUID?
+  - email : String?
+  + getAgents() : List<Agent>
+  + getFilieres() : List<UUID>
+}
+
+enum TypeService {
+  DIRECTION
+  PEDAGOGIE
+  SCOLARITE
+  RESSOURCES_HUMAINES
+  FINANCIER
+  INFORMATIQUE
+  LABORATOIRE
+  BIBLIOTHEQUE
+  MEDECINE_SCOLAIRE
+  HYGIENE
+  SECURITE
+  AUTRE
+}
+
+class Enseignant {
+  - id : UUID
+  - matricule : String
+  - nom : String
+  - postNom : String?
+  - prenom : String
+  - sexe : Sexe
+  - dateNaissance : Date
+  - telephone : String
+  - email : String
+  - adresse : Adresse
+  - diplome : String
+  - diplomePlus : String?
+  - specialite : List<String>
+  - dateRecrutement : Date
+  - statut : StatutEnseignant
+  - volumeHoraireHebdo : Decimal
+  - serviceRattachement : UUID
+  - photo : String?
+  + getChargeHoraire(date : Date) : Decimal
+  + estTitulaireDe(classe : UUID) : Boolean
+  + getClasses() : List<UUID>
+  + getMatieres() : List<UUID>
+}
+
+class PieceIdentiteEnseignant {
+  - type : String
+  - numero : String
+  - dateDelivrance : Date
+  - dateExpiration : Date?
+  - pays : String
+}
+
+' ============================================================
+' AGREGAT : AFFECTATION (regle PRIMAIRE / SECONDAIRE)
+' ============================================================
+
+class AffectationEnseignant {
+  - id : UUID
+  - enseignant : UUID
+  - classe : UUID
+  - matiere : UUID
+  - type : TypeAffection
+  - titulaire : Boolean
+  - volumeHoraireHebdo : Decimal
+  - dateDebut : Date
+  - dateFin : Date?
+  - principale : Boolean
+  - remplacementDe : UUID?
+  - motif : String?
+  + rendreTitulaire() : AffectationEnseignant
+  + cedTitularite() : AffectationEnseignant
+  + estActive(date : Date) : Boolean
+  + getChargeHoraireHebdo() : Decimal
+}
+
+class Titularite {
+  - classe : UUID
+  - enseignant : UUID
+  - dateDelegation : Date
+  - dateRetrait : Date?
+  - type : String
+  - motif : String
+  + estActive(date : Date) : Boolean
+}
+
+' ============================================================
+' REGLE METIER CENTRALE
+' ============================================================
+
+class RegleAffectation {
+  + valider(profil : String, classe : UUID,
+            affectations : List<AffectationEnseignant>) : ResultatValidation
+  + estTitulaireUnique(profil : String,
+            affectations : List<AffectationEnseignant>) : Boolean
+  + getNombreTitulairesRequis(profil : String) : Integer
+}
+
+class ResultatValidation {
+  - valide : Boolean
+  - violations : List<String>
+  + estValide() : Boolean
+}
+
+' ============================================================
+' REFERENCES INTER-SERVICES
+' ============================================================
+
+class ProfilEtablissement <<tenant-service>>
+class AnneeScolaire <<tenant-service>>
+class Classe <<academic-structure>>
+class Matiere <<academic-structure>>
+class Promotion <<academic-structure>>
+class UE <<academic-structure>>
+class CoursECUE <<academic-structure>>
+
+' ============================================================
+' RELATIONS ET CARDINALITES
+' ============================================================
+
+Eleve "1" *-- "1" DossierEleve : possede >
+Eleve "1" -- "0..*" Inscription : effectue >
+Eleve "1" -- "1..*" Parent : a pour responsable >
+Eleve "0..*" -- "0..1" Parent : principal >
+Parent "0..*" -- "1..*" Parent : >
+
+Eleve "1" -- "0..*" Parent : encadre par >
+Eleve "1" *-- "0..*" CongeEtude :beneficie >
+Eleve "1" *-- "0..*" SanctionDisciplinaire : fait l objet >
+Eleve "1" o-- "0..1" Inscription : inscription courante >
+Eleve "1" -- "0..*" ProfilEtablissement : inscrit dans >
+Inscription "1" -- "1" Classe : integre >
+Inscription "1" -- "1" AnneeScolaire : pour >
+
+Agent "0..*" -- "1" ServiceEtablissement : exerce >
+ServiceEtablissement "0..1" -- "0..*" ServiceEtablissement : contient >
+Enseignant "0..1" -- "1" Agent : est un >
+Enseignant "0..*" -- "1" ServiceEtablissement : affecte >
+Enseignant "1" *-- "0..*" PieceIdentiteEnseignant : identifie par >
+
+AffectationEnseignant "0..*" -- "1" Enseignant : concerne >
+AffectationEnseignant "0..*" -- "1" Classe : s applique a >
+AffectationEnseignant "0..*" -- "1" Matiere : porte >
+AffectationEnseignant "0..1" -- "0..1" AffectationEnseignant : remplace >
+Titularite "1" -- "1" Classe : designe >
+Titularite "1" -- "1" Enseignant : attribue >
+
+RegleAffectation ..> AffectationEnseignant : controle >
+RegleAffectation ..> ProfilEtablissement : lit >
+Titularite ..> AffectationEnseignant : materialise >
+Enseignant "1" -- "0..*" AffectationEnseignant : assume >
+Classe "1" -- "1" Titularite : possede >
+
+DossierEleve "1" *-- "0..*" FichierJoint : contient >
+CongeEtude "1" o-- "0..1" FichierJoint : justifie >
+SanctionDisciplinaire ..> TypeSanction : type >
+LienParentalite ..> TypeLien : type >
+Eleve ..> StatutEleve : evolue selon >
+Eleve ..> Sexe : >
+DossierEleve ..> StatutDossier : evolue selon >
+Enseignant ..> StatutEnseignant : evolue selon >
+Inscription ..> StatutInscription : evolue selon >
+ServiceEtablissement ..> TypeService : type >
+AffectationEnseignant ..> TypeAffection : type >
+Matiere "0..*" -- "0..*" CoursECUE : Teaching >
+
+note right of RegleAffectation
+  REGLES IMPOSEES PAR LE PROFIL :
+
+  PRIMAIRE
+    - exactement 1 AffectationEnseignant
+    - cette affectation doit porter
+      titulaire = true
+
+  SECONDAIRE
+    - 1..N AffectationEnseignant
+    - exactement 1 avec titulaire = true
+      (designee dans Titularite)
+
+  UNIVERSITAIRE
+    - 1..N affectations par UE/Cours
+    - titularite portee par le
+      responsable d UE, pas par la classe
+
+  La violation est bloquante : pas de
+  validation d annee sans titulaire.
+end note
+
+@enduml

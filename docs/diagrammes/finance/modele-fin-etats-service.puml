@@ -1,0 +1,292 @@
+@startuml modele-fin-etats-service
+hide empty members
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+
+title Modele de classes - fin-etats-service (Ecritures, Journaux et Etats Financiers SYSCOHADA)
+
+package "fin-etats-service" {
+
+  ' ================= ECRITURES =================
+  package "ecritures" {
+
+    enum SensEcriture {
+      DEBIT
+      CREDIT
+    }
+
+    enum TypePiece {
+      PIECE_CONTABLE
+      OD
+      OPERATION_DIVERSE
+      REGULARISATION
+      CLOTURE
+    }
+
+    enum ModeleRegularisation {
+      ECRITURE_AVANT_PRODUIT
+      ECRITURE_AVANT_CHARGE
+      ECRITURE_APRES_PRODUIT
+      ECRITURE_APRES_CHARGE
+      REGULARISATION_STOCK
+      REGULARISATION_TVA
+    }
+
+    class ModelePiece {
+      + code : String
+      + libelle : String
+      + typePiece : TypePiece
+      + journalCode : String
+      + multiLignes : Boolean
+      + actif : Boolean
+      + ordre : Integer
+    }
+
+    class ModeleEcriture {
+      + id : UUID
+      + code : String
+      + libelle : String
+      + journalCode : String
+      + typePiece : TypePiece
+      + equilibreAutomatique : Boolean
+      + controleTVAAutomatique : Boolean
+      + controleDevise : Boolean
+      + actif : Boolean
+      + description : String
+      + conditionsRegles : List<String>
+    }
+
+    class Ecriture <<fin-compta-core>> #transparent
+
+    class LigneEcriture {
+      + id : UUID
+      + ecritureId : UUID
+      + numeroLigne : Integer
+      + compte : String
+      + libelle : String
+      + sens : SensEcriture
+      + montant : Decimal
+      + devise : String
+      + montantDevise : Decimal
+      + tiersCode : String
+      + axeAnalytique : String
+      + compteAnalytique : String
+      + pieceJustificative : String
+    }
+
+    class Piece {
+      + id : UUID
+      + numero : String
+      + date : Date
+      + type : TypePiece
+      + libelle : String
+      + montantTotal : Decimal
+      + devise : String
+      + exerciceId : UUID
+      + archivee : Boolean
+    }
+
+    class Lettrage {
+      + id : UUID
+      + numero : String
+      + tiersCode : String
+      + date : Date
+      + ecritureLigneIds : List<String>
+      + montantLettre : Decimal
+      + soldeResiduel : Decimal
+      + cloture : Boolean
+    }
+
+    class Journalier {
+      + id : UUID
+      + journalCode : String
+      + date : Date
+      + devise : String
+      + totalDebit : Decimal
+      + totalCredit : Decimal
+      + equilibre : Boolean
+      + cumulDebit : Decimal
+      + cumulCredit : Decimal
+      + nbEcritures : Integer
+      --
+      + estEquilibre() : Boolean
+    }
+  }
+
+  ' ================= ETATS =================
+  package "etats" {
+
+    enum TypeEtatFinancier {
+      BILAN
+      COMPTE_RESULTAT
+      TABLEAU_FINANCEMENT
+      ETAT_TRESORERIE
+      BALANCE
+      BALANCE_AUXILIAIRE
+      BALANCE_AGEE
+      GRAND_LIVRE
+      JOURNAL_GENERAL
+      ETAT_CHARGES_NATURE
+      FEC
+      LISTE_DOSSIERS_COMPTABLES
+    }
+
+    enum StatutEtat {
+      BROUILLON
+      VALIDE
+      CERTIFIE
+      CLOS
+    }
+
+    enum NiveauAgregation {
+      CLASSE
+      GROUPE
+      POSTE
+      DETAIL
+    }
+
+    class EtatFinancier {
+      + id : UUID
+      + type : TypeEtatFinancier
+      + libelle : String
+      + exerciceId : UUID
+      + dateArrete : Date
+      + dateGeneration : DateTime
+      + statut : StatutEtat
+      + devise : String
+      + generePar : UUID
+      + validePar : UUID
+      + fichier : String
+      + signatureNumerique : String
+      --
+      + estClos() : Boolean
+      + verrouiller() : void
+    }
+
+    class LigneEtat {
+      + numero : Integer
+      + libelle : String
+      + niveau : NiveauAgregation
+      + montantAnteriorite : Decimal
+      + montantExercice : Decimal
+      + montantVariation : Decimal
+      + pourcentage : Decimal
+      + codeSYSCOHADA : String
+      + niveauImpot : Integer
+    }
+
+    class CompteResultat {
+      + id : UUID
+      + exerciceId : UUID
+      + produitsOperatifs : Decimal
+      + chargesOperatives : Decimal
+      + margeOperatoire : Decimal
+      + produitsNonOperatifs : Decimal
+      + chargesNonOperatives : Decimal
+      + resultatAvantImpots : Decimal
+      + impotBenefice : Decimal
+      + resultatNet : Decimal
+      + reportANouveau : Decimal
+      + dividendes : Decimal
+    }
+
+    class FichierFEC {
+      + id : UUID
+      + exerciceId : UUID
+      + dateGeneration : DateTime
+      + nomFichier : String
+      + nombreLignes : Integer
+      + totalDebit : Decimal
+      + totalCredit : Decimal
+      + archive : Boolean
+    }
+  }
+
+  ' ================= Relations =================
+  ModelePiece "1" --> "1" ModeleEcriture : genere >
+  Ecriture "1" *-- "2..*" LigneEcriture : lignes >
+  Ecriture "1" --> "1" Piece : justifie >
+  Ecriture "1" --> "1" Journal : enregistre >
+  Ecriture "1" --> "0..1" ModeleEcriture : issu de >
+  Ecriture "1" --> "1" Exercice : impute >
+  Ecriture "1" o-- "0..1" Lettrage : lettre >
+  Journalier "1" --> "1" Journal : recapitule >
+  Lettrage "1" o-- "1..*" LigneEcriture : rapproche >
+  EtatFinancier "1" *-- "0..*" LigneEtat : lignes >
+  EtatFinancier "1" --> "1" CompteResultat : resume >
+  CompteResultat "1" --> "1" Exercice : calcul de >
+  FichierFEC "1" --> "1" Exercice : exporte >
+  class Exercice <<external>> #transparent
+  class Journal <<external>> #transparent
+  class Compte <<external>> #transparent
+  class Tiers <<external>> #transparent
+  LigneEcriture "0..*" --> "1" Compte : impute >
+  LigneEcriture "0..*" --> "0..1" Tiers : tiers >
+}
+
+note bottom of Ecriture
+  <b>REGLE D EQUILIBRE</b>
+  Une ecriture n est comptable que si :
+
+    total debit = total credit
+
+  dans la meme devise et au meme
+  taux de change.
+
+  Un montant en devise sans taux
+  est rejete a la validation.
+end note
+
+note bottom of ModeleEcriture
+  <b>SAISIE GUIDEE</b>
+  Le modele d ecriture genere les
+  lignes equilibrees a partir de
+  quelques champs : le comptable
+  choisit un modele (vente comptoir,
+  achat fournisseur, depense, OD)
+  et saisit deux a trois valeurs.
+
+  C est l objectif de la trame
+  03 du dossier de reference OHADA.
+end note
+
+note bottom of CompteResultat
+  <b>COMPTE RESULTAT SYSCOHADA</b>
+  A - Produits et charges de
+  l exercice (charges par nature)
+
+  B - Resultat net
+
+  C - Affectation du resultat
+
+  Le resultat net se decompose en :
+   - resultat de l exercice
+   - resultat reporte
+
+  Les lignes du SYSCOHADA sont
+  directement reprises dans
+  LigneEtat.
+end note
+
+note bottom of EtatFinancier
+  <b>ETATS CERTIFIES</B>
+  Un etat certifie est fige :
+  il porte une signature numerique,
+  ne peut etre ni regenere ni
+  modifie.
+
+  Seuls les etats certifies sont
+  acceptes par l administration
+  fiscale et par l ICD.
+end note
+
+note bottom of FichierFEC
+  Le fichier FEC doit etre produit
+  a la demande de l administration
+  fiscale, au format SYSCOHADA,
+  avec le journal, le compte, le
+  tiers, la date, le libelle et le
+  montant de chaque ligne.
+end note
+
+@enduml

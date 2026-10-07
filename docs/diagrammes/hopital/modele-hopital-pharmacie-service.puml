@@ -1,0 +1,337 @@
+@startuml modele-hopital-pharmacie-service
+hide empty members
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+
+title Modele de classes - hopital-pharmacie-service (Pharmacie et Stock de Medicaments)
+
+package "hopital-pharmacie-service" {
+
+  enum FormeGalenique {
+    COMPRIME
+    GELULE
+    SIROP
+    INJECTABLE
+    POMMADE
+    COLLYRE
+    SUPPOSITOIRE
+    SACHET
+    AEROSOL
+  }
+
+  enum VoieAdministration {
+    ORALE
+    INJECTABLE
+    CUTANEE
+    INHALEE
+    RECTALE
+    AUTRE
+  }
+
+  enum StatutLot {
+    QUARANTAINE
+    LIBRE
+    BLOQUE
+    PERIME
+    DETRUIT
+  }
+
+  enum TypeMouvement {
+    ENTREE
+    SORTIE
+    RETOUR
+    AJUSTEMENT
+    INVENTAIRE
+    PERTE
+  }
+
+  enum StatutDispensation {
+    EN_ATTENTE
+    EN_PREPARATION
+    DELIVRE
+    REJETE
+    ANNULE
+  }
+
+  enum TypeDestination {
+    PATIENT
+    SERVICE
+    URGENCE
+    BLOC_OPERATOIRE
+    PLATEAU_TECHNIQUE
+    AUTRE
+  }
+
+  enum NatureProduit {
+    MEDICAMENT
+    REACTIF
+    CONTRASTE
+    CONSOMMABLE
+  }
+
+  enum UniteStockHopital {
+    UNITE
+    BOITE
+    FLACON
+    AMPOULE
+    TUBE
+    ML
+    L
+    G
+    KG
+    PIECE
+  }
+
+  class Medicament <<aggregate root>> {
+    + code : String
+    + dci : String
+    + nomCommercial : String
+    + forme : FormeGalenique
+    + voiesAutorisees : List<String>
+    + principeActif : String
+    + dosage : String
+    + fabricant : String
+    + exigeOrdonnance : Boolean
+    + stupéfiant : Boolean
+    + actif : Boolean
+    + codeBarre : String
+    --
+    + nature : NatureProduit
+    + unite : UniteStockHopital
+    + depotDefaut : String
+    + prixAchat : Decimal
+    + compteStock : String
+    + compteResultat : String
+    + lotControle : Boolean
+    + dureePeremptionJours : Integer?
+    + estMedicament() : Boolean
+    + estReactif() : Boolean
+    + estContraste() : Boolean
+    + estConsommable() : Boolean
+  }
+
+  class Lot {
+    + numero : String
+    + datePeremption : Date
+    + quantiteInitiale : Decimal
+    + quantiteDisponible : Decimal
+    + quantiteReservee : Decimal
+    + quantiteConsommee : Decimal
+    + seuilAlerte : Decimal
+    + statut : StatutLot
+    + emplacement : String
+    + depot : String
+    + dateReception : Date
+    + fournisseur : String
+    + grilleStockVersion : Integer
+    --
+    + estPerime() : Boolean
+    + estEnQuarantaine() : Boolean
+    + joursAvantPeremption() : Integer
+    + estSousSeuil() : Boolean
+    + estUtilisablePour(nature : NatureProduit) : Boolean
+    + getQuantiteImmobilisee() : Decimal
+  }
+
+  class Fournisseur {
+    + code : String
+    + nom : String
+    + contact : String
+    + telephone : String
+    + email : String
+    + delaiLivraisonJours : Integer
+    + actif : Boolean
+  }
+
+  class StockTheorique {
+    + id : UUID
+    + annee : Integer
+    + seuilGlobal : Decimal
+    + dateMiseAJour : DateTime
+    + methodeValorisation : String
+    + devise : String
+    + updatedBy : UUID
+    --
+    + valeurStock() : Decimal
+    + calculerValorisation() : Decimal
+  }
+
+  class MouvementStock {
+    + id : UUID
+    + type : TypeMouvement
+    + date : DateTime
+    + quantite : Decimal
+    + lotNumero : String
+    + serviceOrigine : String
+    + destination : TypeDestination
+    + motif : String
+    + utilisateurId : UUID
+    + referenceExterne : String
+  }
+
+  class Reservation {
+    + id : UUID
+    + date : DateTime
+    + expiree : Boolean
+    + ordonnanceNumero : String
+    + patientId : UUID
+  }
+
+  class LigneReservation {
+    + medicamentCode : String
+    + lotNumero : String
+    + quantite : Decimal
+  }
+
+  class Dispensation {
+    + id : UUID
+    + numero : String
+    + date : DateTime
+    + statut : StatutDispensation
+    + ordonnanceNumero : String
+    + patientId : String
+    + prescripteurId : UUID
+    + quantiteTotale : Decimal
+    + remise : String
+    + conseil : String
+    + beneficiaireId : UUID
+    + lotUtilise : String
+  }
+
+  class Inventaire {
+    + id : UUID
+    + date : DateTime
+    + statut : String
+    + ecartQuantite : Decimal
+    + ecartValeur : Decimal
+    + validePar : UUID
+  }
+
+  class LigneInventaire {
+    + medicamentCode : String
+    + quantiteTheorique : Decimal
+    + quantiteComptee : Decimal
+    + ecart : Decimal
+    + lotNumero : String
+  }
+
+  ' ---- Relations ----
+  Medicament "1" *-- "1" FormeGalenique : forme >
+  Medicament "1" *-- "1..*" Lot : conditionne >
+  Medicament "1" o-- "0..*" Fournisseur : fournisseur >
+  Medicament "1" -- "1" StockTheorique : valorise >
+  Lot "1" o-- "0..*" MouvementStock : trace >
+  Reservation "1" *-- "1..*" LigneReservation : compose >
+  Reservation "1" -- "1" Dispensation : honore >
+  Inventaire "1" *-- "1..*" LigneInventaire : detaille >
+  Dispensation "1" o-- "0..*" MouvementStock : genere >
+  LigneReservation "1" --> "1" Lot : reserve >
+  LigneInventaire "1" --> "1" Medicament : compte >
+  Dispensation "0..1" --> "0..1" Patient : pour >
+  Dispensation "1" --> "1" Praticien : prescrit par >
+  Medicament ..> NatureProduit : classe >
+  Medicament ..> UniteStockHopital : quantifie >
+  Lot "0..*" --> "1" Depot : stocke >
+  MouvementStock "0..*" --> "1" Depot : transite par >
+  ConsommationPlateauTechnique "1" --> "1" Lot : preleve >
+  ConsommationPlateauTechnique "0..*" --> "0..1" Depot : sort de >
+  ConsommationPlateauTechnique ..> TypeDestination : va vers >
+
+  class Depot <<external>> #transparent
+  class Patient <<external>> #transparent
+  class Praticien <<external>> #transparent
+  class Ordonnance <<external>> #transparent
+  class Consultation <<external>> #transparent
+  class ConsommationPlateauTechnique <<hopital-plateau-technique>> #transparent
+}
+
+note bottom of Medicament
+  <b>FORCE, POSOLOGIE ET DCI</b>
+  La tresorerie impose :
+   - DCI ou nom commercial ;
+   - forme et dosage ;
+   - voie d administration ;
+   - quantite.
+  La prise en compte est refusee
+  si une de ces donnees manque.
+
+  Le code employe par la reference est
+  le meme que celui de
+  hopital-consultation-service.
+end note
+
+note bottom of Lot
+  <b>QUARANTAINE ET PEREMPTION</B>
+  Un lot recu est en QUARANTAINE.
+  Il passe LIBRE apres controle.
+  Un lot perime est bloque et ne
+  peut plus etre dispense.
+
+  La duree de quarantaine et les
+  seuils d alerte viennent de la
+  GrilleStock.
+
+  <b>QUANTITES : TROIS, PAS DEUX</B>
+  quantiteReservee est bloquee par une
+  prescription en attente de
+  delivrance.
+  quantiteConsommee est deja sortie, y
+  compris vers le plateau technique.
+  Les deux sont distinctes : un
+  reactif reserve puis preleve ne doit
+  pas etre relivrable.
+
+  getQuantiteImmobilisee additionne
+  reservee et consommee. C est la
+  seule quantite que le stock ne peut
+  pas proposer.
+
+  grilleStockVersion figee la version
+  des regles appliquees au lot. Une
+  correction de strategie de rotation ne
+  reevalue pas un lot deja livre.
+end note
+
+note bottom of Medicament
+  <b>AUSSI LES REACTIFS ET LES CONTRASTES</B>
+  Ce referentiel ne porte pas que des
+  medicaments. NatureProduit distingue :
+   - MEDICAMENT : dispense a un patient
+     depuis une ordonnance
+   - REACTIF : consomme par un dosage de
+     laboratoire
+   - CONTRASTE : injecte lors d un
+     examen d imagerie
+   - CONSOMMABLE : materiel consomme par
+     un soin
+
+  <b>POURQUOI LA DISTINCTION</B>
+  Un produit de contraste n est pas un
+  medicament. Les confondre produirait
+  deux erreurs : une dispensation
+  involontaire au patient, et un rappel
+  de lot qui ne remonte pas vers les
+  patients injectes.
+
+  <b>VALORISATION</B>
+  prixAchat, compteStock et compteResultat
+  rendent le stock valorisable. Aucun de
+  ces montants n est ecrit ici : ils
+  sont charges depuis
+  fin-stock-service par depotDefaut.
+
+  Depot est declare <<external>> :
+  fin-stock-service en est le
+  proprietaire. Ce modele ne red eclare
+  pas la classe.
+end note
+
+note bottom of Dispensation
+  <b>LOT OU PRODUIT LE PLUS PROCHE</b>
+  La strategie de lots est parametre
+  de la GrilleStock : premier
+  perime, sinon FEFO (First Expired,
+  First Out).
+end note
+
+@enduml

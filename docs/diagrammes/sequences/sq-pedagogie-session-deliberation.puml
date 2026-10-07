@@ -1,0 +1,141 @@
+@startuml sq-pedagogie-session-deliberation
+title Sequence - Publication des resultats d'une session d'examen et deliberation
+autonumber
+skinparam sequenceMessageAlign center
+
+actor "Censeur" as CEN
+actor "Jury" as JURY
+participant "API Gateway" as GW
+participant "ped-exam" as EXAM
+participant "ped-enrollment" as ENR
+participant "ped-structure" as STR
+participant "ped-assessment" as ASS
+participant "ped-fees" as FEES
+participant "post-notification" as NOTIF
+participant "audit-service" as AUD
+
+== Etape 1 : Programmation de la session ==
+
+CEN -> GW : POST /api/v1/sessions\n{type, periodeId, epreuves[]}
+GW -> EXAM : creer session
+EXAM -> STR : verifier periode et classe
+STR --> EXAM : periode, classe
+EXAM -> EXAM : controler collision COINCIDENCE_COURS_EXAMEN
+EXAM -> ENR : verifier effectif attendu
+ENR --> EXAM : nombre de candidats
+
+EXAM -> EXAM : generer creneaux et plan de salle
+EXAM -> EXAM : affecter les surveillants
+EXAM -> GW : plan de salle provisoire
+GW --> CEN : plan, liste des surveillants
+
+== Etape 2 : Convocation ==
+
+CEN -> GW : POST /api/v1/sessions/{id}/publier
+GW -> EXAM : publier la session
+EXAM -> ENR : recuperer les candidats eligibles
+ENR --> EXAM : enrolements actifs + dispenses
+EXAM -> NOTIF : evenement session.convocations
+NOTIF --> EXAM : convocations envoyees
+EXAM --> CEN : session publiee
+
+== Etape 3 : Tenue de l'epreuve ==
+
+activate EXAM
+
+loop Session ouverte
+  EXAM -> EXAM : pointer les presents
+  EXAM -> ENR : verifier enrolement du candidat
+  ENR --> EXAM : enrolement actif | dispense | absent
+  alt Candidat non enrole
+    EXAM -> EXAM : refuser la copie
+  else Dispense en cours d examen
+    EXAM -> EXAM : tracer l imputation
+  end
+end
+
+EXAM -> GW : cloturer la session
+EXAM -> EXAM : rediger le proces-verbal
+GW --> CEN : PV a signer
+CEN -> GW : signer le PV
+GW -> EXAM : signer
+CEN -> GW : homologuer le PV
+GW -> EXAM : homologuer
+deactivate EXAM
+
+== Etape 4 : Correction ==
+
+EXAM -> ASS : evenement examen.pv.homologue
+ASS --> EXAM : liste des epreuves et baremes
+
+ENS -> GW : saisir les notes d examen
+GW -> ASS : note par candidat et par epreuve
+ASS -> ENR : verifier enrolement actif
+ENR --> ASS : enrolement OK | KO
+ASS -> ASS : calculer ecart entre les correcteurs
+alt Ecart significatif
+  ASS -> GW : seconde correction demandee
+  GW --> JURY : notification seconde correction
+  JURY -> GW : seconde note
+  GW -> ASS : seconde note
+end
+ASS -> GW : cloturer la correction
+GW --> ENS : statistiques de la session
+
+== Etape 5 : Deliberation ==
+
+CEN -> GW : planifier la deliberation
+GW -> EXAM : ouvrir la deliberation
+EXAM -> ASS : resultats et moyennes par UE ou classe
+ASS --> EXAM : moyennes, mentions, classements
+EXAM -> ENR : eligibilite aux UE rattachees
+ENR --> EXAM : UE validees, credits
+
+JURY -> GW : deliberer
+GW -> EXAM : decisions par UE puis par classe
+EXAM -> EXAM : consolider les resultats annuels
+EXAM -> GW : cloturer la deliberation
+GW --> JURY : proces-verbal de deliberation
+
+== Etape 6 : Publication ==
+
+CEN -> GW : publier les resultats officiels
+GW -> EXAM : publier
+EXAM -> ASS : evenement resultats.publies
+ASS --> EXAM : accuse
+EXAM -> FEES : evenement session.deliberation
+FEES -> FEES : evaluer l eligibilite aux reductions
+FEES --> EXAM : reductions applicables
+EXAM -> NOTIF : notifier eleves et parents
+NOTIF --> EXAM : notifications envoyees
+EXAM -> AUD : tracer publication et decisions
+AUD --> EXAM : trace
+
+EXAM --> CEN : resultats publies
+
+note over EXAM,ASS
+  <b>SEPARE CONCERNE ET DECISION</b>
+  l examen-service conserve la preuve
+  et les decisions de jury.
+
+  academic-assessment-service conserve
+  la moyenne et les mentions.
+
+  Les deux ne se remplacent jamais :
+  une contestation porte sur la
+  note, une revision porte sur la
+  moyenne, et chacune est tracee.
+end note
+
+note over EXAM
+  <b>MOYENNE SANS VALEUR EN DUR</b>
+  Les coefficients, seuils de mention
+  et taux de reussite proviennent
+  de la GrilleNotation de l annee.
+
+  Une correction de bareme applique
+  retroactivement la nouvelle
+  version sans ecrasee d historique.
+end note
+
+@enduml

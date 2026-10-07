@@ -1,0 +1,192 @@
+@startuml sq-hopital-acte-facturation
+title Sequence - D un examen a la facture, laboratoire et imagerie
+autonumber
+skinparam sequenceMessageAlign center
+
+actor "Medecin prescripteur" as MED
+actor "Technicien / Manipulateur" as TECH
+actor "Biologiste ou Radiologue" as VAL
+actor "Patient" as PAT
+participant "hop-consultation-service" as CONS
+participant "hop-plateau-technique-service" as PLT
+participant "hop-pharmacie-service" as PHA
+participant "hop-patient-service" as PATS
+participant "notification-service" as NOTIF
+participant "fin-compta-core" as CPTE
+participant "fin-facturation-service" as FACT
+participant "audit-service" as AUD
+
+== Etape 1 : Prescription ==
+
+MED -> CONS : LignePrescription\ntype = ANALYSE | IMAGERIE
+CONS -> PLT : DemandeExamen\n(numero, patient, prescripteur, priorite)
+CONS -> PLT : figer la version\nde la grille tarifaire
+
+activate PLT
+
+PLT -> PLT : getMontantEstime(grille)\n(aucune valeur en dur)
+
+alt Priorite CRITIQUE
+  PLT -> NOTIF : examen critique,\ndelai de prise en charge
+  PLT -> PLT : realisation sans rendez-vous
+else Priorite ROUTINE ou URGENTE
+  PLT -> PLT : planifier selon\nle creneau du service
+end
+
+== Etape 2 : Realisation, chemin laboratoire ==
+
+TECH -> PLT : prelever() puis etiqueter()
+PLT -> PHA : verifier lot avant usage
+PHA -> PLT : statut LIBRE,\nperemption non depassee
+PLT --> TECH : reception possible
+
+TECH -> PLT : recevoir() l echantillon
+
+alt Echantillon non conforme
+  PLT -> PLT : rejeter(motif metier)\nHEMOLYSE | DELAI_DEPASSE |\nETIQUETTE_ILLISIBLE | ...
+  PLT -> NOTIF : prescripteur informe
+  TECH -> PLT : reprelever()
+  note right of PLT
+    Un echantillon rejete ne se reintegrent pas.
+    Une etiquette illisible entraine un rejet,
+    jamais une attribution devinee.
+  end note
+else Echantillon recevable
+  TECH -> PHA : declarer consommation de reactif\n(lot, quantite)
+  PHA -> PHA : MouvementStock\nserviceOrigine = PLATEAU_TECHNIQUE\nreferenceExterne = numero d examen
+  TECH -> PLT : saisir un resultat\n+ valeurs de reference
+  alt Resultat critique
+    TECH -> PLT : declarerCritique()
+    PLT -> NOTIF : resultat critique declare\nimmediate et inconditionnel
+    note right of PLT
+      Le declenche est immediat et ne depend
+      d aucune validation. Un resultat critique
+      non declare est une anomalie de processus.
+    end note
+  end
+end
+
+== Etape 3 : Realisation, chemin imagerie ==
+
+TECH -> PLT : planifier(creneau, salle)
+PLT -> PLT : estRealisable(equipement)
+alt Equipement hors calibration
+  PLT -> TECH : examen refuse\nappareil non realise
+  note right of PLT
+    Un scanner dont la dateDerniereCalibration
+    est depassee, ou bloque par une maintenance
+    non soldee, ne produit aucun examen
+    facturable.
+  end note
+else Equipement conforme
+  TECH -> PHA : verifier produit de contraste
+  PHA --> TECH : lot LIBRE, non perime
+  TECH -> PHA : declarer consommation de contraste\n(lot, dose)
+  PHA -> PHA : MouvementStock trace\nrappel de lot possible
+  TECH -> PLT : injecterContraste() puis acquerir()
+  alt Incident technique
+    TECH -> PLT : declarer un incident
+    PLT -> AUD : evenement equipement.incident
+    AUD --> PLT : trace
+  end
+  TECH -> PLT : images acquises
+  VAL -> PLT : interpreter() puis valider()
+end
+
+== Etape 4 : Validation biologique ou radiologique ==
+
+alt Anatomie pathologique, examen valide
+  VAL -> PLT : valider()\nValidationBiologique
+  PLT -> NOTIF : compte rendu publie\npour le prescripteur
+else Examen partiellement saisi
+  VAL -> PLT : validerPartiellement(motif)
+  PLT -> NOTIF : examen partiel\nle prescripteur est informe
+end
+
+note over PLT
+  <b>LE POINT QUI PROTEGE LE PATIENT</b>
+  Un resultat saisi mais non valide
+  biologiquement :
+   - n est pas lisible du prescripteur
+   - ne declenche aucun acte facturable
+   - ne figure sur aucun compte rendu
+  C est la seule garantie qu une valeur erronee
+  ne se transforme jamais en prescription.
+end note
+
+== Etape 5 : Production de l acte facturable ==
+
+alt Examen non valide
+  PLT -> PLT : aucun ActeFacturable
+  PLT -> MED : examen en attente\nde validation
+  note right of PLT
+    Un examen non interprete ne produit aucun acte
+    facturable. Un compte rendu signe reste seul.
+  end note
+else Examen VALIDE
+  PLT -> PATS : resoudre ou creer le tiers payeur
+  PATS --> PLT : tiersId\n+ taux de couverture
+  PLT -> PLT : scinder(taux)\npartAssurance + partPatient\n= montantBrut
+  PLT -> PLT : ActeFacturable\nidempotencyKey = f(sourceId, codeActe)
+
+  PLT -> NOTIF : emetteur de l evenement
+  PLT -> AUD : evenement\nacte.facturable.emis
+  AUD --> PLT : trace
+
+  PLT ->> CPTE : evenement hopital.acte.facturable\n(topic hopital.events)
+
+  note over PLT, CPTE
+    <b>CONTRAT INTER-SERVICES</b>
+    Le module hospitalier n encaisse rien.
+    Il emet un acte facturable et
+    la comptabilite fait le reste.
+    Meme mecanisme que le paiement de
+    frais scolaires, voie topic
+    academic.events.
+  end note
+end
+
+== Etape 6 : Comptabilisation ==
+
+activate CPTE
+
+CPTE -> CPTE : dedoublonnage sur idempotencyKey
+
+alt Acte deja traite
+  CPTE -> CPTE : ignore\n(retour de l evenement)
+else Nouvel acte
+  CPTE -> FACT : creer la facture\nsur le tiers du patient
+  CPTE -> CPTE : ecriture\nD 411 / C 706\nproduit d exploitation
+  CPTE -> FACT : ligne de facture\n718 / 7061 recapitulatif
+
+  note right of CPTE
+    Le compte 706 est un produit
+    d exploitation de prestations de services.
+    Il se distingue du 701, qui porte les
+    ventes de marchandises.
+  end note
+end
+
+CPTE ->> FACT : encaissement\n(especes, mobile money, assurance)
+FACT -> PAT : recu de paiement
+FACT -> PATS : dossier mis a jour\nquittance rattachee
+
+deactivate CPTE
+
+== Etape 7 : Preuve en cas de contestation ==
+
+MED -> PLT : consulter le compte rendu
+PLT -> PLT : lecture de donnee de sante
+PLT -> AUD : evenement\nresultat.lu\n{finalite, patient, utilisateur}
+AUD --> PLT : trace
+
+note over AUD
+  <b>TRACABILITE</b>
+  GrilleConformite.accesTracable
+  impose l emission d un acces vers
+  audit-service a chaque lecture de
+  donnee de sante. A ne pas desactiver
+  sur un profil HOSPITAL.
+end note
+
+@enduml

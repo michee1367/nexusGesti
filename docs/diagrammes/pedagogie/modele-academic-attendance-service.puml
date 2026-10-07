@@ -1,0 +1,325 @@
+@startuml modele-academic-attendance-service
+title Diagramme de Classes - Service Presence et Assiduite (academic-attendance-service)
+skinparam classAttributeIconSize 0
+hide empty members
+
+' ============================================================
+' ENUMS
+' ============================================================
+
+enum StatutPresence {
+  PRESENT
+  ABSENT
+  RETARD
+  ABSENT_EXCUSE
+  ABSENT_NON_EXCUSE
+  CONGE
+  MALADE
+  SORTIE_AUTORISEE
+}
+enum TypeAbsence {
+  INJUSTIFIEE
+  JUSTIFIEE
+  MEDICALE
+  FAMILIALE
+  SCOLAIRE
+  DISCIPLINAIRE
+  RELIGIEUSE
+  AUTRE
+}
+enum TypeRetard {
+  MOINS_X_MIN
+  PLUS_X_MIN
+  NON_CHRONOMETRE
+}
+enum StatutFeuille {
+  BROUILLON
+  SOUMISE
+  VALIDEE
+  CORRIGEE
+  CLOTUREE
+}
+enum MethodeSaisie {
+  MANUELLE
+  CODE_BARRE
+  BIOMETRIE
+  VOCAL
+  IMPORT
+  AUTOMATIQUE
+}
+enum StatustJustificatif {
+  EN_ATTENTE
+  ACCEPTE
+  REJETE
+  EXPIRE
+}
+
+' ============================================================
+' AGREGAT : SEANCE
+' ============================================================
+
+class Seance {
+  - idSeance : UUID
+  - classe : UUID
+  - cours : UUID
+  - enseignant : UUID
+  - salle : UUID
+  - date : Date
+  - heureDebut : Time
+  - heureFin : Time
+  - volumeHoraireReel : Decimal
+  - type : TypeSeance
+  - statut : StatutSeance
+  - annulee : Boolean
+  - motifAnnulation : String?
+  + demarrer() : Seance
+  + cloturer() : Seance
+  + annuler(motif : String) : Seance
+  + getDureeReelle() : Duration
+  + estSurCreneau(prevue : PlageEmploi) : Boolean
+}
+
+enum TypeSeance {
+  COURS
+  TD
+  TP
+  EXAMEN
+  RATTRAPAGE
+  VISITE
+  SORTIE
+}
+enum StatutSeance {
+  PLANIFIEE
+  EN_COURS
+  TERMINEE
+  ANNULEE
+  REPORTEE
+}
+
+class PlageEmploi {
+  - id : UUID
+  - cours : UUID
+  - creneau : UUID
+  - salle : UUID
+  - enseignant : UUID
+}
+
+class Creneau {
+  - id : UUID
+  - jour : JourSemaine
+  - heureDebut : Time
+  - heureFin : Time
+  - ordre : Integer
+}
+
+enum JourSemaine {
+  LUNDI
+  MARDI
+  MERCREDI
+  JEUDI
+  VENDREDI
+  SAMEDI
+  DIMANCHE
+}
+
+' ============================================================
+' AGREGAT : FEUILLE DE PRESENCE (une par seance)
+' ============================================================
+
+class FeuillePresence {
+  - idFeuille : UUID
+  - seance : UUID
+  - classe : UUID
+  - date : Date
+  - statut : StatutFeuille
+  - methode : MethodeSaisie
+  - ouvertePar : UUID
+  - ouverteLe : Instant
+  - soumiseLe : Instant?
+  - valideePar : UUID?
+  - valideeLe : Instant?
+  - effectifTheorique : Integer
+  - effectifPresent : Integer
+  - observations : String?
+  + ouvrir() : FeuillePresence
+  + Point(eleve : UUID, statut : StatutPresence) : FeuillePresence
+  + marquerPresence(eleve : UUID) : FeuillePresence
+  + marquerAbsence(eleve : UUID, type : TypeAbsence) : FeuillePresence
+  + marquerRetard(eleve : UUID, minutes : Integer) : FeuillePresence
+  + faireAppelGlobal(statut : StatutPresence) : FeuillePresence
+  + soumettre() : FeuillePresence
+  + valider() : FeuillePresence
+  + cloturer() : FeuillePresence
+  + getTauxPresence() : Decimal
+  + getNbAbsents() : Integer
+}
+
+class PresenceEleve {
+  - id : UUID
+  - feuille : UUID
+  - eleve : UUID
+  - statut : StatutPresence
+  - heureArrivee : Time?
+  - minutesRetard : Integer?
+  - heureDepart : Time?
+  - departAnticipe : Boolean
+  - typeAbsence : TypeAbsence?
+  - saisiePar : UUID
+  - saisieLe : Instant
+  - justifiee : Boolean
+  - justifieeLe : Instant?
+  - modifieeApresValidation : Boolean
+  + estPresent() : Boolean
+  + estAbsent() : Boolean
+  + estRetard() : Boolean
+  + getMinutesRetard() : Integer
+  + getDureeAbsence() : Duration
+  + excuser(motif : String, justificatif : UUID) : PresenceEleve
+}
+
+class Appel {
+  - id : UUID
+  - feuille : UUID
+  - eleve : UUID
+  - code : String
+  - repere : String?
+  - statut : StatutPresence
+  - horodatage : Instant
+}
+
+class Justificatif {
+  - id : UUID
+  - eleve : UUID
+  - type : TypeAbsence
+  - dateReference : Date
+  - dateDepot : Date
+  - motif : String
+  - fichier : FichierJoint?
+  - statut : StatustJustificatif
+  - traitePar : UUID?
+  - traiteLe : Instant?
+  - motifRejet : String?
+  + accepter() : Justificatif
+  + rejeter(motif : String) : Justificatif
+  + getPeriodeCouverte() : List<Date>
+}
+
+class FichierJoint {
+  - nom : String
+  - typeMime : String
+  - uri : String
+  - taille : Long
+}
+
+' ============================================================
+' AGREGAT : SUIVI ASSIDUITE (projection)
+' ============================================================
+
+class SuiviAssiduite {
+  - eleve : UUID
+  - annee : UUID
+  - periode : UUID
+  - nbSeancesPrevues : Integer
+  - nbSeancesTenues : Integer
+  - nbHeuresPrevues : Decimal
+  - nbHeuresAbsentes : Decimal
+  - nbAbsencesJustifiees : Integer
+  - nbAbsencesInjustifiees : Integer
+  - nbRetards : Integer
+  - minutesRetardTotal : Integer
+  - tauxPresence : Decimal
+  - respecteRegle : Boolean
+  - regleApplicable : String
+  - dernierCalcul : Instant
+  + getTauxPresence() : Decimal
+  + getTauxAbsenceJustifiee() : Decimal
+  + estEnAlerte() : Boolean
+  + recalculer() : SuiviAssiduite
+}
+
+class AbsenceNotifiee {
+  - id : UUID
+  - presence : UUID
+  - eleve : UUID
+  - parent : UUID?
+  - canal : String
+  - dateNotification : Instant
+  - accuseReception : Boolean
+  - dateAccuse : Instant?
+}
+
+class SeanceAnnuleeComptee {
+  - id : UUID
+  - seance : UUID
+  - eleve : UUID
+  - reporteeSur : UUID?
+  + estRegularisee() : Boolean
+}
+
+' ============================================================
+' REFERENCES INTER-SERVICES
+' ============================================================
+
+class AnneeScolaire <<tenant-service>>
+class Periode <<tenant-service>>
+class GrilleNotation <<tenant-service>>
+class RegleAssiduite <<tenant-service>>
+class Classe <<academic-structure>>
+class CoursECUE <<academic-structure>>
+class Salle <<academic-structure>>
+
+' ============================================================
+' RELATIONS ET CARDINALITES
+' ============================================================
+
+Seance "1" *-- "0..*" PresenceEleve : constate >
+FeuillePresence "1" *-- "1" Seance : porte >
+FeuillePresence "1" *-- "1..*" PresenceEleve : enregistre >
+FeuillePresence "1" *-- "0..*" Appel : trace >
+Seance "1" o-- "1" PlageEmploi : provient de >
+
+PresenceEleve "0..*" -- "1" Justificatif : justifie par >
+Justificatif "1" o-- "0..1" FichierJoint : contient >
+Seance "1" -- "0..*" SeanceAnnuleeComptee : annulee pour >
+SuiviAssiduite "1" -- "1" RegleAssiduite : evalue >
+PresenceEleve "1" -- "0..*" AbsenceNotifiee : notifiee >
+FeuillePresence "1" -- "1" RegleAssiduite : verifie >
+
+FeuillePresence "1" -- "1" Classe : concerne >
+FeuillePresence "1" -- "1" CoursECUE : pour >
+FeuillePresence "1" -- "1" Enseignant : faite par >
+
+Appel "1" -- "0..*" PresenceEleve : complete >
+PresenceEleve "1" -- "0..*" Appel : scan >
+
+SuiviAssiduite ..> GrilleNotation : applique >
+PresenceEleve ..> StatutPresence : statut >
+PresenceEleve ..> TypeAbsence : qualifie >
+PresenceEleve ..> TypeRetard : type >
+FeuillePresence ..> StatutFeuille : evolue selon >
+FeuillePresence ..> MethodeSaisie : saisie par >
+Seance ..> StatutSeance : evolue selon >
+Seance ..> TypeSeance : type >
+Justificatif ..> StatustJustificatif : suit >
+SuiviAssiduite "1" -- "1" Periode : sur >
+SuiviAssiduite "1" -- "1" AnneeScolaire : pour >
+
+note bottom of SuiviAssiduite
+  SuiviAssiduite est une PROJECTION
+  recalculee a chaque feuille validee.
+  Les seuils proviennent de la
+  RegleAssiduite de la GrilleNotation
+  (aucune valeur en dur).
+end note
+
+note right of PresenceEleve
+  Le couple (eleve, seance) est unique :
+  une seule ligne de presence par
+  eleve et par feuille. Le passage
+  de JUSTIFIEE a INJUSTIFIEE ne se
+  fait que si le justificatif est
+  REJETE, et l operation est tracee
+  dans audit-service.
+end note
+
+@enduml

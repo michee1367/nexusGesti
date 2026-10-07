@@ -1,0 +1,375 @@
+@startuml modele-academic-enrollment-service
+title Diagramme de Classes - Service Inscriptions et Enrolements (academic-enrollment-service)
+skinparam classAttributeIconSize 0
+hide empty members
+
+' ============================================================
+' ENUMS
+' ============================================================
+
+enum StatutInscriptionUE {
+  EN_ATTENTE
+  INSCRIT
+  EN_LISTE_ATTENTE
+  VALIDE
+  REFUSE
+  RATTAPE
+  ANNULE
+  TRANSFERE
+}
+enum TypeGroupe {
+  TD
+  TP
+  SEMINAIRE
+  ATELIER
+  EXERCICE
+  PROJET
+}
+enum StatutGroupe {
+  OUVERT
+  COMPLET
+  CLOS
+  ARCHIVE
+}
+enum TypeEnrolement {
+  OBLIGATOIRE
+  OPTIONNEL
+  RATTRAPAGE
+  SESSION_2
+  PRE_REQUIS
+}
+enum StatutEnrolement {
+  EN_ATTENTE
+  ENROULE
+  ABSENT
+  NON_ADMIS
+  ANNULE
+  PRESENT
+}
+enum TypeEquivalence {
+  IDENTIQUE
+  PARTIELLE
+  EQUIVALENT
+  SUBSTITUTION
+}
+
+' ============================================================
+' AGREGAT : INSCRIPTION UNIVERSITAIRE
+' ============================================================
+
+class InscriptionUE {
+  - id : UUID
+  - eleve : UUID
+  - programme : UUID
+  - promotion : UUID
+  - ue : UUID
+  - annee : UUID
+  - semestre : UUID
+  - statut : StatutInscriptionUE
+  - dateInscription : Date
+  - creditsReconnus : Decimal?
+  - moyenneAnneePrecedente : Decimal?
+  - moyenneUEPrecedente : Decimal?
+  - option : String?
+  - motifRefus : String?
+  - valideLe : Instant?
+  - validePar : UUID?
+  + inscrire() : InscriptionUE
+  + placerEnListeAttente(rang : Integer) : InscriptionUE
+  + valider() : InscriptionUE
+  + refuser(motif : String) : InscriptionUE
+  + estRattape() : Boolean
+  + getCreditsAcquis() : Decimal
+  + getCreditsRestants() : Decimal
+}
+
+class RegleInscription {
+  - id : UUID
+  - libelle : String
+  - programme : UUID?
+  - condition : String
+  - creditsMin : Decimal?
+  - moyenneMin : Decimal?
+  - creneauAge : Integer?
+  - priorite : Integer
+  + evaluer(candidat : Candidat) : DecisionInscription
+}
+
+class Candidat {
+  - eleve : UUID
+  - programme : UUID
+  - creditsValides : Decimal
+  - creditsRequis : Decimal
+  - moyenneGenerale : Decimal?
+  - age : Integer?
+  - niveauxValides : List<String>
+  + aRempli(condition : String) : Boolean
+}
+
+enum DecisionInscription {
+  ELIGIBLE
+  INELIGIBLE
+  LISTE_ATTENTE
+  OBLIGATOIRE
+}
+
+' ============================================================
+' AGREGAT : GROUPES TD / TP
+' ============================================================
+
+class Groupe {
+  - id : UUID
+  - code : String
+  - libelle : String
+  - type : TypeGroupe
+  - cours : UUID
+  - ue : UUID
+  - classe : UUID
+  - enseignant : UUID
+  - salle : UUID
+  - capacite : Integer
+  - effectif : Integer
+  - statut : StatutGroupe
+  - creneau : UUID?
+  - jour : String?
+  + ouvrir() : Groupe
+  + clore() : Groupe
+  + estComplet() : Boolean
+  + getPlacesRestantes() : Integer
+  + getVolumeHoraire() : Decimal
+}
+
+class MembreGroupe {
+  - groupe : UUID
+  - eleve : UUID
+  - dateAffectation : Date
+  - affectePar : UUID
+  - rang : Integer?
+  + exclure(motif : String) : MembreGroupe
+}
+
+' ============================================================
+' AGREGAT : ENROLEMENT PAR EPREUVE  (exige par l utilisateur)
+' ============================================================
+
+class EnrolementExamen {
+  - id : UUID
+  - epreuve : UUID
+  - eleve : UUID
+  - type : TypeEnrolement
+  - statut : StatutEnrolement
+  - dateEnrolement : Instant
+  - enrolePar : UUID
+  - surJustification : Boolean
+  - referenceJustification : String?
+  - creditesRetenus : Decimal?
+  - presence : Boolean
+  - absenceConstatee : Instant?
+  - note : Decimal?
+  - motifNonEnrolement : String?
+  - notifie : Boolean
+  - dateNotification : Instant?
+  + enroller() : EnrolementExamen
+  + pointer() : EnrolementExamen
+  + marquerAbsent() : EnrolementExamen
+  + annuler(motif : String) : EnrolementExamen
+  + estValidePourNote() : Boolean
+  + estObligatoire() : Boolean
+}
+
+class ObligationEnrolement {
+  - id : UUID
+  - programme : UUID?
+  - ue : UUID?
+  - cours : UUID?
+  - typeEpreuve : String?
+  - obligatoire : Boolean
+  - nbSessionsExemptes : Integer?
+  - justificatifRequis : String?
+  - priorite : Integer
+  + estApplicable(candidat : CandidatExamen) : Boolean
+  + dispense(eleve : UUID, motif : String) : Dispense
+}
+
+class CandidatExamen {
+  - eleve : UUID
+  - programme : UUID
+  - promotion : UUID
+  - cours : UUID
+  - credits : Decimal?
+  - inscriptions : List<UUID>
+  + aDesCreditsReussis() : Boolean
+  + estInscrit() : Boolean
+}
+
+class Dispense {
+  - id : UUID
+  - eleve : UUID
+  - epreuve : UUID
+  - motif : String
+  - justificatif : String?
+  - accordeePar : UUID
+  - dateAccord : Date
+  - creditsRetenus : Decimal?
+  + estActive() : Boolean
+}
+
+' ============================================================
+' AGREGAT : PRE REQUIS ET EQUIVALENCES
+' ============================================================
+
+class PreRequis {
+  - id : UUID
+  - ueConcernee : UUID
+  - uePreRequis : UUID
+  - obligatoire : Boolean
+  - creditsMinReussis : Decimal?
+  + estSatisfait(parcours : ParcoursAcademique) : Boolean
+}
+
+class EquivalenceUE {
+  - id : UUID
+  - ueOrigine : UUID
+  - programmeOrigine : UUID
+  - ueSubstitutive : UUID
+  - programmeSubstitutif : UUID
+  - type : TypeEquivalence
+  - creditsReconnus : Decimal?
+  - valideePar : UUID
+  - dateValidation : Date
+  + estAplicable(parcours : ParcoursAcademique) : Boolean
+}
+
+class ParcoursAcademique {
+  - eleve : UUID
+  - programme : UUID
+  - inscriptions : List<InscriptionUE>
+  - decisions : List<DecisionUE>
+  - creditsAcquis : Decimal
+  - creditsRequis : Decimal
+  + estUeAcquise(ue : UUID) : Boolean
+  + estUeEquivalente(ue : UUID) : Boolean
+  + getTauxProgression() : Decimal
+  + getMoyennePonderee() : Decimal?
+}
+
+class TransfertProgramme {
+  - id : UUID
+  - eleve : UUID
+  - programmeOrigine : UUID
+  - programmeDestination : UUID
+  - dateDemande : Date
+  - dateDecision : Date?
+  - motif : String
+  - creditsReportes : Decimal?
+  - statut : StatutTransfert
+  + valider(decider : UUID) : TransfertProgramme
+  + refuser(motif : String) : TransfertProgramme
+}
+
+enum StatutTransfert {
+  EN_ATTENTE
+  VALIDE
+  REFUSE
+  EFFECTUE
+}
+
+' ============================================================
+' REFERENCES INTER-SERVICES
+' ============================================================
+
+class AnneeScolaire <<tenant-service>>
+class UE <<academic-structure>>
+class CoursECUE <<academic-structure>>
+class Promotion <<academic-structure>>
+class Programme <<academic-structure>>
+class Salle <<academic-structure>>
+class Enseignant <<academic-people>>
+class Epreuve <<academic-exam>>
+class DecisionUE <<academic-exam>>
+
+' ============================================================
+' RELATIONS ET CARDINALITES
+' ============================================================
+
+InscriptionUE "1" -- "1" UE : porte >
+InscriptionUE "1" -- "1" Promotion : suit >
+InscriptionUE "1" -- "1" Groupe : groupe >
+InscriptionUE "1" -- "1" Enseignant : suit >
+
+Groupe "1" *-- "1..*" MembreGroupe : regroupe >
+Groupe "1" -- "1" CoursECUE : porte >
+Groupe "1" -- "0..1" Salle : se tient en >
+Groupe "1" -- "1" Enseignant : anime >
+
+RegleInscription ..> Candidat : evalue >
+RegleInscription ..> DecisionInscription : produit >
+InscriptionUE ..> StatutInscriptionUE : evolue selon >
+
+ObligationEnrolement "1" -- "0..*" EnrolementExamen : impose >
+ObligationEnrolement ..> CandidatExamen : teste >
+ObligationEnrolement "1" -- "1" UE : cible >
+ObligationEnrolement "1" -- "0..1" CoursECUE : cible >
+EnrolementExamen "1" -- "1" Epreuve : concerne >
+EnrolementExamen "1" -- "0..1" Dispense : dispense >
+Dispense "1" -- "1" EnrolementExamen : leve >
+
+PreRequis "1" -- "1" UE : exige >
+PreRequis "0..*" -- "1" UE : bloque >
+PreRequis ..> ParcoursAcademique : verifie >
+EquivalenceUE "1" -- "1" UE : remplace >
+EquivalenceUE "1" -- "1" UE : substituee a >
+EquivalenceUE ..> ParcoursAcademique : verifie >
+EquivalenceUE ..> TypeEquivalence : type >
+
+ParcoursAcademique "1" *-- "1..*" InscriptionUE : agrège >
+ParcoursAcademique "1" o-- "1..*" DecisionUE : heritee >
+TransfertProgramme "1" -- "1" Programme : origine >
+TransfertProgramme "1" -- "1" Programme : destination >
+TransfertProgramme ..> StatutTransfert : evolue selon >
+TransfertProgramme ..> ParcoursAcademique : reconfigure >
+
+EnrolementExamen ..> StatutEnrolement : evolue selon >
+EnrolementExamen ..> TypeEnrolement : type >
+Groupe ..> TypeGroupe : type >
+Groupe ..> StatutGroupe : evolue selon >
+
+note bottom of EnrolementExamen
+  <b>REGLE METIER EXIGEE</b>
+  Toute note d examen ne peut etre
+  enregistree que si un
+  EnrolementExamen existe et porte
+  le statut ENROULE ou PRESENT.
+
+  academic-exam-service lit cet
+  etat (projection evenementielle)
+  et refuse la saisie sinon.
+  La dispense est un enrolement
+  a part entiere, tracee.
+end note
+
+note bottom of PreRequis
+  <b>REGLE DE PRE REQUIS</b>
+  UE-INFO-301 (Licence 2) exige la
+  validation de UE-INFO-201 (Licence 1).
+
+  Credits requis et moyenne minimale
+  sont des donnees du referentiel de
+  l etablissement : aucune valeur
+  en dur.
+end note
+
+note bottom of EquivalenceUE
+  <b>CAS DU RATTRAPAGE PAR EQUIVALENCE</b>
+  Un etudiant rate UE-X dans le
+  Programme A. S il valide UE-Y, declaree
+  equivalente dans le Programme B,
+  les credits de UE-Y sont imputes sur
+  UE-X.
+
+  La validation de l equivalence est
+  une decision humaine tracee
+  (valideePar, dateValidation).
+end note
+
+@enduml

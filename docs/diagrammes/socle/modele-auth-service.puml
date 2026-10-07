@@ -1,0 +1,173 @@
+@startuml modele-auth-service
+title Diagramme de Classes - Service Authentification et Sessions (auth-service)
+skinparam classAttributeIconSize 0
+hide empty members
+
+' ============================================================
+' ENUMS
+' ============================================================
+
+enum MethodeAuthentification {
+  MOT_DE_PASSE
+  PINCODE
+  OTP_SMS
+  TOTP
+  BIOMETRIE
+  CLE_PUBLIQUE
+}
+enum StatutSession {
+  ACTIVE
+  EXPIREE
+  REVOKEE
+  VERROUILLEE
+}
+enum ResultatTentative {
+  SUCCES
+  ECHEC
+  BLOCQUEE
+  COMPTE_INACTIF
+  COMPTE_VERROUILLE
+}
+enum FacteurMfa {
+  TOTP
+  SMS
+  EMAIL
+  CLE_DUREE
+}
+
+' ============================================================
+' AGREGAT : SESSION
+' ============================================================
+
+class Session {
+  - idSession : UUID
+  - identifiant : String
+  - utilisateur : UUID
+  - fournisseur : String
+  - methode : MethodeAuthentification
+  - statut : StatutSession
+  - dateEmission : Instant
+  - dateExpiration : Instant
+  - dateRevocation : Instant?
+  - adresseIp : String
+  - empreinteAppareil : String?
+  - agentNavigateur : String?
+  - mfaVerifie : Boolean
+  - refreshJti : String
+  + estActive(date : Instant) : Boolean
+  + estExpiree(date : Instant) : Boolean
+  + revoquer(motif : String) : Session
+  + prolonger(duree : Duration) : Session
+  + enregistrerActivite() : Session
+  + estMfaValide() : Boolean
+}
+
+' ============================================================
+' AGREGAT : SECRET MFA
+' ============================================================
+
+class SecretMfa {
+  - id : UUID
+  - utilisateur : UUID
+  - facteur : FacteurMfa
+  - secretChiffre : String
+  - algo : String
+  - digits : Integer
+  - periode : Integer
+  - actif : Boolean
+  - dateActivation : Instant?
+  - dateDerniereUtilisation : Instant?
+  - nbEchecs : Integer
+  + activer(code : String) : SecretMfa
+  + desactiver() : SecretMfa
+  + estBloque(date : Instant) : Boolean
+  + enregistrerEchec() : SecretMfa
+  + verifier(code : String) : Boolean
+}
+
+' ============================================================
+' AGREGAT : PROTECTION ANTI-BRUTEFORCE
+' ============================================================
+
+class TentativeConnexion {
+  - id : UUID
+  - identifiant : String
+  - adresseIp : String
+  - methode : MethodeAuthentification
+  - resultat : ResultatTentative
+  - horodatage : Instant
+  - reason : String?
+}
+
+class VerrouillageCompte {
+  - id : UUID
+  - utilisateur : UUID?
+  - identifiant : String
+  - dateDebut : Instant
+  - dateFin : Instant
+  - motif : String
+  - compteurEchecs : Integer
+  - deverrouillePar : UUID?
+  + estActif(date : Instant) : Boolean
+  + lever() : VerrouillageCompte
+}
+
+class RegleAntiBruteforce {
+  - id : UUID
+  - portee : String
+  - maxTentativesParIp : Integer
+  - maxTentativesParCompte : Integer
+  - fenetreMinutes : Integer
+  - dureeVerrouillageMinutes : Integer
+  - active : Boolean
+  + estAutorise(identifiant : String, ip : String,
+                 tentatives : Integer, date : Instant) : Boolean
+}
+
+' ============================================================
+' LISTE NOIRE ET PERMISSIONS
+' ============================================================
+
+class ListeNoireJeton {
+  - jti : String
+  - dateRevocation : Instant
+  - dateExpiration : Instant
+  - motif : String
+  - utilisateur : UUID?
+  + estEncoreBloque(date : Instant) : Boolean
+}
+
+class Delegation {
+  - id : UUID
+  - deleguant : UUID
+  - delegue : UUID
+  - roles : List<String>
+  - dateDebut : Date
+  - dateFin : Date
+  - motif : String
+  + estValide(date : Date) : Boolean
+}
+
+' ============================================================
+' RELATIONS ET CARDINALITES
+' ============================================================
+
+Utilisateur "1" -- "0..*" Session : ouvre >
+Session "1" o-- "0..*" SecretMfa : protege >
+Utilisateur "1" o-- "1..*" SecretMfa : possede >
+Utilisateur "1" -- "0..*" TentativeConnexion : genere >
+Utilisateur "0..1" -- "0..*" VerrouillageCompte : subit >
+SecretMfa "1" -- "0..*" TentativeConnexion : comptabilise >
+RegleAntiBruteforce "1" -- "0..*" VerrouillageCompte : declenche >
+Utilisateur "1" o-- "0..*" Delegation : accorde >
+Utilisateur "1" o-- "0..*" Delegation : recoit >
+Session "1" o-- "0..1" ListeNoireJeton : revoque >
+
+Session ..> MethodeAuthentification : utilise >
+Session ..> StatutSession : evolve selon >
+SecretMfa ..> FacteurMfa : type >
+TentativeConnexion ..> ResultatTentative : aboutit a >
+VerrouillageCompte ..> ResultatTentative : provoque >
+Delegation ..> StatutSession : agit comme >
+
+@enduml

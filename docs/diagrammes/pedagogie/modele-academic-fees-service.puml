@@ -1,0 +1,495 @@
+@startuml modele-academic-fees-service
+title Diagramme de Classes - Service Frais de Scolarite et Paiements (academic-fees-service)
+skinparam classAttributeIconSize 0
+hide empty members
+
+' ============================================================
+' ENUMS
+' ============================================================
+
+enum TypeFrais {
+  INSCRIPTION
+  SCOLARITE
+  CANTINE
+  TRANSPORT
+  FOURNITURES
+  EXAMEN
+  TENUE
+  GARDERIE
+  EXCURSION
+  LABORATOIRE
+  BIBLIOTHEQUE
+  DIPLOME
+  RATTRAPAGE
+  AUTRE
+}
+enum CategorieFrais {
+  OBLIGATOIRE
+  OPTIONNEL
+  FACULTATIF
+  SANCTION
+}
+enum StatutGrille {
+  BROUILLON
+  ACTIVE
+  ARCHIVEE
+}
+enum StatutAvis {
+  BROUILLON
+  EMIS
+  PARTIELLEMENT_REGLE
+  REGLE
+  ANNULE
+  EN_RETARD
+  TRANSFERE
+}
+enum StatutEcheance {
+  A_VENIR
+  ECHUE
+  REGLEE
+  PARTIELLEMENT_REGLEE
+  ANNULEE
+  REPORTEE
+}
+enum MoyenPaiement {
+  ESPECES
+  MOBILE_MONEY
+  VIREMENT
+  CHEQUE
+  CARTE
+  PRELEVEMENT
+  COMPENSATION
+  DEVIS_ELEVE
+}
+enum StatutPaiement {
+  EN_ATTENTE
+  VALIDE
+  REJETE
+  ANNULE
+  REMBOURSE
+  A_VERIFIER
+}
+enum TypeBeneficiaire {
+  ELEVE
+  TIERS_PAYEUR
+  EMPLOYEUR
+  ANCIENNE
+  AUTRE
+}
+enum StatutCoupon {
+  A_TIRER
+  TIRE
+  REMIS
+  ARCHIVE
+  ANNULE
+}
+
+' ============================================================
+' AGREGAT : GRILLE TARIFAIRE
+' ============================================================
+
+class GrilleTarifaire {
+  - id : UUID
+  - code : String
+  - libelle : String
+  - annee : UUID
+  - profil : String
+  - statut : StatutGrille
+  - devise : String
+  - dateActivation : Date
+  - active : Boolean
+  - version : Integer
+  + activer() : GrilleTarifaire
+  + figer() : GrilleTarifaire
+  + archiver() : GrilleTarifaire
+  + getCoutTotal(niveau : String, categorie : String) : Decimal
+  + getLignes(niveau : String) : List<LigneGrille>
+}
+
+class LigneGrille {
+  - id : UUID
+  - grille : GrilleTarifaire
+  - typeFrais : TypeFrais
+  - categorie : CategorieFrais
+  - libelle : String
+  - montant : Decimal
+  - montantPromo : Decimal?
+  - devise : String
+  - obligatoire : Boolean
+  - periodicite : Periodicite
+  - jour : Integer?
+  - nbEcheances : Integer?
+  - ordre : Integer
+  + estOptionnel() : Boolean
+  + estPeriodicite() : Boolean
+}
+
+enum Periodicite {
+  PONCTUELLE
+  MENSUELLE
+  TRIMESTRIELLE
+  SEMESTRIELLE
+  ANNUELLE
+}
+
+class Reduction {
+  - id : UUID
+  - grille : GrilleTarifaire
+  - code : String
+  - libelle : String
+  - type : TypeReduction
+  - valeur : Decimal
+  - cumulable : Boolean
+  - conditions : List<ConditionReduction>
+  + appliquer(montantBrut : Decimal, contexte : ContexteReduction) : Decimal
+}
+
+enum TypeReduction {
+  POURCENTAGE
+  MONTANT_FIXE
+  TRANCHE
+  TARIF_REDUIT
+}
+
+class ConditionReduction {
+  - critere : String
+  - operateur : String
+  - valeur : String
+  - cumulable : Boolean
+}
+
+class ContexteReduction {
+  - niveau : String?
+  - classe : UUID?
+  - nombreEnfantsScolaires : Integer?
+  - statutSocial : String?
+  - bourse : Boolean
+  - inscriptionTardive : Boolean
+  - eleveRedoublant : Boolean
+}
+
+' ============================================================
+' AGREGAT : AVIS DE PAIEMENT
+' ============================================================
+
+class AvisPaiement {
+  - idAvis : UUID
+  - reference : String
+  - eleve : UUID
+  - annee : UUID
+  - classe : UUID
+  - grille : GrilleTarifaire
+  - dateEmission : Date
+  - dateEcheanceGlobale : Date
+  - statut : StatutAvis
+  - montantBrut : Decimal
+  - montantReduction : Decimal
+  - montantNet : Decimal
+  - montantRegle : Decimal
+  - soldeDu : Decimal
+  - devise : String
+  - tauxChange : Decimal
+  - journalier : UUID
+  - ecritureGeneree : UUID
+  + valider() : AvisPaiement
+  + emettre() : AvisPaiement
+  + recalculerSolde() : AvisPaiement
+  + estSolde() : Boolean
+  + estEnRetard(date : Date) : Boolean
+  + annuler(motif : String) : AvisPaiement
+  + getJoursRetard(date : Date) : Integer
+  + appliquerRemise(reduction : UUID) : AvisPaiement
+}
+
+class LigneFrais {
+  - id : UUID
+  - avis : UUID
+  - typeFrais : TypeFrais
+  - libelle : String
+  - montantBrut : Decimal
+  - tauxReduction : Decimal?
+  - montantReduction : Decimal
+  - montantNet : Decimal
+  - nbEcheances : Integer
+  - echeances : List<Echeance>
+  - anneeReference : String?
+  + getMontantDu() : Decimal
+}
+
+class Echeance {
+  - id : UUID
+  - ligne : UUID
+  - numero : Integer
+  - dateEcheance : Date
+  - montant : Decimal
+  - montantRegle : Decimal
+  - statut : StatutEcheance
+  - dateReglement : Date?
+  + estEchue(date : Date) : Boolean
+  + getSolde() : Decimal
+  + reporter(nouvelleDate : Date) : Echeance
+}
+
+' ============================================================
+' AGREGAT : PAIEMENT
+' ============================================================
+
+class Paiement {
+  - idPaiement : UUID
+  - reference : String
+  - avis : UUID
+  - eleve : UUID
+  - date : Date
+  - montant : Decimal
+  - moyen : MoyenPaiement
+  - compteDebit : String
+  - referenceTransaction : String?
+  - idEvenement : String?
+  - beneficiaire : TypeBeneficiaire
+  - referenceBeneficiaire : String?
+  - statut : StatutPaiement
+  - encaissePar : UUID
+  - resteARembourser : Decimal
+  - couponGenere : UUID?
+  - ecritureGeneree : UUID?
+  - motifAnnulation : String?
+  - motifRejet : String?
+  - dateValidation : Instant?
+  + valider() : Paiement
+  + rejeter(motif : String) : Paiement
+  + annuler(motif : String) : Paiement
+  + estIdempotent() : Boolean
+  + getImputation() : List<Echeance>
+}
+
+class PayementMobileMoney {
+  - operateur : String
+  - numeroTelephone : String
+  - referenceTransaction : String
+  - dateTransaction : Instant
+  - statutTransaction : String
+  - frais : Decimal
+  - montantRecu : Decimal
+  + estReceptionne() : Boolean
+}
+
+class PayementVirement {
+  - banque : String
+  - numeroCompte : String
+  - referenceVirement : String
+  - dateValeur : Date
+  - commission : Decimal
+}
+
+class PayementEspeces {
+  - caja : UUID
+  - numeroRecepisse : String
+  - agent : UUID
+  - contresigne : Boolean
+}
+
+class Imputation {
+  - paiement : UUID
+  - echeance : UUID
+  - montant : Decimal
+  - dateImputation : Date
+  - ordre : Integer
+}
+
+class Remboursement {
+  - id : UUID
+  - paiement : UUID
+  - montant : Decimal
+  - motif : String
+  - date : Date
+  - moyen : MoyenPaiement
+  - referenceTransaction : String?
+  + estEffectue() : Boolean
+}
+
+' ============================================================
+' AGREGAT : COUPON DE PAIEMENT
+' ============================================================
+
+class CouponPaiement {
+  - id : UUID
+  - numero : String
+  - sequence : Integer
+  - annee : UUID
+  - eleve : UUID
+  - paiement : UUID
+  - avis : UUID
+  - ligneFrais : UUID?
+  - dateEdition : Date
+  - montant : Decimal
+  - libelle : String
+  - moyen : MoyenPaiement
+  - statut : StatutCoupon
+  - devise : String
+  - mention : String?
+  - urlQr : String
+  - codeBarre : String
+  - empreinte : String
+  - remisLe : Instant?
+  - remisA : UUID?
+  - referenceSignature : String?
+  - annule : Boolean
+  - motifAnnulation : String?
+  + tirer() : CouponPaiement
+  + remettre(destinataire : UUID) : CouponPaiement
+  + annuler(motif : String) : CouponPaiement
+  + verifierEmpreinte() : Boolean
+  + getTexte() : String
+}
+
+' ============================================================
+' DETAIL DES COMPOSITIONS DE DROITS
+' ============================================================
+
+class CompositionFrais {
+  - id : UUID
+  - eleve : UUID
+  - annee : UUID
+  - statut : String
+  - type : String
+  - cumulabilite : Boolean
+  - plafond : Decimal?
+  - eligibilite : Boolean
+  - motifRefus : String?
+  + estApplicable() : Boolean
+}
+
+class Bourse {
+  - id : UUID
+  - eleve : UUID
+  - annee : UUID
+  - type : String
+  - montant : Decimal
+  - taux : Decimal?
+  - sourceFinancement : String
+  - dateDebut : Date
+  - dateFin : Date
+  + getReduction() : Decimal
+  + estActive(date : Date) : Boolean
+}
+
+class JOURNALier {
+  - id : UUID
+  - date : Date
+  - site : UUID
+  - statut : String
+  - fond : Decimal
+  + estOuvert() : Boolean
+  + cloturer() : JOURNALier
+}
+
+' ============================================================
+' REFERENCES INTER-SERVICES
+' ============================================================
+
+class AnneeScolaire <<tenant-service>>
+class TauxChange <<fin-compta-core>>
+class Ecriture <<fin-compta-core>>
+class Journal <<fin-compta-core>>
+class PlanComptable <<fin-compta-core>>
+class Enseignant <<academic-people>>
+
+' ============================================================
+' RELATIONS ET CARDINALITES
+' ============================================================
+
+GrilleTarifaire "1" *-- "1..*" LigneGrille : definit >
+GrilleTarifaire "1" o-- "0..*" Reduction : accorde >
+Reduction "1" *-- "1..*" ConditionReduction : soumet >
+Reduction ..> ContexteReduction : applique >
+Reduction ..> TypeReduction : type >
+LigneGrille ..> TypeFrais : type >
+LigneGrille ..> Periodicite : rythme >
+
+AvisPaiement "1" *-- "1..*" LigneFrais : decompose >
+LigneFrais "1" *-- "1..*" Echeance : eclate >
+AvisPaiement "1" -- "1" GrilleTarifaire : applique >
+AvisPaiement "1" -- "1" Eleve : concerne >
+AvisPaiement "1" -- "1" Classe : de >
+
+Paiement "1" *-- "1..*" Imputation : impute >
+Imputation "1" -- "1" Echeance : solder >
+Paiement "1" o-- "0..1" PayementMobileMoney : mobile money >
+Paiement "1" o-- "0..1" PayementVirement : virement >
+Paiement "1" o-- "0..1" PayementEspeces : especes >
+Paiement "1" o-- "0..1" Remboursement : rembourse >
+Paiement "1" o-- "1" CouponPaiement : genere >
+Paiement "1" o-- "0..1" Ecriture : produit >
+Paiement "1" -- "0..1" Journalier : encaisse >
+Paiement "1" -- "0..1" Enseignant : encaisse par >
+Paiement "1" -- "1" PlanComptable : debite >
+
+CouponPaiement "1" -- "1" Paiement : atteste >
+CouponPaiement "1" o-- "1" LigneFrais : detaille >
+AvisPaiement "0..1" -- "0..*" CompositionFrais : applique >
+CompositionFrais "1" -- "1" Eleve : concerne >
+Bourse "1" -- "1" Eleve : beneficie >
+
+AvisPaiement ..> StatutAvis : evolue selon >
+Paiement ..> StatutPaiement : evolue selon >
+Paiement ..> MoyenPaiement : Selon >
+Echeance ..> StatutEcheance : evolue selon >
+GrilleTarifaire ..> StatutGrille : evolue selon >
+CouponPaiement ..> StatutCoupon : evolue selon >
+
+note bottom of CouponPaiement
+  <b>COUPON DE PAIEMENT</b>
+  Reupecu numerote et sequentiel par
+  annee (COUPON-PAIEMENT-2025-00123).
+
+  Porte : numero, QR de verification,
+  code-barres, montant en lettres,
+  moyen de paiement, mention.
+
+  L empreinte est un SHA-256 du
+  contenu : toute reimpression
+  est detectee. Un coupon annule
+  garde sa place dans la sequence
+  et porte un bandeau ANNULE.
+end note
+
+note bottom of Paiement
+  <b>IDEMPOTENCE</b>
+  Un Paiement porte un identifiant
+  Idempotency-Key. Deux requetes
+  identiques ne creent qu une seule
+  entree et ne declenchent qu une
+  seule ecriture comptable.
+
+  <b>EVENEMENT EMIS</b>
+  validation publie
+  paiement.frais.recu sur le topic
+  academic.events. fin-compta-core
+  le consomme pour generer l ecriture :
+    D 411 / C 512 ou 54 (reglement)
+    D 411 / C 706 (avance sur frais)
+end note
+
+note bottom of AvisPaiement
+  Un avis porte le snapshot de la
+  grille tarifaire au moment de
+  l emission : modifier la grille
+  ensuite ne change pas les avis
+  deja emis.
+end note
+
+note bottom of GrilleTarifaire
+  <b>VERSIONNEMENT</b>
+  figer() verrouille la grille : une
+  correction cree une nouvelle version,
+  elle ne modifie jamais une version
+  en place.
+
+  Une piece fige sa version a l emission :
+  ligne de tarification a l admission,
+  demande d examen a la prescription,
+  lot a la reception. Les pieces deja
+  emises gardent leur version d origine.
+end note
+
+@enduml

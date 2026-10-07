@@ -1,0 +1,134 @@
+@startuml uc-hopital-rdv-service
+skinparam packageStyle rectangle
+skinparam actorStyle stickman
+left to right direction
+
+title Diagramme des Cas d'Utilisation - hopital-rdv-service
+
+actor "Patient" as PAT
+actor "Agent d'accueil" as ACC
+actor "Medecin" as SEC
+actor "Secretaire medical" as MED
+actor "Superviseur de planning" as SUP
+actor "Systeme Notifications" as NOT
+
+rectangle "Plateforme NexusGesti" {
+  rectangle "hopital-rdv-service" {
+
+    ' ---- Agenda ----
+    usecase "Creer un agenda" as UC_CreerAgenda
+    usecase "Configurer les plages horaires" as UC_Plages
+    usecase "Definir les jours d activite" as UC_JoursActivite
+    usecase "Fermer un agenda" as UC_FermerAgenda
+    usecase "Suspendre une plage horaire" as UC_SuspendrePlage
+
+    ' ---- Planification ----
+    usecase "Definir les jours feries" as UC_JoursFeries
+    usecase "Definir les periodes de conge" as UC_Conge
+    usecase "Gerer les indisponibilites" as UC_Indisponibilite
+    usecase "Consulter le planning" as UC_ConsulterPlanning
+
+    ' ---- Rendez-vous ----
+    usecase "Prendre rendez-vous" as UC_PrendreRDV
+    usecase "Proposer des creneaux alternatifs" as UC_CreneauxAlternatifs
+    usecase "Confirmer un rendez-vous" as UC_Confirmer
+    usecase "Replanifier un rendez-vous" as UC_Replanifier
+    usecase "Honorer un rendez-vous" as UC_Honorer
+    usecase "Constater un retard" as UC_Retard
+    usecase "Constater une absence" as UC_Absence
+    usecase "Reporter un rendez-vous" as UC_Reporter
+    usecase "Annuler un rendez-vous" as UC_Annuler
+    usecase "Ajouter une personne accompagnante" as UC_Accompagnant
+    usecase "Creer une serie de rendez-vous" as UC_SerieRDV
+    usecase "Bloquer une periode de fermeture" as UC_FermeturePonctuelle
+
+    ' ---- Relances ----
+    usecase "Configurer les relances" as UC_ConfigurerRelances
+    usecase "Envoyer une relance" as UC_EnvoyerRelance
+    usecase "Changer le canal de notification" as UC_Canal
+
+    ' ---- Relations ----
+    UC_CreerAgenda .> UC_Plages : <<include>>
+    UC_CreerAgenda .> UC_JoursActivite : <<include>>
+    UC_PrendreRDV .> UC_ConsulterPlanning : <<include>>
+    UC_PrendreRDV .> UC_CreneauxAlternatifs : <<include>>
+    UC_PrendreRDV .> UC_Confirmer : <<include>>
+    UC_PrendreRDV .> UC_EnvoyerRelance : <<include>>
+    UC_ConfigurerRelances .> UC_EnvoyerRelance : <<include>>
+    UC_SerieRDV .> UC_PrendreRDV : <<include>>
+    UC_Reporter .> UC_Annuler : <<extend>>
+    UC_Replanifier .> UC_Annuler : <<extend>>
+    UC_Honorer .> UC_Retard : <<extend>>
+    UC_Honorer .> UC_Absence : <<extend>>
+    UC_FermeturePonctuelle .> UC_Annuler : <<include>>
+    UC_CreneauxAlternatifs .> UC_JoursFeries : <<require>>
+    UC_CreneauxAlternatifs .> UC_Conge : <<require>>
+    UC_CreneauxAlternatifs .> UC_Indisponibilite : <<require>>
+    UC_Canal .> UC_ConfigurerRelances : <<extend>>
+  }
+}
+
+PAT --> UC_PrendreRDV
+PAT --> UC_Confirmer
+PAT --> UC_Replanifier
+PAT --> UC_Annuler
+PAT --> UC_ConsulterPlanning
+ACC --> UC_PrendreRDV
+ACC --> UC_SerieRDV
+ACC --> UC_Replanifier
+ACC --> UC_Annuler
+ACC --> UC_Absence
+ACC --> UC_Retard
+ACC --> UC_CreneauxAlternatifs
+MED --> UC_CreerAgenda
+MED --> UC_Plages
+MED --> UC_JoursActivite
+MED --> UC_FermerAgenda
+MED --> UC_SuspendrePlage
+MED --> UC_ConfigurerRelances
+MED --> UC_Canal
+MED --> UC_Indisponibilite
+SEC --> UC_ConsulterPlanning
+SEC --> UC_Honorer
+SEC --> UC_PrendreRDV
+SEC --> UC_Retard
+SUP --> UC_JoursFeries
+SUP --> UC_Conge
+SUP --> UC_Indisponibilite
+SUP --> UC_FermeturePonctuelle
+SUP --> UC_CreneauxAlternatifs
+SUP --> UC_CreerAgenda
+NOT --> UC_EnvoyerRelance
+
+note bottom of UC_CreneauxAlternatifs
+  <b>REGLE ANTI-DOUBLE ANNULATION</b>
+  La proposition de creneaux est
+  contrainte par :
+   - plages ouvertes de l agenda ;
+   - jours feries et conges ;
+   - indisponibilites du praticien ;
+   - creneaux deja occupes ;
+   - regles de delai de
+     reservation.
+
+  A defaut de creneau, le systeme
+  propose une liste d attente.
+end note
+
+note bottom of UC_Honorer
+  Aucun creneau n est reserve au
+  simple motif que le planning est
+  libre : la reservation est
+  bloquee des la prise de rendez-vous.
+end note
+
+note bottom of UC_Annuler
+  <b>CONSEQUENCE METIER</b>
+  Une annulation late engendre un
+  motif de facturation pour consultation
+  non honoree. Le patient peut
+  etreMis sous peine d exclusion
+  temporaire.
+end note
+
+@enduml

@@ -1,0 +1,116 @@
+@startuml sq-hopital-rappel-lot
+title Sequence - Rappel de lot et gestion des dispensationnes concernees
+autonumber
+skinparam sequenceMessageAlign center
+
+participant "hop-patient-service" as PAT
+participant "hop-pharmacie-service" as PHA
+participant "hop-consultation-service" as CONS
+participant "hop-rdv-service" as RDV
+participant "hop-core-notification" as NOTIF
+participant "hop-core-finance" as FIN
+participant "audit-service" as AUD
+database "Stock & Mouvements" as DB
+
+== Etape 1 : Signalement du rappel ==
+
+activate PHA
+
+note over PHA
+  <b>ORIGINE DU RAPPEL</b>
+  Le rappel peut venir :
+   - d une autorite de sante ;
+   - d un laboratoire ;
+   - du fournisseur ;
+   - d une surveillance interne ;
+   - du lot perime constate en stock.
+end note
+
+PHA -> PHA : select lot par numero
+PHA -> DB : update Lot.statut = BLOQUE
+PHA -> DB : update Medicament.alerte
+PHA -> AUD : evenement lot.rappele\n{lot, motif, reference}
+AUD --> PHA : trace
+
+== Etape 2 : Perimetre des patients concernes ==
+
+PHA -> DB : select Dispensation\nwhere lotUtilise = lot
+DB --> PHA : dispensation concernees
+
+loop Pour chaque dispensation concernee
+  PHA -> PAT : lire le patient\n(numero de dossier interne)
+  PAT --> PHA : identite du patient,\nnumero de telephone
+
+  alt Patient present physiquement
+    PHA -> RDV : planifier un rendez-vous de retour
+    RDV --> PHA : creneau propose
+  else Patient injoignable
+    PHA -> NOTIF : alerte contact impossible
+    NOTIF --> PHA : escalation
+  end
+end
+
+== Etape 3 : Information du prescripteur ==
+
+loop Pour chaque prescription liee
+  PHA -> CONS : retrouver la consultation d origine
+  CONS --> PHA : prescripteur, date, diagnostic
+
+  PHA -> NOTIF : notifier le prescripteur\ndu rappel de lot
+  NOTIF --> PHA : accuse de reception
+end
+
+== Etape 4 : Reassort et remplacement ==
+
+PHA -> DB : select stock des lots alternatifs
+DB --> PHA : lots disponibles
+
+alt Lot de remplacement disponible
+  PHA -> CONS : proposer la substitution au prescripteur
+  CONS --> PHA : substitution acceptee
+  PHA -> DB : enregistrer la substitution
+  PHA -> NOTIF : informer le patient du changement
+else Aucun lot disponible
+  PHA -> FIN : demande d approximation therapeutique
+  FIN --> PHA : autorisation financiere
+  PHA -> CONS : demande d approximation
+  CONS --> PHA : produit substitue
+  PHA -> DB : enregistrer le remplacement
+end
+
+== Etape 5 : Bilan et cloture ==
+
+PHA -> DB : update Dispensation.statut\net tracabilite du rappel
+PHA -> PHA : rediger le proces-verbal de rappel
+PHA -> AUD : evenement rappel.cloture\n{patients touches, lots remplaces}
+AUD --> PHA : trace
+PHA -> NOTIF : publier le bilan du rappel
+NOTIF --> PHA : diffusion
+
+deactivate PHA
+
+note over PHA,CONS
+  <b>LECONS EQUIVALENCE</B>
+  Dans NexusGesti, la pharmacie
+  hospitaliere et la pedagogique
+  partagent le meme processus de
+  rappel : un lot bloque, des
+  dispensations concernees, des
+  patients traces, un proces-verbal.
+
+  Le patient est aussi peut-etre un eleve :
+  academic-notification-service
+  previent alors la famille par le
+  canal de l etablissement.
+end note
+
+note over PHA,DB
+  <b>SECURITE MEDICAMENTEUSE</b>
+  Aucune substitution n est appliquee
+  sans accord explicite du prescripteur.
+  Un lot bloque ne peut plus etre
+  dispense : la dispense tente un
+  autre lot ou declenche un refus.
+end note
+
+@enduml

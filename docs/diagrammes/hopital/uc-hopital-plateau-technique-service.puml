@@ -1,0 +1,377 @@
+@startuml uc-hopital-plateau-technique-service
+skinparam packageStyle rectangle
+skinparam actorStyle stickman
+left to right direction
+
+title Diagramme des Cas d'Utilisation - hopital-plateau-technique-service (Laboratoire et Imagerie)
+
+actor "Medecin prescripteur" as MED
+actor "Patient" as PAT
+actor "Biologiste" as BIO
+actor "Technicien de laboratoire" as TECH
+actor "Manipulateur radiologie" as MAN
+actor "Radiologue" as RAD
+actor "Medecin-chef de service" as MEDSEC
+actor "Administrateur" as ADM
+actor "Service Examen" as EXA
+actor "Systeme Notifications" as NOT
+actor "Systeme Comptable" as COM
+actor "Systeme Audit" as AUD
+actor "Service Pharmacie" as PHA
+
+rectangle "Plateforme NexusGesti" {
+  rectangle "hopital-plateau-technique-service" {
+
+    ' ---- Demande ----
+    usecase "Prescrire un examen" as UC_PrescrireExamen
+    usecase "Ouvrir une demande d examen" as UC_OuvrirDemande
+    usecase "Ajouter une ligne d examen" as UC_AjouterLigne
+    usecase "Choisir la priorite" as UC_Priorite
+    usecase "Accepter une demande" as UC_AccepterDemande
+    usecase "Rejeter une demande" as UC_RejeterDemande
+    usecase "Annuler une demande" as UC_AnnulerDemande
+    usecase "Consulter les demandes en retard" as UC_DemandesEnRetard
+
+    ' ---- Laboratoire : prelevement ----
+    usecase "Preparer la demande de prelevement" as UC_PreparerPrelevement
+    usecase "Prelever" as UC_Prelever
+    usecase "Etiqueter l echantillon" as UC_Etiqueter
+    usecase "Recevoir l echantillon au laboratoire" as UC_Recevoir
+    usecase "Rejeter un echantillon" as UC_RejeterEchantillon
+    usecase "Reprelever" as UC_Reprelever
+
+    ' ---- Laboratoire : realisation ----
+    usecase "Planifier le dosage" as UC_Dosage
+    usecase "Saisir un resultat" as UC_SaisirResultat
+    usecase "Saisir un resultat qualitatif" as UC_ResultatQualitatif
+    usecase "Declarer un resultat critique" as UC_ResultatCritique
+    usecase "Verifier les valeurs de reference" as UC_ValursReference
+    usecase "Rappeler un automate hors service" as UC_AutomateHorsService
+
+    ' ---- Laboratoire : validation ----
+    usecase "Valider biologiquement" as UC_ValiderBio
+    usecase "Valider partiellement" as UC_ValiderPartiel
+    usecase "Refuser une validation" as UC_RefuserValidation
+    usecase "Relever le travail d un operateur" as UC_Relever
+    usecase "Notifier un resultat critique" as UC_NotifierCritique
+    usecase "Rechercher un resultat" as UC_RechercherResultat
+    usecase "Exporter un resultat" as UC_ExporterResultat
+
+    ' ---- Imagerie ----
+    usecase "Planifier un examen d imagerie" as UC_PlanifierImagerie
+    usecase "Verifier le produit de contraste" as UC_VerifierContraste
+    usecase "Realiser l examen" as UC_RealiserImagerie
+    usecase "Injecter un produit de contraste" as UC_InjecterContraste
+    usecase "Acquerir les images" as UC_Acquerir
+    usecase "Declarer un incident technique" as UC_Incident
+    usecase "Interpreter les images" as UC_Interpreter
+    usecase "Valider le compte rendu" as UC_ValiderCRImagerie
+    usecase "Signaler une divergence" as UC_Divergence
+
+    ' ---- Equipement ----
+    usecase "Declarer un equipement" as UC_DeclarerEquipement
+    usecase "Planifier une maintenance" as UC_PlanifierMaintenance
+    usecase "Realiser une calibration" as UC_Calibrer
+    usecase "Cloturer une maintenance" as UC_CloturerMaintenance
+    usecase "Suspendre un equipement" as UC_SuspendreEquipement
+
+    ' ---- Consommables ----
+    usecase "Declarer une consommation de reactif" as UC_DeclarerReactif
+    usecase "Declarer une consommation de contraste" as UC_DeclarerContraste
+    usecase "Verifier un lot avant usage" as UC_VerifierLot
+
+    ' ---- Facturation ----
+    usecase "Emettre l acte facturable" as UC_EmettreActe
+    usecase "Scinder part assure et part patient" as UC_Scinder
+    usecase "Suspendre la facturation" as UC_SuspendreFacturation
+
+    ' ---- Relations ----
+    UC_PrescrireExamen .> UC_OuvrirDemande : <<include>>
+    UC_OuvrirDemande .> UC_AjouterLigne : <<include>>
+    UC_AjouterLigne .> UC_Priorite : <<include>>
+    UC_AccepterDemande .> UC_Dosage : <<extend>>
+    UC_AccepterDemande .> UC_PlanifierImagerie : <<extend>>
+    UC_Prelever .> UC_PreparerPrelevement : <<include>>
+    UC_Prelever .> UC_Etiqueter : <<include>>
+    UC_Etiqueter .> UC_VerifierLot : <<include>>
+    UC_Recevoir .> UC_VerifierLot : <<include>>
+    UC_Recevoir .> UC_RejeterEchantillon : <<extend>>
+    UC_SaisirResultat .> UC_ValursReference : <<include>>
+    UC_SaisirResultat .> UC_ResultatCritique : <<extend>>
+    UC_SaisirResultat .> UC_DeclarerReactif : <<include>>
+    UC_ResultatQualitatif .> UC_SaisirResultat : <<include>>
+    UC_ValiderBio .> UC_NotifierCritique : <<extend>>
+    UC_ValiderBio .> UC_RechercherResultat : <<include>>
+    UC_ValiderPartiel .> UC_ValiderBio : <<extend>>
+    UC_RefuserValidation .> UC_Reprelever : <<extend>>
+    UC_RealiserImagerie .> UC_VerifierContraste : <<include>>
+    UC_RealiserImagerie .> UC_PlanifierImagerie : <<include>>
+    UC_InjecterContraste .> UC_VerifierContraste : <<include>>
+    UC_InjecterContraste .> UC_DeclarerContraste : <<include>>
+    UC_Acquerir .> UC_Incident : <<extend>>
+    UC_Interpreter .> UC_ValiderCRImagerie : <<include>>
+    UC_ValiderCRImagerie .> UC_Divergence : <<extend>>
+    UC_Calibrer .> UC_CloturerMaintenance : <<include>>
+    UC_CloturerMaintenance .> UC_SuspendreEquipement : <<extend>>
+    UC_EmettreActe .> UC_Scinder : <<include>>
+    UC_EmettreActe .> UC_SuspendreFacturation : <<extend>>
+    UC_DemandesEnRetard .> UC_NotifierCritique : <<extend>>
+  }
+}
+
+MED --> UC_PrescrireExamen
+MED --> UC_Priorite
+MED --> UC_RechercherResultat
+MED --> UC_Divergence
+MED --> UC_AnnulerDemande
+MEDSEC --> UC_PrescrireExamen
+MEDSEC --> UC_DemandesEnRetard
+MEDSEC --> UC_RejeterDemande
+PAT --> UC_Prelever
+BIO --> UC_AccepterDemande
+BIO --> UC_RejeterDemande
+BIO --> UC_Dosage
+BIO --> UC_ValiderBio
+BIO --> UC_ValiderPartiel
+BIO --> UC_RefuserValidation
+BIO --> UC_ResultatCritique
+BIO --> UC_ExporterResultat
+TECH --> UC_Prelever
+TECH --> UC_Etiqueter
+TECH --> UC_Recevoir
+TECH --> UC_RejeterEchantillon
+TECH --> UC_Reprelever
+TECH --> UC_SaisirResultat
+TECH --> UC_SaisirResultat
+TECH --> UC_ResultatQualitatif
+TECH --> UC_DeclarerReactif
+TECH --> UC_Relever
+TECH --> UC_AutomateHorsService
+MAN --> UC_PlanifierImagerie
+MAN --> UC_RealiserImagerie
+MAN --> UC_InjecterContraste
+MAN --> UC_Acquerir
+MAN --> UC_Incident
+RAD --> UC_Interpreter
+RAD --> UC_ValiderCRImagerie
+RAD --> UC_Divergence
+ADM --> UC_DeclarerEquipement
+ADM --> UC_PlanifierMaintenance
+ADM --> UC_SuspendreEquipement
+EXA --> UC_RealiserImagerie
+EXA --> UC_Acquerir
+NOT --> UC_NotifierCritique
+NOT --> UC_EmettreActe
+COM --> UC_EmettreActe
+AUD --> UC_RechercherResultat
+AUD --> UC_ExporterResultat
+PHA --> UC_VerifierLot
+
+note bottom of UC_ValiderBio
+  <b>RIEN NE SORT AVANT VALIDATION</B>
+  Un resultat saisi n est pas lisible
+  du prescripteur tant qu il n est
+  pas valide biologiquement. Il ne
+  declenche aucun acte facturable et
+  ne figure sur aucun compte rendu.
+
+  C est la seule garantie qu une
+  valeur erronee ne se transforme
+  jamais en prescription.
+
+  <b>NIVEAU DE VALIDATION</B>
+  RegleValidationBiologique decide si
+  une simple relecture operateur
+  suffit ou si la validation d un
+  biologiste est obligatoire. Ce
+  niveau est une donnee de
+  configuration, pas une constante.
+end note
+
+note bottom of UC_ResultatCritique
+  <b>RESULTAT CRITIQUE : DECLARE, JAMAIS DEDUIT</B>
+  Un resultat critique est declare par
+  le technicien ou le biologiste. Il
+  ne se deduit pas silencieusement
+  d une comparaison de valeur.
+
+  Le declenche est immediat et sans
+  condition de validation. Le seuil
+  vient de ExamenBiologique
+  .valeurCritiqueMin ou
+  valeurCritiqueMax, jamais d une
+  comparaison ecrite ici.
+
+  Un resultat critique non declare est
+  traite comme une anomalie de
+  processus, pas comme un resultat
+  normal.
+end note
+
+note bottom of UC_RejeterEchantillon
+  <b>REJET : UN MOTIF METIER OBLIGATOIRE</B>
+  MotifRejetEchantillon n est pas une
+  texte libre :
+   - hemolyse
+   - coagulant
+   - volume insuffisant
+   - delai depasse
+   - tube non conforme
+   - etiquette illisible
+   - patient non identifie
+   - examen incompatible
+
+  Un echantillon rejete ne se
+  reintegrent pas : il se repreleve.
+  L examen d origine change de
+  prelevement et conserve son numero.
+
+  <b>IDENTITE JAMAIS DEVINEE</B>
+  Une etiquette illisible entraine un
+  rejet, jamais une attribution
+  devinee.
+end note
+
+note bottom of UC_VerifierContraste
+  <b>PRODUIT DE CONTRASTE</B>
+  Un produit de contraste n est pas un
+  medicament : NatureProduit le
+  distingue. La distinction existe
+  pour qu un stock de reactifs et de
+  contrastes ne soit jamais confondu
+  avec un stock de medicaments.
+
+  <b>LE LOT EST TRACE</B>
+  La consommation porte son numero de
+  lot. En cas de rappel, on remonte du
+  lot aux patients injectes sans
+  synthese de dispensations.
+
+  Verification avant usage :
+   - statut du lot LIBRE, ni en
+     quarantaine ni bloque
+   - date de peremption non depassee
+   - quantite disponible suffisante
+  Ces regles viennent de la
+  GrilleStock.
+end note
+
+note bottom of UC_Acquerir
+  <b>ACQUISITION ET INTERPRETATION SONT DISTINCTES</B>
+  acquerir clot la production
+  d images. interpreter clot la
+  lecture par le radiologue.
+
+  Une serie peut etre acquise et
+  rejetee a l interpretation sans que
+  l examen soit refait : ce qui compte
+  alors est le motif de rejet
+  radiologique, pas un incident
+  machine.
+
+  <b>COMPTE RENDU</B>
+  Ce service ne red eclare pas
+  CompteRendu : la classe appartient a
+  hopital-consultation-service. Il y
+  rattache son compteRenduId, ce qui
+  evite deux definitions divergentes.
+
+  Un examen non interprete ne produit
+  aucun acte facturable.
+end note
+
+note bottom of UC_Calibrer
+  <b>PAS D EXAMEN SANS CALIBRATION</B>
+  Un equipement n est realisable que
+  si :
+   - son statut est EN_SERVICE
+   - sa dateDerniereCalibration
+     n est pas depassee de la
+     periodicite
+   - aucune maintenance bloquante
+     reste ouverte
+
+  Une calibration cloturee non
+  conforme laisse l equipement en
+  MAINTENANCE. Il redevient
+  EN_SERVICE seulement a la cloture
+  d une maintenance conforme.
+
+  Un scanner hors calibration ne peut
+  produire aucun examen facturable.
+end note
+
+note bottom of UC_ValiderPartiel
+  <b>VALIDER PARTIELLEMENT EST UN ETAT REEL</B>
+  Pas une tolerance. Valider
+  partiellement signale au prescripteur
+  qu une partie de l examen reste en
+  attente.
+
+  Si un seul resultat critique reste
+  non valide, l examen ne peut pas
+  etre valide partiellement : la
+  notification critique part dans tous
+  les cas.
+end note
+
+note bottom of UC_EmettreActe
+  <b>CONTRAT AVEC LA COMPTABILITE</B>
+  Seul un ExamenTechnique VALIDE
+  emet un ActeFacturable.
+
+  emettre() publie
+  hopital.acte.facturable sur le
+  topic hopital.events :
+   - code de l acte
+   - patient et tiers
+   - montant brut
+   - part assurance et part patient
+
+  fin-compta-core consomme et produit
+  l ecriture :
+   - produit d exploitation :
+     D 411 / C 706
+
+  <b>IDEMPOTENCE</B>
+  La cle derive de sourceId et
+  codeActe. Deux emissions du meme
+  examen ne creent qu une seule
+  entree et une seule ecriture.
+
+  <b>LE MODULE N ENCAISSE RIEN</B>
+  Ni especes, ni mobile money, ni
+ Assurance. L encaissement et le
+  recouvrement appartiennent a
+  fin-facturation-service.
+end note
+
+note bottom of UC_Divergence
+  <b>DIVERGENCE ENTRE PRESCRIPTEUR ET RADIOLOGUE</B>
+  Une divergence signalee ne modifie
+  pas le compte rendu. Elle ouvre
+  une confrontation tracée entre les
+  deux praticiens, decidee par le
+  medecin-chef.
+
+  Le compte rendu publie reste
+  inchange jusqu a decision. Une
+  divergence n est pas un droit de
+  reecriture du document signe.
+end note
+
+note bottom of UC_DemandesEnRetard
+  <b>SUIVI DES DELAIS</B>
+  getDelaiRestant compare l echeance
+  a la GrilleConformite et non a une
+  duree ecrite ici.
+
+  Une demande en retard reste
+  visible du medecin-chef et declenche
+  une relance du prescripteur. Une
+  demande critique en retard est
+  traitee comme une anomalie de
+  processus.
+end note
+
+@enduml

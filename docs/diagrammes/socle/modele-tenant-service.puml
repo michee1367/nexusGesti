@@ -1,0 +1,677 @@
+@startuml modele-tenant-service
+title Diagramme de Classes - Service Etablissements et Referentiels (tenant-service)
+skinparam classAttributeIconSize 0
+hide empty members
+
+' ============================================================
+' ENUMS
+' ============================================================
+
+enum ProfilEtablissement {
+  PRIMAIRE
+  SECONDAIRE
+  SUPERIEUR
+  UNIVERSITAIRE
+  HOSPITAL
+}
+
+enum StatutEtablissement {
+  PREPARATION
+  ACTIF
+  SUSPENDU
+  ARCHIVE
+}
+enum TypeAnnee {
+  SCOLAIRE
+  ACADEMIQUE
+}
+enum StatutAnnee {
+  PREPARATION
+  EN_COURS
+  CLOTUREE
+  ARCHIVEE
+}
+
+enum TypePortee {
+  GLOBALE
+  PAR_ETABLISSEMENT
+  PAR_SITE
+  PAR_PROFIL
+  PAR_CYCLE
+  PAR_NIVEAU
+  PAR_PARCOURS
+  PAR_PROGRAMME
+  PAR_SEMESTRE
+  PAR_UE
+  PAR_COURS
+  PAR_MATIERE
+  PAR_ENSEIGNANT
+  PAR_CLASSE
+  PAR_TYPE_EVALUATION
+  PAR_TYPE_SESSION
+}
+
+enum TypeBareme {
+  POINTS
+  SUR_5
+  SUR_10
+  SUR_20
+  SUR_100
+  LETTRE
+  MENTION
+}
+enum TypeArrondi {
+  AUCUN
+  DECIMALE
+  INFERIEUR
+  SUPERIEUR
+  MI_SUPERIEUR
+}
+
+enum StrategieAggregation {
+  MOYENNE_PONDEREE
+  MOYENNE_NON_PONDEREE
+  SOMME_PONDEREE
+  MEILLEURE_NOTE
+  MOYENNE_TRONQUEE
+  DERNIERE_NOTE
+}
+
+enum NiveauAcalcul {
+  EVALUATION
+  COURS_ECUE
+  UE
+  PERIODE
+  ANNEE
+  CYCLE
+}
+
+enum Decision {
+  ADMIS
+  ADMIS_MENTION
+  RATTAPAGE
+  REDOUBLANT
+  REJETE
+}
+
+enum NatureReferentiel {
+  BAREME
+  MENTION
+  LIBELLE
+  MOTIF_ABSENCE
+  MOTIF_RETARD
+  MOTIF_REJET
+  TYPE_CANAL
+  TYPE_FRAIS
+  MOTIF_FRAIS
+  MODE_REGLEMENT
+  MOTIF_ADMISSION
+  MOTIF_SORTIE
+  MOTIF_TRANSFERT_INTERNE
+  NATURE_PRODUIT
+  TYPE_ACTE_HOSPITALIER
+  TYPE_CHAMBRE
+  DELAI_VALIDATION
+}
+
+' ============================================================
+' AGREGAT : ETABLISSEMENT
+' ============================================================
+
+class Etablissement {
+  - idEtablissement : UUID
+  - code : String
+  - denomination : String
+  - sigle : String
+  - profil : ProfilEtablissement
+  - statut : StatutEtablissement
+  - adresse : Adresse
+  - telephone : String
+  - emailOfficiel : String
+  - devise : String
+  - pays : String
+  - fuseauHoraire : String
+  - capaciteAccueil : Integer?
+  + activer() : Etablissement
+  + suspendre(motif : String) : Etablissement
+  + archiver() : Etablissement
+  + estOperatif() : Boolean
+  + getFilieres() : List<Filiere>
+}
+
+class Adresse {
+  - rue : String
+  - avenue : String
+  - quartier : String
+  - commune : String
+  - ville : String
+  - province : String
+  - territoire : String
+  - codePostal : String
+  - pays : String
+}
+
+class Site {
+  - idSite : UUID
+  - code : String
+  - libelle : String
+  - adresse : Adresse
+  - principal : Boolean
+  + estPrincipal() : Boolean
+}
+
+class Parametre {
+  - cle : String
+  - valeur : String
+  - typeValeur : TypeValeur
+  - categorie : String
+  - description : String
+}
+
+enum TypeValeur {
+  TEXTE
+  NOMBRE
+  BOOLEEN
+  DATE
+  LISTE
+  JSON
+}
+
+class GrillePreset {
+  - idGrillePreset : UUID
+  - code : String
+  - libelle : String
+  - profil : ProfilEtablissement
+  - description : String
+  - systeme : Boolean
+  + dupliquer(libelle : String) : GrillePreset
+}
+
+' ============================================================
+' AGREGAT : ANNEE SCOLAIRE / ACADEMIQUE
+' ============================================================
+
+class AnneeScolaire {
+  - idAnnee : UUID
+  - code : String
+  - libelle : String
+  - type : TypeAnnee
+  - dateDebut : Date
+  - dateFin : Date
+  - statut : StatutAnnee
+  - anneeReference : Integer
+  - siteParDefaut : Site
+  + ouvrir() : AnneeScolaire
+  + cloturer(date : Date) : AnneeScolaire
+  + estCourante() : Boolean
+  + getPeriodes() : List<Periode>
+  + contient(date : Date) : Boolean
+}
+
+class Periode {
+  - idPeriode : UUID
+  - code : String
+  - libelle : String
+  - rang : Integer
+  - dateDebut : Date
+  - dateFin : Date
+  - type : TypePeriode
+  - cloturee : Boolean
+  - dateCloture : Date?
+  + ouvrir() : Periode
+  + cloturer() : Periode
+  + estCourante(date : Date) : Boolean
+  + getDureeJours() : Long
+}
+
+enum TypePeriode {
+  TRIMESTRE
+  SEMESTRE
+  ANNEE
+  MODULE
+  SESSION
+}
+
+' ============================================================
+' AGREGAT : GRILLE DE NOTATION  (aucune valeur en dur)
+' ============================================================
+
+class GrilleNotation {
+  - idGrille : UUID
+  - code : String
+  - libelle : String
+  - version : Integer
+  - profil : ProfilEtablissement
+  - annee : AnneeScolaire
+  - dateActivation : Date
+  - active : Boolean
+  - modifiable : Boolean
+  + activer() : GrilleNotation
+  + figer() : GrilleNotation
+  + estFigee() : Boolean
+  + getBaremeDefaut() : Bareme
+  + getMention(note : Decimal) : Mention
+  + getSeuilDecision(moyenne : Decimal) : SeuilDecision
+  + resoudreRegle(cle : CleRegle) : ReglePonderation
+  + estAbsenteToleree(absences : Integer) : Boolean
+}
+
+' ============================================================
+' AGREGAT : GRILLE DE STOCK
+' Proprietaire des regles de rotation de lot, de quarantaine
+' et de seuil. Referencee par hopital-pharmacie-service
+' et fin-stock-service.
+' ============================================================
+
+class GrilleStock {
+  - idGrille : UUID
+  - code : String
+  - libelle : String
+  - version : Integer
+  - profil : ProfilEtablissement
+  - annee : AnneeScolaire
+  - dateActivation : Date
+  - active : Boolean
+  - modifiable : Boolean
+  - strategieRotationLot : StrategieRotationLot
+  - dureeQuarantaineJours : Integer?
+  - seuilAlertePeremptionJours : Integer?
+  - toleranceEcartInventairePct : Decimal?
+  - delaiReapproJours : Integer?
+  - seuilAlerteTauxRotationPct : Decimal?
+  - autoriserPeremptionEnSortie : Boolean
+  - exigerControleReception : Boolean
+  + activer() : GrilleStock
+  + figer() : GrilleStock
+  + estFigee() : Boolean
+  + getDureeQuarantaine() : Integer
+  + getSeuilAlertePeremption() : Integer
+  + getDelaiReappro() : Integer
+  + estEcartInventaireTolere(ecartPct : Decimal) : Boolean
+  + choisirLot(lots : List<Lot>) : Lot
+  + getToleranceInventaire() : Decimal
+}
+
+enum StrategieRotationLot {
+  PREMIER_PERIME
+  FEFO
+  FIFO
+}
+
+class AlerteStock <<tenant-service>> {
+  - idAlerte : UUID
+  - grille : UUID
+  - reference : String
+  - depot : String?
+  - seuil : Decimal
+  - niveau : NiveauAlerte
+  - destinataires : List<UUID>
+  - active : Boolean
+  + declencher() : AlerteStock
+  + acquitter(utilisateur : UUID) : AlerteStock
+}
+
+enum NiveauAlerte {
+  INFO
+  ATTENTION
+  CRITIQUE
+  BLOCAGE
+}
+
+' ============================================================
+' AGREGAT : GRILLE DE CONFORMITE
+' Proprietaire des durees de retention et des obligations
+' reglementaires sur les donnees de sante.
+' Referencee par hopital-patient-service,
+' hopital-plateau-technique-service et fin-etats-service.
+' ============================================================
+
+class GrilleConformite {
+  - idGrille : UUID
+  - code : String
+  - libelle : String
+  - version : Integer
+  - profil : ProfilEtablissement
+  - annee : AnneeScolaire
+  - dateActivation : Date
+  - active : Boolean
+  - modifiable : Boolean
+  - dureeRetentionDossierMedical : Integer?
+  - dureeConservationResultats : Integer?
+  - dureeConservationImages : Integer?
+  - dureeConservationEchantillons : Integer?
+  - chiffrementAuRepos : Boolean
+  - accesTracable : Boolean
+  - delaiDeclarationResultatCritique : Integer?
+  - niveauAccesResultatCritique : String?
+  - archivable : Boolean
+  + activer() : GrilleConformite
+  + figer() : GrilleConformite
+  + estFigee() : Boolean
+  + getDureeRetention(objet : String) : Integer
+  + estExpire(objet : String, date : Date) : Boolean
+  + estArchivable(objet : String, date : Date) : Boolean
+  + exigeAccesTrace() : Boolean
+  + getDelaiDeclarationCritique() : Integer
+}
+
+class Bareme {
+  - idBareme : UUID
+  - code : String
+  - libelle : String
+  - type : TypeBareme
+  - baremeMax : Decimal
+  - noteMinimale : Decimal
+  - precision : Integer
+  - arrondi : TypeArrondi
+  - defaut : Boolean
+  + normaliser(valeur : Decimal) : Decimal
+  + convertir(versType : TypeBareme) : Decimal
+  + convertirVersLettre() : String
+  + estAtteignable(valeur : Decimal) : Boolean
+}
+
+class ReglePonderation {
+  - idRegle : UUID
+  - libelle : String
+  - portee : TypePortee
+  - profil : ProfilEtablissement?
+  - cycle : Cycle?
+  - niveau : String?
+  - parcours : String?
+  - programme : String?
+  - semestre : String?
+  - ue : String?
+  - cours : String?
+  - matiere : String?
+  - enseignant : UUID?
+  - classe : UUID?
+  - typeEvaluation : String?
+  - typeSession : String?
+  - coefficient : Decimal?
+  - seuilInclusion : Decimal?
+  - plafondContribution : Decimal?
+  - poidsMax : Decimal?
+  - priorite : Integer
+  - active : Boolean
+  + sApplique(candidat : CandidatPonderation) : Boolean
+  + estPlusSpecifique(autre : ReglePonderation) : Boolean
+}
+
+class CandidatPonderation {
+  - profil : ProfilEtablissement
+  - cycle : String?
+  - niveau : String?
+  - parcours : String?
+  - programme : String?
+  - semestre : String?
+  - ue : String?
+  - cours : String?
+  - matiere : String?
+  - enseignant : UUID?
+  - classe : UUID?
+  - typeEvaluation : String?
+  - typeSession : String?
+  - typeSourceNote : String?
+}
+
+class ConfigCascade {
+  - niveauxActifs : List<NiveauAcalcul>
+  - strategie : StrategieAggregation
+  - arrondi : TypeArrondi
+  - precision : Integer
+  - seuilAbsorption : Decimal?
+  - regleEquivalence : RegleEquivalence?
+  - ordreConversionLettre : Boolean
+  + agreger(niveau : NiveauAcalcul, valeurs : List<NotePonderee>) : Decimal
+  + normaliser(valeur : Decimal, bareme : Bareme) : Decimal
+  + verifierEquilibrage(resultat : ResultatCascade) : List<AlerteCascade>
+  + estActif(niveau : NiveauAcalcul) : Boolean
+}
+
+class RegleEquivalence {
+  - strategie : StrategieAggregation
+  - nombreMaxIgnorees : Integer?
+  - moyenneMinimaleIgnoree : Decimal?
+  - principes : List<PrincipeEquivalence>
+}
+
+class PrincipeEquivalence {
+  - type : TypePrincipe { MATIERE_EQUIVALENTE  UE_EQUIVALENTE  MEILLEUR_GROUPE
+                           IGNORER_LA_MOYENNE_FAIBLE  PRENDRE_LA_MEILLEURE }
+  - cible : String?
+  - ponderation : Decimal?
+}
+
+enum TypePrincipe {
+  MATIERE_EQUIVALENTE
+  UE_EQUIVALENTE
+  MEILLEUR_GROUPE
+  IGNORER_LA_MOYENNE_FAIBLE
+  PRENDRE_LA_MEILLEURE
+}
+
+class SeuilDecision {
+  - idSeuil : UUID
+  - libelle : String
+  - portee : TypePortee
+  - cycle : Cycle?
+  - niveau : String?
+  - parcours : String?
+  - programme : String?
+  - moyenneMinimale : Decimal?
+  - moyenneMaximale : Decimal?
+  - tauxReussiteMinimale : Decimal?
+  - moyenneDeReussite : Decimal?
+  - absencesMaximales : Integer?
+  - decisionResultante : Decision
+  - rangMin : Integer?
+  - rangMax : Integer?
+  - priorite : Integer
+  + contient(moyenne : Decimal, tauxReussite : Decimal,
+      absences : Integer, rang : Integer) : Boolean
+  + getBorneBasse() : String
+}
+
+class RegleAssiduite {
+  - idRegle : UUID
+  - portee : TypePortee
+  - cycle : Cycle?
+  - niveau : String?
+  - absencesMaxParPeriode : Integer?
+  - absencesParJourMax : Integer?
+  - tauxPresenceMinimale : Decimal?
+  - absencesJustifieesExonerees : Boolean
+  - retardCompteCommeAbsence : Boolean
+  - seuilRetardMinutes : Integer?
+  - consequence : Decision?
+  - priorite : Integer
+  + estRespectee(absences : Integer, seances : Integer) : Boolean
+  + getTauxPresence(seances : Integer, absences : Integer) : Decimal
+}
+
+class Mention {
+  - idMention : UUID
+  - code : String
+  - libelle : String
+  - symbole : String
+  - seuilMinimum : Decimal
+  - seuilMaximum : Decimal?
+  - couleur : String
+  - AppreciationAssociee : String?
+  - ordre : Integer
+  + contient(moyenne : Decimal) : Boolean
+}
+
+class RegleAppreciation {
+  - idRegle : UUID
+  - portee : TypePortee
+  - moyenneMinimale : Decimal
+  - moyenneMaximale : Decimal?
+  - libelle : String
+  - modeleTexte : String?
+  - mentionAssociee : Mention?
+}
+
+' ============================================================
+' REFERENTIELS PARAMETRABLES
+' ============================================================
+
+class Referentiel {
+  - idReferentiel : UUID
+  - code : String
+  - libelle : String
+  - nature : NatureReferentiel
+  - ordre : Integer
+  - actif : Boolean
+  + ajouterItem(libelle : String, code : String) : Referentiel
+  + getItems() : List<ReferentielItem>
+  + desactiver(code : String) : Referentiel
+}
+
+class ReferentielItem {
+  - idItem : UUID
+  - code : String
+  - libelle : String
+  - valeur : String?
+  - metaDonnees : Map<String,String>
+  - ordre : Integer
+  - actif : Boolean
+  - comptabilisePresence : Boolean?
+  - bloqueSaisie : Boolean?
+  + estCocheable() : Boolean
+}
+
+class Filiere {
+  - idFiliere : UUID
+  - code : String
+  - libelle : String
+  - departement : String?
+  - diplome : String
+  - niveauDiplome : String
+  - dureeAnnees : Integer
+  - active : Boolean
+  + getProgrammes() : List<Programme>
+}
+
+class Cycle {
+  - code : String
+  - libelle : String
+  - rang : Integer
+  - profil : ProfilEtablissement
+}
+
+class Programme {
+  - idProgramme : UUID
+  - code : String
+  - libelle : String
+  - filiere : Filiere
+  - parcours : List<String>
+  - totalCredits : Decimal?
+  - active : Boolean
+}
+
+' ============================================================
+' RELATIONS ET CARDINALITES
+' ============================================================
+
+Etablissement "1" *-- "1..*" Site : possede >
+Etablissement "1" *-- "0..*" Filiere : propose >
+Etablissement "1" *-- "1..*" GrillePreset : met a disposition >
+Etablissement "1" *-- "1..*" Parametre : configure >
+Etablissement "1" *-- "0..*" AnneeScolaire : ouvre >
+Etablissement "1" -- "1..*" ProfilEtablissement : est de profil >
+
+Filiere "1" *-- "1..*" Programme : porte >
+Filiere "1" -- "0..1" Cycle : rattache >
+
+AnneeScolaire "1" *-- "1..*" Periode : decoupe >
+AnneeScolaire "1" *-- "1" Site : se deroule sur >
+AnneeScolaire "1" *-- "0..*" GrilleNotation : active >
+AnneeScolaire "1" -- "0..*" Cycle : couvre >
+
+GrilleNotation "1" *-- "1..*" Bareme : definit >
+GrilleNotation "1" *-- "1..*" ReglePonderation : contient >
+GrilleNotation "1" *-- "1" ConfigCascade : agrege par >
+GrilleNotation "1" *-- "1..*" SeuilDecision : delimite >
+GrilleNotation "1" *-- "1..*" RegleAssiduite : controle >
+GrilleNotation "1" *-- "1..*" Mention : gradue >
+GrilleNotation "1" *-- "1..*" RegleAppreciation : commente >
+GrilleNotation "0..1" -- "0..1" GrillePreset : derive de >
+
+GrilleNotation "1" *-- "1" RegleEquivalence : >-
+ConfigCascade "1" *-- "0..*" RegleEquivalence : applique >
+RegleEquivalence "1" *-- "1..*" PrincipeEquivalence : combine >
+
+ReglePonderation ..> CandidatPonderation : teste >
+ReglePonderation ..> TypePortee : ordonne par >
+ConfigCascade ..> StrategieAggregation : applique >
+ConfigCascade ..> NiveauAcalcul : active >
+
+SeuilDecision ..> Decision : produit >
+RegleAssiduite ..> Decision : produit >
+Mention "0..1" -- "0..*" RegleAppreciation : illustre >
+Bareme "0..1" -- "0..*" NotePonderee : normalise >
+
+GrillePreset "1" ..> "0..*" GrilleNotation : initialise >
+
+GrilleStock "1" *-- "0..*" AlerteStock : declenche >
+GrilleStock ..> StrategieRotationLot : applique >
+AlerteStock ..> NiveauAlerte : declenche >
+
+' La rotation de lot est appliquee par les services qui possedent
+' le stock : le service socle ne stocke aucun lot. La classe Lot
+' reste propriete de fin-stock-service et de hopital-pharmacie-service.
+class Lot <<fin-stock>> #transparent
+
+note bottom of GrilleStock
+  <b>Aucune valeur en dur</b>
+  Duree de quarantaine, seuil d alerte
+  peremption, strategie de rotation,
+  tolerance d ecart d inventaire et
+  delai de reappro sont des donnees
+  versionnees. Une correction cree une
+  nouvelle version : les lots deja
+  livres gardent la version d origine.
+
+  <b>FIGEAGE</b>
+  figer() verrouille la grille. Les
+  mouvements de stock en cours
+  refusent une grille non figee :
+  le stock doit etre reproductible.
+
+  <b>STRATEGIE DE ROTATION</b>
+  PREMIER_PERIME .consomme d abord
+  le lot le plus proche de la
+  peremption
+  FEFO .consomme d abord celui dont
+  la date de peremption est la plus
+  lointaine
+  FIFO .consomme dans l ordre d entree
+end note
+
+note bottom of GrilleConformite
+  <b>RETENTION DES DONNEES DE SANTE</b>
+  Duree de retention du dossier medical,
+  de conservation des resultats
+  d analyse, des images et des
+  echantillons : donnees versionnees.
+  Une grille non configuree
+  interdit l archivage, elle ne
+  l invente pas.
+
+  <b>RESULTAT CRITIQUE</b>
+  Le delai de declaration et le niveau
+  d acces sont portes par la grille.
+  Un resultat critique reste
+  confidentiel tant que la grille ne
+  definit pas son cercle.
+
+  <b>TRACABILITE</b>
+  accesTracable impose l emission d un
+  acces vers audit-service a chaque
+  lecture de donnee de sante.
+  Ne pas desactiver ce drapeau sur un
+  profil HOSPITAL.
+end note
+@enduml

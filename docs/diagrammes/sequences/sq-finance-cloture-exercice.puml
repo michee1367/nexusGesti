@@ -1,0 +1,149 @@
+@startuml sq-finance-cloture-exercice
+title Sequence - Cloture complete d'un exercice comptable OHADA
+autonumber
+skinparam sequenceMessageAlign center
+
+actor "Directeur financier" as DAF
+actor "Comptable general" as CG
+actor "Magasinier" as MAG
+actor "Commissaire aux comptes" as CAC
+participant "fin-compta-core" as CORE
+participant "fin-stock" as STOCK
+participant "fin-inventaire" as INV
+participant "fin-facturation" as FACT
+participant "fin-etats" as ETATS
+participant "fin-immobilisation" as IMMO
+participant "audit-service" as AUD
+
+== Etape 1 : Cloture des caisses ==
+
+DAF -> CORE : POST /api/v1/exercices/{id}/cloture-caisses
+CORE -> CORE : verifier que l exercice est OUVERT
+CORE -> FACT : lister les factures non reglees
+FACT --> CORE : encours clients et fournisseurs
+CORE -> CORE : controler les soldes de tresorerie
+CORE -> ETATS : arreter les journaux de caisse et banque
+ETATS --> CORE : arretes
+CORE -> CORE : statuts journaliers passes a CLOTURE_CAISSES
+CORE -> AUD : evenement exercice.cloture-caisses
+CORE --> DAF : caisse close
+
+== Etape 2 : Inventaire des stocks ==
+
+CG -> INV : POST /api/v1/inventaires\n{type: ANNUEL, depotCode}
+INV -> STOCK : figer les quantites theoriques
+STOCK --> INV : stock theorique au 31 decembre
+
+MAG -> INV : saisir les comptages physiques
+INV -> INV : double comptage si le seuil le demande
+INV -> INV : comparer reel et theorique
+
+loop Pour chaque ecart
+  MAG -> INV : justification de l ecart
+  INV -> CG : demande de visa senior comptable
+  CG -> INV : valider l ecart
+end
+
+INV -> STOCK : regulariser le stock
+STOCK --> INV : stock ajuste
+
+INV -> INV : rediger le proces-verbal d inventaire
+INV -> CAC : transmettre le PV pour signature
+CAC -> INV : signer le PV
+INV -> CORE : declarer l inventaire cloture
+CORE --> CG : exercice en INVENTAIRE
+
+== Etape 3 : Valorisation et taux de change ==
+
+CG -> STOCK : valoriser le stock au 31 decembre
+STOCK -> IMMO : declarer le stock d immobilisations
+IMMO --> STOCK : valeur des immobilisations
+STOCK --> CG : valeur du stock
+
+CG -> CORE : calculer le taux moyen pondere
+CORE -> FACT : cumuler achats et ventes en devise
+FACT --> CORE : volumes et montants par devise
+CORE -> CORE : taux moyen = (achats + ventes) / volumes
+CORE --> CG : taux moyen de l exercice
+
+note over CORE
+  <b>DEVISE FONCTIONNELLE : USD</b>
+  Le taux moyen pondere est fige a la
+  cloture et s applique aux
+  valorisations de stock, aux
+  immobilisations et a l analyse des
+  ecarts de conversion.
+
+  L ecart de conversion entre le taux
+  moyen et le taux de cloture est
+  isole au compte de resultat.
+end note
+
+== Etape 4 : Arret des ecritures ==
+
+CG -> ETATS : POST /api/v1/exercices/{id}/arret-comptable
+ETATS -> ETATS : controler l equilibre general
+ETATS -> ETATS : verifier les TVA declarees
+ETATS -> ETATS : verifier l existence des pieces
+ETATS -> IMMO : calculer et comptabiliser les dotations
+IMMO --> ETATS : dotations enregistrees
+ETATS -> FACT : lettrer les echeances ouvertes
+FACT --> ETATS : lettrage effectue
+ETATS -> CORE : passer l exercice en ARRET_COMPTABLE
+CORE --> CG : ecritures arretees
+
+note over ETATS
+  Apres arret comptable, toute
+  ecriture exige une regularisation
+  nominative et motivee.
+end note
+
+== Etape 5 : Generation des etats ==
+
+CG -> ETATS : generer la balance
+ETATS --> CG : balance generale
+CG -> ETATS : generer le bilan
+ETATS --> CG : bilan SYSCOHADA
+CG -> ETATS : generer le compte de resultat
+ETATS --> CG : charges par nature et resultat net
+CG -> ETATS : generer le tableau de financement
+ETATS --> CG : emplois et ressources
+CG -> ETATS : generer l etat de tresorerie
+ETATS --> CG : flux d exploitation, investissement, financement
+
+== Etape 6 : Certification ==
+
+CG -> ETATS : certifier les etats
+ETATS -> ETATS : figer et signer numeriquement
+ETATS --> CG : etats certifies
+
+CG -> ETATS : generer le fichier FEC
+ETATS --> CG : FEC archive
+
+== Etape 7 : Cloture definitive ==
+
+CG -> CORE : POST /api/v1/exercices/{id}/cloturer
+CORE -> CORE : exiger tous les etats certifies
+CORE -> CORE : passer le statut a CLOTURE
+CORE -> CORE : ouvrir le nouvel exercice
+CORE -> AUD : evenement exercice.cloture\n{etats certifies, FEC}
+CORE --> DAF : exercice clos, nouvel exercice ouvert
+DAF --> CG : cloture terminee
+
+note over CORE,FACT
+  <b>ORDRE IMPERATIF</b>
+  1. cloture des caisses
+  2. inventaire des stocks
+  3. valorisation
+  4. arret comptable
+  5. edition des etats
+  6. certification
+  7. cloture et ouverture
+
+  Chaque etape est bloquante : on ne
+  peut pas certifier un bilan sans
+  inventaire, ni cloturer sans etats
+  certifies.
+end note
+
+@enduml

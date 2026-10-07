@@ -1,0 +1,183 @@
+@startuml uc-pedagogie-academic-assessment-service
+skinparam packageStyle rectangle
+skinparam actorStyle stickman
+left to right direction
+
+title Diagramme des Cas d'Utilisation - Service Evaluation et Bulletins (academic-assessment-service)
+
+actor "Enseignant" as ENS
+actor "Professeur titulaire" as TIT
+actor "Censeur" as CEN
+actor "Proviseur / Directeur" as DIR
+actor "Eleve" as ELE
+actor "Parent / Tuteur" as PAR
+actor "Secretaire Scolarité" as SCO
+
+rectangle "Plateforme NexusGesti" {
+  rectangle "academic-assessment-service" {
+
+    ' ---- Evaluations ----
+    usecase "Creer une evaluation" as UC_CreerEval
+    usecase "Definir le bareme et le coefficient" as UC_Bareme
+    usecase "Anonymiser une copie" as UC_Anonymiser
+    usecase "Generer la feuille de notes" as UC_Feuille
+    usecase "Saisir une note" as UC_SaisirNote
+    usecase "Marquer un eleve absent" as UC_AbsentEval
+    usecase "Saisir une note en masse" as UC_SaisieMass
+    usecase "Cloturer une evaluation" as UC_CloturerEval
+    usecase "Publier les notes" as UC_PublierNotes
+    usecase "Annuler une evaluation" as UC_AnnulerEval
+    usecase "Declarer une composition comme examen officiel" as UC_Composer
+
+    ' ---- Calcul de moyenne ----
+    usecase "Definir la cascade de calcul" as UC_Cascade
+    usecase "Definir les regles de ponderation" as UC_ReglesPonderation
+    usecase "Definir les mentions" as UC_Mentions
+    usecase "Definir les appreciations automatiques" as UC_Appreciations
+    usecase "Calculer une moyenne" as UC_CalculerMoyenne
+    usecase "Calculer le detail de ponderation" as UC_DetailPonderation
+    usecase "Calculer le classement" as UC_Classement
+    usecase "Simuler une grille avant activation" as UC_Simulation
+
+    ' ---- Bulletin ----
+    usecase "Preparer un bulletin" as UC_PreparerBulletin
+    usecase "Verifier un bulletin" as UC_VerifierBulletin
+    usecase "Publier un bulletin" as UC_PublierBulletin
+    usecase "Generer le bulletin et les coupons" as UC_GenererBulletin
+    usecase "Rectifier un bulletin" as UC_RectifierBulletin
+    usecase "Annuler un bulletin" as UC_AnnulerBulletin
+    usecase "Generer en masse les bulletins" as UC_LotBulletin
+
+    ' ---- Coupons ----
+    usecase "Tirer les coupons de notes" as UC_TirerCoupon
+    usecase "Detacher un coupon" as UC_Detacher
+    usecase "Enregistrer le coupon signe" as UC_CouponSigne
+    usecase "Constater un coupon non rendu" as UC_CouponNonRendu
+    usecase "Reimprimer un coupon" as UC_Reimprimer
+    usecase "Verifier l empreinte d un coupon" as UC_VerifierEmpreinte
+
+    ' ---- Contestation ----
+    usecase "Contester une note" as UC_Contester
+    usecase "Traiter une contestation" as UC_TraiterContestation
+    usecase "Annuler une contestation" as UC_ResoudreContestation
+
+    ' ---- Relations ----
+    UC_CreerEval .> UC_Bareme : <<include>>
+    UC_CreerEval .> UC_Feuille : <<include>>
+    UC_Feuille .> UC_SaisirNote : <<include>>
+    UC_SaisirNote .> UC_AbsentEval : <<extend>>
+    UC_SaisieMass .> UC_CloturerEval : <<include>>
+    UC_CloturerEval .> UC_PublierNotes : <<include>>
+    UC_Composer .> UC_CreerEval : <<extend>>
+    UC_CalculerMoyenne .> UC_ReglesPonderation : <<include>>
+    UC_CalculerMoyenne .> UC_Cascade : <<include>>
+    UC_CalculerMoyenne .> UC_DetailPonderation : <<include>>
+    UC_CalculerMoyenne .> UC_Mentions : <<include>>
+    UC_CalculerMoyenne .> UC_Classement : <<include>>
+    UC_PreparerBulletin .> UC_CalculerMoyenne : <<include>>
+    UC_VerifierBulletin .> UC_Appreciations : <<include>>
+    UC_PublierBulletin .> UC_GenererBulletin : <<include>>
+    UC_GenererBulletin .> UC_TirerCoupon : <<include>>
+    UC_VerifierEmpreinte .> UC_Reimprimer : <<extend>>
+    UC_Contester .> UC_TraiterContestation : <<include>>
+    UC_RectifierBulletin .> UC_Contester : <<include>>
+    UC_Simulation .> UC_CalculerMoyenne : <<include>>
+    UC_LotBulletin .> UC_PublierBulletin : <<include>>
+  }
+}
+
+ENS --> UC_CreerEval
+ENS --> UC_Bareme
+ENS --> UC_Anonymiser
+ENS --> UC_Feuille
+ENS --> UC_SaisirNote
+ENS --> UC_AbsentEval
+ENS --> UC_SaisieMass
+ENS --> UC_CloturerEval
+ENS --> UC_DetailPonderation
+ENS --> UC_Contester
+ENS --> UC_CalculerMoyenne
+TIT --> UC_PublierNotes
+TIT --> UC_Composer
+TIT --> UC_VerifierBulletin
+TIT --> UC_RectifierBulletin
+TIT --> UC_TraiterContestation
+CEN --> UC_CreerEval
+CEN --> UC_CalculerMoyenne
+CEN --> UC_PreparerBulletin
+CEN --> UC_VerifierBulletin
+CEN --> UC_Classement
+CEN --> UC_Simulation
+CEN --> UC_TraiterContestation
+DIR --> UC_PreparerBulletin
+DIR --> UC_PublierBulletin
+DIR --> UC_LotBulletin
+DIR --> UC_AnnulerBulletin
+DIR --> UC_RectifierBulletin
+DIR --> UC_Cascade
+DIR --> UC_ReglesPonderation
+DIR --> UC_Mentions
+DIR --> UC_Appreciations
+DIR --> UC_Simulation
+ELE --> UC_DetailPonderation
+ELE --> UC_Contester
+PAR --> UC_DetailPonderation
+PAR --> UC_Contester
+PAR --> UC_CouponSigne
+SCO --> UC_Detacher
+SCO --> UC_CouponSigne
+SCO --> UC_CouponNonRendu
+SCO --> UC_Reimprimer
+SCO --> UC_VerifierEmpreinte
+
+note bottom of UC_CalculerMoyenne
+  <b>CASCADE DE PONDERATION</b>
+
+  La cascade n est pas codee : elle
+  vient de ConfigCascade.niveauxActifs
+  dans la GrilleNotation de l
+  annee.
+
+  Exemples :
+   PRIMAIRE    matiere -> periode
+   SECONDAIRE  matiere -> periode
+               -> annee -> cycle
+   UNIVERSITAIRE coursECUE -> UE
+               -> semestre -> cycle
+
+  Les coefficients sont resolus par
+  specificite decroissante, aucune
+  valeur en dur.
+end note
+
+note bottom of UC_DetailPonderation
+  Le detail explique la note :
+   "TP2 : 16 sur 20, coefficient 2,
+    poids normalise 17%"
+  Il est imprime sur le bulletin et
+  opposable en cas de contestation.
+end note
+
+note bottom of UC_Composer
+  Marquer une Evaluation de type
+  COMPOSITION comme declenchant une
+  session d examen.
+
+  academic-exam-service consomme
+  l evenement et cree la SessionExamen
+  rattachee a la meme periode.
+end note
+
+note bottom of UC_CouponSigne
+  Le coupon de notes est la partie
+  PERFOREE du bulletin. Le parent le
+  detache, le signe et le rend.
+
+  L empreinte SHA-256 detecte toute
+  reimpression non autorisee.
+  Un bulletin rectifie produit de
+  nouveaux coupons ; les anciens
+  sont annules.
+end note
+
+@enduml

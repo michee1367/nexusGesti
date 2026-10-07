@@ -1,0 +1,228 @@
+@startuml modele-hopital-consultation-service
+hide empty members
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+
+title Modele de classes - hopital-consultation-service (Consultations et Prescriptions)
+
+package "hopital-consultation-service" {
+
+  enum StatutConsultation {
+    EN_ATTENTE
+    EN_COURS
+    TERMINEE
+    TERMINEE_PARTIELLE
+    ANNULEE
+  }
+
+  enum TypeConsultation {
+    NOUVELLE
+    SUIVI
+    URGENCE
+    TELECONSULTATION
+    BILAN
+  }
+
+  enum MotifTerminaison {
+    GUERI
+    AMELIORE
+    STABLE
+    AGGRAVE
+    HOSPITALISE
+    TRANSFERE
+    DECEDE
+    AUTRE
+  }
+
+  enum TypePrescription {
+    MEDICAMENT
+    EXAMEN
+    IMAGERIE
+    ANALYSE
+    CHIRURGIE
+    KINESITHERAPIE
+    VACCIN
+  }
+
+  enum StatutOrdonnance {
+    BROUILLON
+    SIGNEE
+    ENVOYEE_PHARMACIE
+    DELIVREE
+    EXPIREE
+    ANNULEE
+  }
+
+  enum VoieAdministration {
+    ORALE
+    INJECTABLE
+    CUTANEE
+    INHALEE
+    RECTALE
+    AUTRE
+  }
+
+  class Consultation <<aggregate root>> {
+    + id : UUID
+    + reference : String
+    + dateHeure : DateTime
+    + statut : StatutConsultation
+    + type : TypeConsultation
+    + motif : String
+    + examenClinique : String
+    + diagnostic : String
+    + diagnosticCode : String
+    + Patient : String
+    + practitionerId : UUID
+    + agePatient : Integer
+    + temperature : Decimal
+    + tensionArterielle : String
+    + poids : Decimal
+    + taille : Decimal
+    + allergieDeclaree : Boolean
+    + dateCreation : DateTime
+    + dateCloture : DateTime
+    + motifTerminaison : MotifTerminaison
+    + motifAnnulation : String
+    + compteRenduId : UUID
+    + demandeExamenId : UUID
+    --
+    + imc() : Decimal
+    + calculerIMC() : Decimal
+    + estCloturee() : Boolean
+  }
+
+  class LignePrescription {
+    + id : UUID
+    + code : String
+    + denomination : String
+    + dosage : String
+    + quantite : Decimal
+    + voie : VoieAdministration
+    + frequence : String
+    + duree : String
+    + quantiteRestante : Decimal
+    + observance : Boolean
+    + precisions : String
+    + typePrescription : TypePrescription
+    + indication : String
+    + demandeExamenId : UUID
+    --
+    + estExamenComplementaire() : Boolean
+    + ciblePlateauTechnique() : Boolean
+  }
+
+  class Ordonnance {
+    + id : UUID
+    + numero : String
+    + dateEmission : DateTime
+    + statut : StatutOrdonnance
+    + consultationId : UUID
+    + prescripteurId : UUID
+    + dateSignature : DateTime
+    + pharmacieId : UUID
+    + dateExpiration : Date
+    + nombreLignes : Integer
+    + qrVerification : String
+    --
+    + signer() : void
+    + envoyerPharmacie() : void
+    + estExpiree() : Boolean
+  }
+
+  class ExamenClinique {
+    + id : UUID
+    + date : DateTime
+    + practitionerId : UUID
+    + resultat : String
+    + conclusion : String
+    + pieceJointe : String
+  }
+
+  class CertificatMedical {
+    + id : UUID
+    + type : String
+    + date : DateTime
+    + validiteJours : Integer
+    + motif : String
+    + pdf : String
+  }
+
+  class CompteRendu {
+    + id : UUID
+    + contenu : Text
+    + dateRedaction : DateTime
+    + redacteurId : UUID
+    + verrouille : Boolean
+  }
+
+  class SuiviOrientation {
+    + id : UUID
+    + date : DateTime
+    + type : String
+    + motif : String
+    + praticienId : UUID
+    + observations : String
+  }
+
+  class Patient <<external>> #transparent
+  class Praticien <<external>> #transparent
+  class DemandeExamen <<external>> #transparent
+
+  ' ---- Relations ----
+  Consultation "1" *-- "1" ExamenClinique : clinique >
+  Consultation "1" o-- "1..*" LignePrescription : prescrit >
+  Consultation "1" o-- "0..1" Ordonnance : aboutit a >
+  Consultation "1" o-- "0..1" CompteRendu : redige >
+  Consultation "1" o-- "0..*" SuiviOrientation : oriente vers >
+  Consultation "1" --> "1" Patient : concerne >
+  Consultation "1" --> "1" Praticien : realizee par >
+  Consultation "1" o-- "0..*" DemandeExamen : fait examiner >
+  Ordonnance "1" *-- "1" TypePrescription : type >
+  CompteRendu "1" --> "1" Consultation : decrit >
+  LignePrescription "0..*" --> "0..1" DemandeExamen : devient >
+}
+
+note bottom of Consultation
+  <b>COHERENCE CLINIQUE</B>
+  A la cloture, si le diagnostic est
+  renseigne, au moins une prescription
+  doit exister : sinon la consultation
+  reste TERMINEE_PARTIELLE et une
+  tache de validation est creee.
+
+  <b>OU PART UNE LIGNE COMPLEMENTAIRE</B>
+  Une LignePrescription de type
+  ANALYSE, IMAGERIE ou EXAMEN
+  n aboutit pas a ce service. Elle
+  devient une DemandeExamen de
+  hopital-plateau-technique-service,
+  qui aiguille vers le laboratoire ou
+  l imagerie.
+
+  C est la raison pour laquelle
+  Consultation ne porte plus d attribut
+  imagerieId : la cible d un examen se
+  trouve desormais sur la ligne de
+  prescription, et non sur la
+  consultation. Un attribut unique
+  n aurait pas suffi : une consultation
+  peut prescrire plusieurs examens.
+
+  Aucune ligne n aboutit jamais
+  directement a un examen : le passage
+  par DemandeExamen est ce qui garantit
+  une prescription tracable.
+end note
+
+note bottom of Ordonnance
+  <b>ANTICIPATION PHARMACIE</b>
+  A l emission, l ordonnance
+  alimente le stock reserve de
+  hopital-pharmacie-service.
+  La disponibilite est evaluee a
+  partir de la GrilleStock, jamais
+  en dur.
+end note
+
+@enduml

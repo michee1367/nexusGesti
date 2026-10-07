@@ -1,0 +1,490 @@
+@startuml modele-hopital-hospitalisation-service
+title Diagramme de Classes - hopital-hospitalisation-service (Sejour et Lits)
+skinparam classAttributeIconSize 0
+hide empty members
+skinparam packageStyle rectangle
+
+package "hopital-hospitalisation-service" {
+
+' ============================================================
+' ENUMS
+' ============================================================
+
+enum StatutSejour {
+  EN_ATTENTE
+  ADMIS
+  EN_COURS
+  TRANSFERE
+  SORTI
+  CLOTURE
+  FACTURE
+  ANNULE
+}
+
+enum TypeAdmission {
+  URGENCE
+  PROGRAMMEE
+  TRANSFERT_EXTERNE
+  REPROGRAMMATION
+}
+
+enum TypeDestinationSortie {
+  DOMICILE
+  TRANSFERT_EXTERNE
+  CONVALESCENCE
+  DECES
+  SORTIE_INVOLONTAIRE
+  FUITE
+}
+
+enum TypeMouvementInterne {
+  TRANSFERT
+  PERMUTATION
+  ESCALADE
+  DESCENTE
+  MAINTENANCE
+}
+
+enum StatutLit {
+  LIBRE
+  OCCUPE
+  INDISPONIBLE
+  BLOQUE
+  RESERVE
+}
+
+enum TypeChambre {
+  STANDARD
+  SIMPLEXE
+  DOUBLE
+  ISOLEMENT
+  REANIMATION
+  SOINS_CONTINUS
+}
+
+enum MotifIndisponibilite {
+  NETTOYAGE
+  MAINTENANCE
+  DESINFECTION
+  TRAVAUX
+  INCIDENT
+}
+
+enum TypeCompteRenduSortie {
+  ORDONNANCE_SORTIE
+  COMPTE_RENDU_HOSPITALISATION
+  CERTIFICAT_ARRET_TRAVAIL
+  TRANSFERT
+  AUCUN
+}
+
+' ============================================================
+' AGREGAT : SERVICE HOSPITALIER
+' Proprietaire de Service. Ce service est le point de
+' resolution de la reference Service <<external>>
+' consommee par hopital-rdv-service.
+' ============================================================
+
+class Service <<aggregate root>> {
+  - id : UUID
+  - code : String
+  - libelle : String
+  - typeService : String
+  - responsable : UUID
+  - capaciteLits : Integer
+  - litsOccupes : Integer
+  - actif : Boolean
+  - accepteTransfert : Boolean
+  - niveauSoins : String?
+  + getLitsDisponibles() : Integer
+  + estSature() : Boolean
+  + affecterLits(nombre : Integer) : Service
+  + libererLits(nombre : Integer) : Service
+  + peutAccueillir(type : TypeAdmission) : Boolean
+}
+
+' ============================================================
+' AGREGAT : CHAMBRE ET LIT
+' ============================================================
+
+class Chambre {
+  - id : UUID
+  - code : String
+  - libelle : String
+  - type : TypeChambre
+  - service : UUID
+  - etage : String?
+  - capacite : Integer
+  - litsOccupes : Integer
+  - actif : Boolean
+  + getLitsLibres() : Integer
+  + getLitsDisponibles() : Integer
+  + estComplete() : Boolean
+  + estApte(typeAdmission : TypeAdmission) : Boolean
+}
+
+class Lit {
+  - id : UUID
+  - code : String
+  - chambre : UUID
+  - service : UUID
+  - statut : StatutLit
+  - dateIndisponibilite : Date?
+  - dateLibre : Date?
+  - motifIndisponibilite : MotifIndisponibilite?
+  - sejourCourant : UUID?
+  - dateMiseService : Date
+  - dateMiseHorsService : Date?
+  - equipements : List<String>
+  + ouvrir() : Lit
+  + occuper(sejour : UUID) : Lit
+  + liberer() : Lit
+  + indisposer(motif : MotifIndisponibilite) : Lit
+  + reserver() : Lit
+  + estDisponible() : Boolean
+  + estOccupe() : Boolean
+  + getDureeOccupation() : Integer
+}
+
+class BlocAdmission <<tenant-service>> {
+  - code : String
+  - libelle : String
+  - motif : String
+  - dureeBlocageJours : Integer?
+  - actif : Boolean
+  + getDureeJours() : Integer
+}
+
+' ============================================================
+' AGREGAT : SEJOUR
+' ============================================================
+
+class Sejour <<aggregate root>> {
+  - id : UUID
+  - numero : String
+  - patient : UUID
+  - admission : Admission
+  - serviceOrigine : UUID
+  - serviceActuel : UUID
+  - medecinReferent : UUID
+  - dateAdmission : Instant
+  - dateSortiePrevue : Date?
+  - dateSortieEffective : Instant?
+  - dateCloture : Instant?
+  - statut : StatutSejour
+  - diagnosticPrincipal : String?
+  - diagnosticSecondaire : List<String>
+  - statutFacturation : String?
+  - gridTarifaireVersion : Integer?
+  - tiersId : UUID?
+  - dateCreation : Instant
+  - empreinte : String?
+  + admettre() : Sejour
+  + affecterLit(lit : UUID) : Sejour
+  + changerService(service : UUID, motif : String) : Sejour
+  + enregistrerMouvement(mouvement : MouvementInterne) : Sejour
+  + presortir(datePrevue : Date) : Sejour
+  + sortir(sortie : Sortie) : Sejour
+  + cloturer() : Sejour
+  + annuler(motif : String) : Sejour
+  + getDureeSejourJours() : Integer
+  + getDureeSejourNuit() : Integer
+  + getTauxOccupationService() : Decimal
+  + getMontantDu(grille : GrilleTarifaire) : Decimal
+  + getGrilleAppliquee() : GrilleTarifaire
+  + estEnCours() : Boolean
+  + estFacturable() : Boolean
+  + getTauxCouverture() : Decimal?
+}
+
+class Admission {
+  - typeAdmission : TypeAdmission
+  - motif : String
+  - motifCode : String?
+  - admissionnaire : UUID
+  - serviceDemandeur : UUID?
+  - venue : String?
+  - allergieDeclaree : Boolean
+  - isolement : Boolean
+  - accepteSoins : Boolean
+  - dateDecision : Instant?
+  - decisionnaire : UUID?
+  + estAccesUrgence() : Boolean
+  + getMotifLibelle() : String
+  + exigerMotif() : Boolean
+}
+
+class Sortie {
+  - dateSortie : Instant
+  - destination : TypeDestinationSortie
+  - motifSortie : String
+  - motifCode : String?
+  - ordreSortie : String?
+  - sortieAutorisee : Boolean
+  - motifRefus : String?
+  - medecinSortant : UUID
+  - serviceDestination : String?
+  - etablissementDestination : String?
+  - typeCompteRendu : TypeCompteRenduSortie
+  - compteRenduId : UUID?
+  - consignes : String?
+  + autoriser() : Sortie
+  + refuser(motif : String) : Sortie
+  + getSortieClinique() : Boolean
+  + getSortieDecedent() : Boolean
+  + getCompteRenduExige() : Boolean
+}
+
+class MouvementInterne {
+  - date : Instant
+  - type : TypeMouvementInterne
+  - serviceOrigine : UUID
+  - serviceDestination : UUID
+  - litOrigine : UUID?
+  - litDestination : UUID?
+  - motif : String
+  - autorisePar : UUID
+  - executePar : UUID
+  - observation : String?
+  + getDureeTransfert() : Integer
+  + estTransfertEffectif() : Boolean
+  + estDegrade() : Boolean
+}
+
+' ============================================================
+' AGREGAT : COMPTE RENDU DE SEJOUR
+' ============================================================
+
+class CompteRenduSejour {
+  - id : UUID
+  - sejour : UUID
+  - type : TypeCompteRenduSortie
+  - redacteur : UUID
+  - dateRedaction : Instant
+  - diagnosticSortie : String?
+  - resume : String
+  - traitements : List<String>
+  - recommandation : String?
+  - siegeSocial : Boolean
+  - signeNumeriquement : Boolean
+  - empreinte : String?
+  + signer() : CompteRenduSejour
+  + estSigne() : Boolean
+  + estFige() : Boolean
+  + figer() : CompteRenduSejour
+}
+
+' ============================================================
+' TARIFICATION
+' Aucune valeur en dur : tout provient de la
+' GrilleTarifaire versionnee du referentiel tenant.
+' ============================================================
+
+class LigneTarification {
+  - id : UUID
+  - sejour : UUID
+  - codeActe : String
+  - libelle : String
+  - quantite : Decimal
+  - prixUnitaire : Decimal
+  - montant : Decimal
+  - grilleVersion : Integer
+  - dateApplication : Date
+  - coveredByAssurance : Boolean
+  - partAssurance : Decimal?
+  - partPatient : Decimal?
+  + calculer() : LigneTarification
+  + getMontantPatient() : Decimal
+  + getMontantAssurance() : Decimal
+  + estFacturable() : Boolean
+  + appliquerTaux(taux : Decimal) : LigneTarification
+}
+
+class MotifSortie <<tenant-service>> {
+  - code : String
+  - libelle : String
+  - typeDestination : TypeDestinationSortie
+  - compteRenduExige : Boolean
+  - actif : Boolean
+}
+
+' ============================================================
+' REFERENCES INTER-SERVICES
+' ============================================================
+
+class Patient <<hopital-patient>>
+class Praticien <<hopital-consultation>>
+class Consultation <<hopital-consultation>>
+class GrilleTarifaire <<academic-fees>>
+class GrilleConformite <<tenant-service>>
+class Tiers <<fin-facturation>>
+class Ecriture <<fin-compta-core>>
+
+}
+
+' ============================================================
+' RELATIONS ET CARDINALITES
+' ============================================================
+
+Sejour "1" *-- "1" Admission : entre par >
+Sejour "1" *-- "0..1" Sortie : termine par >
+Sejour "1" *-- "0..*" MouvementInterne : subit >
+Sejour "1" *-- "1..*" LigneTarification : valorise >
+Sejour "1" o-- "0..1" CompteRenduSejour : produit >
+
+Sejour "1" -- "1" Patient : concerne >
+Sejour "1" -- "1" Service : heberge >
+Sejour "1" -- "1" Praticien : suivi par >
+Sejour "0..*" -- "0..1" Consultation : justifie >
+Sejour "0..*" -- "1" Tiers : facture >
+Sejour "0..*" -- "0..1" Ecriture : comptabilise >
+Sejour ..> StatutSejour : evolue selon >
+
+Sortie ..> TypeDestinationSortie : aboutit a >
+Sortie ..> MotifSortie : code >
+MouvementInterne ..> TypeMouvementInterne : type >
+Lit ..> StatutLit : evolue selon >
+Lit ..> MotifIndisponibilite : bloque pour >
+
+Service "1" *-- "0..*" Chambre : regroupe >
+Service "1" *-- "0..*" Lit : possede >
+Service "0..*" -- "0..*" Chambre : exige type >
+
+Chambre "1" *-- "0..*" Lit : contient >
+Chambre ..> TypeChambre : type >
+BlocAdmission "1" ..> Lit : bloque >
+
+LigneTarification ..> GrilleTarifaire : lit la grille >
+Sejour ..> GrilleTarifaire : fige sa version >
+
+note bottom of Sejour
+  <b>PERIMETRE : LE SEJOUR SEULEMENT</b>
+  Ce service modelise l occupation d un lit
+  et sa valorisation. Il ne porte ni les
+  observations quotidiennes, ni les
+  transmissions, ni le dossier de soins
+  continu. Ce perimetre est volontairement
+  isole pour rester tenable.
+
+  <b>RESOLUTION DU LIT</b>
+  affecterLit exige dans cet ordre :
+   1. un lit libre du service cible
+   2. un lit dont le type de chambre
+      est compatible avec le
+      typeAdmission
+   3. un lit hors BlocAdmission actif
+  Le critere 2 explique pourquoi un
+  isolement et une reanimation ne
+  suivent pas le meme parcours :
+  le type d admission commande le
+  type de chambre, pas la disponibilite.
+end note
+
+note bottom of Sortie
+  <b>SORTIE CONTROLEE</b>
+  autorisation exige :
+   - une date de sortie effective
+   - un motif code issu du referentiel
+   - un compte rendu si
+     TypeCompteRenduSortie l exige
+  Une sortie clinique refusee reste
+  au statut EN_COURS : le lit n est
+  pas libere et la facturation est
+  suspendue.
+
+  <b>DECES</b>
+  destination DECES declenche
+  l obligation d information et
+  bloque la cloture automatique. La
+  sortie reste un acte humain, jamais
+  un effet de bord d un autre
+  evenement.
+end note
+
+note bottom of LigneTarification
+  <b>GRILLE FIGEE SUR LA LIGNE</b>
+  Chaque ligne porte grilleVersion. Une
+  correction tarifaire cree une nouvelle
+  version de grille : les sejours en
+  cours gardent la version capturee a
+  leur admission. Un releve de facture
+  ne bouge pas parce que la grille a
+  change entre-temps.
+
+  <b>PART ASSURANCE</b>
+  appliquerTaux scinde le montant en
+  part patient et part assurance. Le
+  taux provient du dossier patient
+  AssuranceMaladie.tauxCouverture, pas
+  du service hospitalisation.
+
+  Aucun montant, aucun pourcentage
+  n est ecrit dans ce modele.
+end note
+
+note bottom of Chambre
+  <b>CAPACITE ET INCOMPATIBILITES</b>
+  Une chambre double porte deux lits.
+  estApte verifie qu un type d
+  admission n est pas refuse par le
+  type de chambre : pas de patient
+  isole dans une chambre double, pas de
+  patient en reanimation hors unit
+  de soins continus.
+
+  Ce controle appartient a l
+  hospitalisation, pas au rdv :
+  hopital-rdv-service lit Service et
+  Chamber en reference.
+end note
+
+note bottom of MouvementInterne
+  <b>TRANSFERT INTERNE</b>
+  Un deplacement entre services se
+  trace comme un mouvement du Sejour,
+  pas comme une nouvelle admission.
+  Le numero de sejour ne change pas.
+
+  <b>MOTIF MAINTENANCE</b>
+  type MAINTENANCE traduit le transfert
+  d un patient vers un service technique
+  pour un soin non prevu au plateau
+  technique. Il ouvre un mouvement
+  interne, il ne cree pas d acte
+  facturable propre.
+end note
+
+note bottom of Service
+  <b>RESOLUTION DE LA REFERENCE MANQUANTE</b>
+  hopital-rdv-service declarait
+  Service <<external>> sans qu aucun
+  service ne le possede. Ce modele en
+  devient le proprietaire.
+
+  Le meme identifiant est employe par
+  hopital-consultation-service pour
+  designer un service demandeur, et par
+  hopital-pharmacie-service pour un
+  TypeDestination. Les trois lectures
+  designent le meme objet.
+end note
+
+note bottom of CompteRenduSejour
+  <b>EMPREINTE ET SIGNATURE</b>
+  empreinte est un SHA-256 du contenu :
+  toute reouverture est detectee.
+  figer() rend le document non
+  modifiable. Un compte rendu fige
+  dont la date depasse la duree de
+  conservation de la GrilleConformite
+  devient archivable.
+
+  <b>LE SEJOUR NE SE CLOTURE QU AVEC</b>
+  cloturer() refuse un sejour sans
+  sortie effective, et un sejour sans
+  compte rendu quand le type de sortie
+  l exige. Un sejur bloque au statut
+  SORTI est visible du pilotage.
+end note
+
+@enduml

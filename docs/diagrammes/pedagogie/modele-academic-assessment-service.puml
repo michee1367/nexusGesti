@@ -1,0 +1,643 @@
+@startuml modele-academic-assessment-service
+title Diagramme de Classes - Service Evaluation, Moyennes et Bulletins (academic-assessment-service)
+skinparam classAttributeIconSize 0
+hide empty members
+
+' ============================================================
+' ENUMS
+' ============================================================
+
+enum TypeEvaluation {
+  INTERROGATION
+  TP
+  TD
+  PROJET
+  DEVOIR
+  COMPOSITION
+  ORAL
+  EXAMEN_BLANC
+  CONCOURS
+  DEVOIR_SURVEILLE
+}
+enum StatutEvaluation {
+  BROUILLON
+  PLANIFIEE
+  OUVERTE
+  CLOTUREE
+  PUBLIEE
+  ANNULEE
+}
+enum StatutNote {
+  PROVISOIRE
+  DEFINITIVE
+  CONTESTEE
+  ANNULEE
+  EXCLUE
+}
+enum TypeSourceNote {
+  EVALUATION_CONTINUE
+  SESSION_EXAMEN
+  RATTRAPAGE
+  CONTROLE_CONTINU
+  EXCEPTION
+}
+enum TypeBareme {
+  POINTS
+  SUR_5
+  SUR_10
+  SUR_20
+  SUR_100
+  LETTRE
+  MENTION
+}
+enum NiveauAcalcul {
+  EVALUATION
+  COURS_ECUE
+  UE
+  PERIODE
+  ANNEE
+  CYCLE
+}
+enum StrategieAggregation {
+  MOYENNE_PONDEREE
+  MOYENNE_NON_PONDEREE
+  SOMME_PONDEREE
+  MEILLEURE_NOTE
+  MOYENNE_TRONQUEE
+  DERNIERE_NOTE
+}
+enum StatutBulletin {
+  BROUILLON
+  CALCULE
+  PUBLIE
+  GENERE
+  SIGNE
+  RECTIFIE
+  ANNULE
+}
+enum TypeBulletin {
+  TRIMESTRIEL
+  SEMESTRIEL
+  ANNUEL
+  PROVISOIRE
+  RATTRAPAGE
+  CERTIFICAT
+}
+enum StatutCoupon {
+  A_TIRER
+  TIRE
+  DETACHE
+  SIGNE_PAR_TUTEUR
+  RENDU
+  NON_RENDU
+  PERDU
+  INVALIDE
+}
+
+' ============================================================
+' AGREGAT : EVALUATION
+' ============================================================
+
+class Evaluation {
+  - idEvaluation : UUID
+  - reference : String
+  - libelle : String
+  - type : TypeEvaluation
+  - classe : UUID
+  - cours : UUID
+  - matsiere : UUID
+  - enseignant : UUID
+  - annee : UUID
+  - periode : UUID
+  - date : Date
+  - heureDebut : Time?
+  - duree : Integer?
+  - salle : UUID
+  - statut : StatutEvaluation
+  - grille : GrilleNotation
+  - bareme : Bareme
+  - coefficientDeclare : Decimal?
+  - consignes : String?
+  - anonymise : Boolean
+  - compteeDansMoyenne : Boolean
+  - declencheSession : Boolean
+  + ouvrir() : Evaluation
+  + genererFeuille() : FeuilleNote
+  + saisirNote(eleve : UUID, valeur : Decimal) : Evaluation
+  + marquerAbsent(eleve : UUID) : Evaluation
+  + cloturer() : Evaluation
+  + publier() : Evaluation
+  + annuler(motif : String) : Evaluation
+  + estClosePourSaisie() : Boolean
+  + getMaxNoteAtteignable() : Decimal
+}
+
+class FeuilleNote {
+  - id : UUID
+  - evaluation : UUID
+  - statut : StatutBulletin
+  - nbNotesAttendues : Integer
+  - nbNotesSaisies : Integer
+  - nbAbsents : Integer
+  - ouverteLe : Instant?
+  - clotureeLe : Instant?
+  - verrouillee : Boolean
+  + ouvrir() : FeuilleNote
+  + verrouiller() : FeuilleNote
+  + getProgression() : Decimal
+  + estComplete() : Boolean
+}
+
+class Note {
+  - id : UUID
+  - evaluation : UUID
+  - eleve : UUID
+  - valeur : Decimal?
+  - statut : StatutNote
+  - absent : Boolean
+  - exclue : Boolean
+  - motifExclusion : String?
+  - coefficientReel : Decimal?
+  - saisiePar : UUID
+  - saisieLe : Instant
+  - dateSaisie : Instant
+  - apptee : Boolean
+  - motifContestation : String?
+  - dateContestation : Instant?
+  - remplaceePar : UUID?
+  + estDefinitive() : Boolean
+  + getValeurEffective() : Decimal?
+  + exclure(motif : String) : Note
+  + contester(motif : String) : Note
+  + estAbsente() : Boolean
+}
+
+' ============================================================
+' CASCADE DE PONDERATION (moteur generique, aucune valeur en dur)
+' ============================================================
+
+' La grille elle-meme n est pas redefinie ici :
+' elle est propriete de hopital/socle tenant-service.
+' Les classes locales ci-dessous en sont la projection
+' pedagogique specialisee.
+
+class GrilleNotation <<tenant-service>> #transparent {
+  - id : UUID
+  - version : Integer
+  - annee : UUID
+  - profil : String
+  - dateActivation : Date
+  - configCascade : ConfigCascade
+  - regles : List<ReglePonderation>
+  + resoudreRegle(candidat : CandidatPonderation) : ReglePonderation
+  + getBareme(type : TypeBareme) : Bareme
+  + retenir(notes : List<NotePeriodique>) : List<NotePeriodique>
+  + getMention(moyenne : Decimal) : Mention
+}
+
+class Bareme {
+  - type : TypeBareme
+  - baremeMax : Decimal
+  - noteMinimale : Decimal
+  - precision : Integer
+  - arrondi : TypeArrondi
+  + normaliser(valeur : Decimal) : Decimal
+  + convertir(versType : TypeBareme) : Decimal
+  + estAtteignable(valeur : Decimal) : Boolean
+  + formater(valeur : Decimal) : String
+}
+
+class ConfigCascade {
+  - niveauxActifs : List<NiveauAcalcul>
+  - strategie : StrategieAggregation
+  - arrondi : TypeArrondi
+  - precision : Integer
+  - seuilAbsorption : Decimal?
+  - principesEquivalence : List<PrincipeEquivalence>
+  + agreger(niveau : NiveauAcalcul, valeurs : List<NotePonderee>) : Decimal
+  + normaliser(valeur : Decimal, bareme : Bareme) : Decimal
+  + estActif(niveau : NiveauAcalcul) : Boolean
+  + verifierEquilibrage(resultat : ResultatCascade) : List<AlerteCascade>
+}
+
+class PrincipeEquivalence {
+  - type : TypePrincipe
+  - cible : String?
+  - ponderation : Decimal?
+  + appliquer(valeurs : List<NotePonderee>) : List<NotePonderee>
+}
+
+enum TypePrincipe {
+  MATIERE_EQUIVALENTE
+  UE_EQUIVALENTE
+  MEILLEUR_GROUPE
+  IGNORER_LA_MOYENNE_FAIBLE
+  PRENDRE_LA_MEILLEURE
+}
+
+class ReglePonderation {
+  - libelle : String
+  - portee : TypePortee
+  - profil : String?
+  - cycle : String?
+  - niveau : String?
+  - parcours : String?
+  - programme : String?
+  - semestre : String?
+  - ue : String?
+  - cours : String?
+  - matiere : String?
+  - enseignant : UUID?
+  - classe : UUID?
+  - typeEvaluation : String?
+  - typeSourceNote : TypeSourceNote?
+  - coefficient : Decimal?
+  - seuilInclusion : Decimal?
+  - plafondContribution : Decimal?
+  - poidsMax : Decimal?
+  - priorite : Integer
+  - active : Boolean
+  + sApplique(candidat : CandidatPonderation) : Boolean
+  + estPlusSpecifique(autre : ReglePonderation) : Boolean
+  + getCoefficient() : Decimal
+}
+
+enum TypePortee {
+  GLOBALE
+  PAR_PROFIL
+  PAR_CYCLE
+  PAR_NIVEAU
+  PAR_PARCOURS
+  PAR_PROGRAMME
+  PAR_SEMESTRE
+  PAR_UE
+  PAR_COURS
+  PAR_MATIERE
+  PAR_ENSEIGNANT
+  PAR_CLASSE
+  PAR_TYPE_EVALUATION
+  PAR_TYPE_SESSION
+}
+
+class CandidatPonderation {
+  - profil : String
+  - cycle : String?
+  - niveau : String?
+  - parcours : String?
+  - programme : String?
+  - semestre : String?
+  - ue : String?
+  - cours : String?
+  - matiere : String?
+  - enseignant : UUID?
+  - classe : UUID?
+  - typeEvaluation : String?
+  - typeSourceNote : TypeSourceNote?
+  - niveauAcalcul : NiveauAcalcul
+}
+
+class NotePonderee {
+  - eleve : UUID
+  - niveau : NiveauAcalcul
+  - cible : String
+  - libelleCible : String
+  - valeur : Decimal
+  - coefficient : Decimal
+  - poidsNormalise : Decimal?
+  - source : TypeSourceNote
+  - retenu : Boolean
+  - motifExclusion : String?
+  - rang : Integer?
+  + recalculerPoids(total : Decimal) : NotePonderee
+  + estExclu() : Boolean
+  + getContribution() : Decimal
+}
+
+class MoteurCalculMoyenne {
+  + calculer(eleve : UUID, periode : UUID, grille : GrilleNotation,
+             notes : List<Note>) : ResultatCascade
+  + calculerNiveau(resultat : ResultatCascade, niveau : NiveauAcalcul,
+                   grille : GrilleNotation) : List<NotePonderee>
+  + verifierRegles(resultat : ResultatCascade,
+                   grille : GrilleNotation) : List<AlerteCascade>
+}
+
+class ResultatCascade {
+  - eleve : UUID
+  - periode : UUID
+  - classe : UUID
+  - grilleVersion : Integer
+  - niveaux : List<NiveauAcalcul>
+  - calculLe : Instant
+  - equilibre : Boolean
+  + getMoyenne(niveau : NiveauAcalcul, cible : String) : Decimal?
+  + getDetail(niveau : NiveauAcalcul, cible : String) : List<DetailPonderation>
+  + getClassement(cible : String) : List<UUID>
+  + getTotalPoids() : Decimal
+}
+
+class DetailPonderation {
+  - evaluation : UUID?
+  - sessionExamen : UUID?
+  - niveau : NiveauAcalcul
+  - libelle : String
+  - date : Date
+  - valeur : Decimal
+  - bareme : TypeBareme
+  - coefficient : Decimal
+  - poidsNormalise : Decimal
+  - retenu : Boolean
+  - motifExclusion : String?
+  + getExplication() : String
+}
+
+class AlerteCascade {
+  - code : String
+  - message : String
+  - niveau : NiveauAcalcul
+  - criticite : Criticite
+}
+
+enum Criticite {
+  BLOQUANT
+  AVERTISSEMENT
+  INFORMATION
+}
+
+class Mention {
+  - code : String
+  - libelle : String
+  - symbole : String
+  - seuilMinimum : Decimal
+  - couleur : String
+  + contient(moyenne : Decimal) : Boolean
+}
+
+class Appreciation {
+  - libelle : String
+  - moyenne : Decimal
+  - rang : Integer?
+  + getTexte() : String
+}
+
+' ============================================================
+' AGREGAT : BULLETIN
+' ============================================================
+
+class Bulletin {
+  - idBulletin : UUID
+  - reference : String
+  - eleve : UUID
+  - annee : UUID
+  - periode : UUID
+  - classe : UUID
+  - type : TypeBulletin
+  - statut : StatutBulletin
+  - version : Integer
+  - grilleVersion : Integer
+  - grilleDateActivation : Date
+  - cascade : ResultatCascade
+  - moyenneGenerale : Decimal?
+  - moyennePeriode : Decimal?
+  - moyenneAnnuelle : Decimal?
+  - rang : Integer?
+  - effectif : Integer
+  - appreciationGenerale : String?
+  - mentionGenerale : String?
+  - decision : String?
+  - nbAbsencesJustifiees : Integer
+  - nbAbsencesInjustifiees : Integer
+  - nbRetards : Integer
+  - tauxPresence : Decimal?
+  - genereLe : Instant?
+  - publieLe : Instant?
+  - generePar : UUID?
+  - rectifieLe : Instant?
+  + calculer(grille : GrilleNotation) : Bulletin
+  + publier() : Bulletin
+  + genererDocuments() : Bulletin
+  + signer() : Bulletin
+  + rectifier(motif : String) : Bulletin
+  + estEditable() : Boolean
+  + getLignes() : List<LigneBulletin>
+  + getCoupons() : List<CouponNotes>
+  + getSyntheseAbsences() : SyntheseAbsences
+}
+
+class LigneBulletin {
+  - id : UUID
+  - bulletin : UUID
+  - niveau : NiveauAcalcul
+  - code : String
+  - libelle : String
+  - parent : String?
+  - coefficient : Decimal
+  - poidsNormalise : Decimal
+  - moyennePeriode : Decimal?
+  - moyenneAnnuelle : Decimal?
+  - moyenneUE : Decimal?
+  - moyenneCours : Decimal?
+  - rang : Integer?
+  - effectif : Integer
+  - mention : String?
+  - appreciation : String?
+  - absent : Boolean
+  - casParticulier : String?
+  - detail : List<DetailPonderation>
+  + getDetail() : List<DetailPonderation>
+  + estReussi(seuil : Decimal) : Boolean
+  + getMention() : Mention
+}
+
+class SyntheseAbsences {
+  - seancesJustifiees : Integer
+  - seancesInjustifiees : Integer
+  - retardJours : Integer
+  - retardHeures : Integer
+  - regleApplicable : String
+  - respecteRegle : Boolean
+  - avertissement : String?
+  + getCompteRendu() : String
+}
+
+' ============================================================
+' COUPON DE NOTES (detachable du bulletin)
+' ============================================================
+
+class CouponNotes {
+  - id : UUID
+  - numero : String
+  - bulletin : UUID
+  - eleve : UUID
+  - annee : UUID
+  - periode : UUID
+  - classe : String
+  - dateEdition : Date
+  - statut : StatutCoupon
+  - noteMoyenne : Decimal?
+  - mention : String?
+  - urlQr : String
+  - codeBarre : String
+  - empreinte : String
+  - detacheLe : Instant?
+  - detachePar : UUID?
+  - signePar : UUID?
+  - signeLe : Instant?
+  - observation : String?
+  - dateRendu : Instant?
+  + tirer() : CouponNotes
+  + detacher() : CouponNotes
+  + signer(signePar : UUID) : CouponNotes
+  + estSigne() : Boolean
+  + estRendu() : Boolean
+  + verifierEmpreinte() : Boolean
+  + getTexte() : String
+}
+
+' ============================================================
+' REFERENCES INTER-SERVICES
+' ============================================================
+
+class SeuilDecision <<tenant-service>>
+class RegleAssiduite <<tenant-service>>
+class Periode <<tenant-service>>
+class Matiere <<academic-structure>>
+class CoursECUE <<academic-structure>>
+class UE <<academic-structure>>
+class Enseignant <<academic-people>>
+class NoteExamenProjetee <<academic-exam>>
+class DecisionProjetee <<academic-exam>>
+
+' ============================================================
+' RELATIONS ET CARDINALITES
+' ============================================================
+
+Evaluation "1" *-- "1" FeuilleNote : genere >
+Evaluation "1" -- "1..*" Note : sanctionne >
+FeuilleNote "1" *-- "0..*" Note : contient >
+Evaluation "1" -- "1" GrilleNotation : applique >
+Evaluation "1" -- "1" Bareme : porte >
+Evaluation "1" -- "0..1" Enseignant : conduite par >
+Evaluation "1" -- "1" CoursECUE : porte >
+Evaluation "1" -- "1" Periode : dans >
+Evaluation "1" -- "0..1" SeanceExamen : declenche >
+
+GrilleNotation "1" *-- "1" ConfigCascade : agrege par >
+GrilleNotation "1" o-- "1..*" ReglePonderation : contient >
+GrilleNotation "1" o-- "0..*" Bareme : definit >
+GrilleNotation "1" o-- "0..*" Mention : gradue >
+ConfigCascade "1" *-- "0..*" PrincipeEquivalence : combine >
+ConfigCascade ..> StrategieAggregation : applique >
+ConfigCascade ..> NiveauAcalcul : active >
+
+ReglePonderation ..> CandidatPonderation : teste >
+ReglePonderation ..> TypePortee : ordonne par >
+Bareme ..> TypeBareme : type >
+MoteurCalculMoyenne ..> GrilleNotation : lit >
+MoteurCalculMoyenne ..> Note : agrege >
+MoteurCalculMoyenne ..> ResultatCascade : produit >
+MoteurCalculMoyenne ..> CandidatPonderation : construit >
+MoteurCalculMoyenne ..> ReglePonderation : resout >
+
+ResultatCascade "1" *-- "1..*" NotePonderee : contient >
+ResultatCascade "1" *-- "0..*" DetailPonderation : justifie >
+ResultatCascade "1" o-- "0..*" NoteExamenProjetee : projeté >
+NotePonderee ..> NiveauAcalcul : palier >
+NotePonderee ..> TypeSourceNote : origine >
+PrincipeEquivalence ..> TypePrincipe : type >
+PrincipeEquivalence ..> NotePonderee : filtre >
+AlerteCascade ..> Criticite : classe >
+GrilleNotation ..> Mention : attribue >
+
+Bulletin "1" -- "1" ResultatCascade : base >
+Bulletin "1" -- "1" GrilleNotation : fige >
+Bulletin "1" *-- "1..*" LigneBulletin : detaille >
+Bulletin "1" o-- "1" SyntheseAbsences : synthetise >
+Bulletin "1" *-- "1..*" CouponNotes : fournit >
+Bulletin "1" -- "1" Periode : concerne >
+Bulletin "1" -- "1" Classe : de >
+
+LigneBulletin "1" -- "1" Mention : qualifie >
+LigneBulletin "1" o-- "0..*" DetailPonderation : decompose >
+LigneBulletin "0..1" -- "0..1" UE : agrège >
+LigneBulletin "0..1" -- "0..1" CoursECUE : porte >
+LigneBulletin "0..1" -- "0..1" Matiere : porte >
+
+CouponNotes "1" -- "0..1" Bulletin : issu de >
+SyntheseAbsences ..> RegleAssiduite : applique >
+Bulletin ..> StatutBulletin : evolue selon >
+Bulletin ..> TypeBulletin : type >
+CouponNotes ..> StatutCoupon : evolue selon >
+Note ..> StatutNote : evolue selon >
+Note ..> StatutNote : statut >
+Evaluation ..> StatutEvaluation : evolue selon >
+Evaluation ..> TypeEvaluation : type >
+
+' ============================================================
+' CASCADE VISUELLE
+' ============================================================
+
+note as N1
+  <b>CASCADE UNIVERSITAIRE</b>
+  Evaluation (coef) -> MoyenneCoursECUE
+    -> MoyenneUE (coef UE)
+      -> MoyenneSemestre
+        -> MoyenneCycle
+end note
+
+note as N2
+  <b>CASCADE SECONDAIRE</b>
+  Evaluation -> MoyenneMatiere
+    -> MoyenneTrimestre
+      -> MoyenneAnnuelle
+        -> MoyenneCycle
+end note
+
+note as N3
+  <b>CASCADE PRIMAIRE</b>
+  Evaluation -> MoyenneMatiere
+    -> MoyennePeriode
+end note
+
+note right of MoteurCalculMoyenne
+  AUCUNE valeur metier en dur.
+  Le moteur ne connait ni PRIMAIRE,
+  ni SECONDAIRE, ni UNIVERSITAIRE :
+  il lit ConfigCascade.niveauxActifs
+  et resout les ReglePonderation
+  par specificite decroissante.
+
+  Specificite :
+  PAR_ENSEIGNANT > PAR_COURS > PAR_UE >
+  PAR_TYPE_EVALUATION > PAR_MATIERE >
+  PAR_NIVEAU > PAR_PARCOURS >
+  PAR_PROGRAMME > PAR_SEMESTRE >
+  PAR_CYCLE > PAR_PROFIL > GLOBALE
+  A portee egale : priorite, puis
+  date de creation.
+end note
+
+note bottom of CouponNotes
+  Le coupon est la partie PERFOREE du
+  bulletin papier :
+   - il porte un numero, un QR et
+     un code-barres
+   - le parent le detache, le signe
+     et le rend
+   - l empreinte permet de verifier
+     qu il n a pas ete modifie
+  Un coupon REGENRE est produit
+  par un nouveau Bulletin (version+1).
+end note
+
+note bottom of Bulletin
+  Un Bulletin PUBLIE est immuable.
+  Toute correction cree une version
+  superieure conservee pour audit.
+  La grille de notation referencee est
+  celle active au moment du calcul :
+  modifier la grille ne reecrit pas
+  l historique.
+end note
+
+@enduml

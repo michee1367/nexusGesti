@@ -1,0 +1,88 @@
+@startuml uc-socle-identity-service
+skinparam packageStyle rectangle
+skinparam actorStyle stickman
+left to right direction
+
+title Diagramme des Cas d'Utilisation - Service Identite et Utilisateurs (identity-service)
+
+actor "Super Administrateur" as SA
+actor "Directeur / Proviseur" as DIR
+actor "Secretaire" as SEC
+actor "Utilisateur" as USR
+actor "Application Interne" as APP
+
+rectangle "Plateforme NexusGesti" {
+  rectangle "identity-service" {
+
+    ' ---- Utilisateurs ----
+    usecase "Creer un compte utilisateur" as UC_Creer
+    usecase "Inviter un utilisateur" as UC_Inviter
+    usecase "Modifier un profil" as UC_Modifier
+    usecase "Activer un compte" as UC_Activer
+    usecase "Desactiver un compte" as UC_Desactiver
+    usecase "Suspendre temporairement" as UC_Suspendre
+    usecase "Reinitialiser le mot de passe" as UC_Reinit
+    usecase "Imposer un changement de mot de passe" as UC_ChangerMdp
+    usecase "Consulter un profil" as UC_Consulter
+    usecase "Rechercher / filtrer des utilisateurs" as UC_Rechercher
+    usecase "Consulter l annuaire" as UC_Annuaire
+
+    ' ---- Roles et permissions ----
+    usecase "Attribuer des roles" as UC_AttribuerRole
+    usecase "Retirer des roles" as UC_RetirerRole
+    usecase "Creer un role" as UC_CreerRole
+    usecase "Definir les permissions d un role" as UC_Permissions
+    usecase "Verifier une permission" as UC_Verifier
+    usecase "Deleguer des roles temporairement" as UC_Deleguer
+
+    ' ---- Liaisons metier ----
+    usecase "Rattacher un utilisateur a un profil metier" as UC_Rattacher
+    usecase "Delombok un compte" as UC_Delombok
+
+    ' ---- Relations ----
+    UC_Creer .> UC_AttribuerRole : <<include>>
+    UC_Inviter .> UC_Creer : <<include>>
+    UC_Creer .> UC_ChangerMdp : <<include>>
+    UC_Reinit .> UC_ChangerMdp : <<include>>
+    UC_CreerRole .> UC_Permissions : <<include>>
+    UC_Deleguer .> UC_AttribuerRole : <<extend>>
+    UC_Suspendre .> UC_Desactiver : <<extend>>
+    UC_Delombok .> UC_Desactiver : <<include>>
+    UC_Rattacher .> UC_Consulter : <<include>>
+  }
+}
+
+SA --> UC_Creer
+SA --> UC_CreerRole
+SA --> UC_Permissions
+SA --> UC_Deleguer
+SA --> UC_Delombok
+SA --> UC_Rechercher
+DIR --> UC_Inviter
+DIR --> UC_AttribuerRole
+DIR --> UC_RetirerRole
+DIR --> UC_Rattacher
+DIR --> UC_Rechercher
+DIR --> UC_Suspendre
+SEC --> UC_Creer
+SEC --> UC_Inviter
+SEC --> UC_Activer
+SEC --> UC_Desactiver
+SEC --> UC_Rechercher
+SEC --> UC_Annuaire
+SEC --> UC_Reinit
+USR --> UC_Consulter
+USR --> UC_Modifier
+USR --> UC_ChangerMdp
+USR --> UC_Verifier
+
+APP --> UC_Consulter
+
+note bottom of UC_Creer
+  Un compte LOCAL est cree par un acteur
+  authentifie. Un compte KEYCLOAK est cree
+  par Keycloak puis synchronise (liaison
+  par IdentifiantExterne).
+end note
+
+@enduml

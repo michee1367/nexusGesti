@@ -1,0 +1,643 @@
+@startuml modele-academic-exam-service
+title Diagramme de Classes - Service Sessions d'Examens (academic-exam-service)
+skinparam classAttributeIconSize 0
+hide empty members
+
+' ============================================================
+' ENUMS
+' ============================================================
+
+enum TypeSession {
+  SESSION_TRIMESTRIELLE
+  SESSION_SEMESTRIELLE
+  SESSION_RATTRAPAGE
+  RESESSION_ANNUELLE
+  EXAMEN_BLANC
+  SESSION_EXTRAORDINAIRE
+}
+enum StatutSession {
+  BROUILLON
+  PROGRAMMEE
+  EN_COURS
+  CORRECTION
+  DELIBERATION
+  CLOTUREE
+  ANNULEE
+}
+enum TypeEpreuve {
+  ECRIT
+  ORAL
+  QCM
+  PRATIQUE
+  TP_NOTE
+  DISSERTATION
+  PROBLEME
+  MIXTE
+}
+enum StatutEpreuve {
+  PROJETEE
+  VALIDEE
+  PROGRAMMEE
+  TENUE
+  ANNULEE
+}
+enum TypeRetard {
+  MATIN
+  APRES_MIDI
+  SOIR
+  MATIN_APRES_MIDI
+}
+enum StatutConvocation {
+  EMISE
+  NOTIFIEE
+  PRESENTE
+  ANNULEE
+}
+enum RoleSurveillant {
+  TITULAIRE
+  ADJOINT
+  RESERVISTE
+  COORDINATEUR
+}
+enum StatutPV {
+  BROUILLON
+  SOUMIS
+  SIGNE
+  CONTESTE
+  HOMOLOGUE
+}
+enum Decision {
+  ADMIS
+  ADMIS_MENTION
+  RATTAPAGE
+  REDOUBLANT
+  REJETE
+}
+enum StatutDeliberation {
+  PLANIFIEE
+  EN_COURS
+  CLOTUREE
+  REPRISE
+}
+
+' ============================================================
+' AGREGAT : SESSION D EXAMEN  (racine, plusieurs par annee)
+' ============================================================
+
+class SessionExamen {
+  - idSession : UUID
+  - reference : String
+  - libelle : String
+  - type : TypeSession
+  - annee : UUID
+  - periode : UUID?
+  - classe : UUID
+  - dateOuverture : Date
+  - dateCloture : Date?
+  - statut : StatutSession
+  - anneeUniversitaire : Boolean
+  - convocationEmise : Boolean
+  - procesVerbal : UUID?
+  - grilleDeliberation : String
+  - nbCandidatsAttendus : Integer
+  - nbCandidatsConvoques : Integer
+  + programmer() : SessionExamen
+  + ouvrir() : SessionExamen
+  + cloturer() : SessionExamen
+  + annuler(motif : String) : SessionExamen
+  + getEpreuves() : List<Epreuve>
+  + getCreneaux() : List<Creneau>
+  + estAnnuelle() : Boolean
+  + getTotalPointsPrevus() : Decimal
+  + estCloturee() : Boolean
+}
+
+' Les 3 drapeaux quiereg lent le cas des examens hors moyenne.
+class Epreuve {
+  - idEpreuve : UUID
+  - sessionExamen : UUID
+  - reference : String
+  - libelle : String
+  - matiere : UUID
+  - ue : UUID?
+  - type : TypeEpreuve
+  - date : Date
+  - heureDebut : Time
+  - dureeMinutes : Integer
+  - bareme : Bareme
+  - coefficient : Decimal
+  - statut : StatutEpreuve
+  - comptabiliseDansMoyenne : Boolean
+  - periodeRattachement : UUID?
+  - evaluationOrigine : UUID?
+  - salleParDefaut : UUID?
+  - consignes : String?
+  - anonymise : Boolean
+  - noteEliminatoire : Decimal?
+  + valider() : Epreuve
+  + estHorsMoyenne() : Boolean
+  + estSessionAnnuelle() : Boolean
+  + getPointsMax() : Decimal
+  + estAnonymisee() : Boolean
+  + rattacherPeriode(periode : UUID) : Epreuve
+  + declarerHorsMoyenne() : Epreuve
+}
+
+class Bareme {
+  - type : String
+  - baremeMax : Decimal
+  - noteMinimale : Decimal
+  - precision : Integer
+  - arrondi : String
+  + normaliser(valeur : Decimal) : Decimal
+  + formater(valeur : Decimal) : String
+}
+
+' ============================================================
+' AGREGAT : PLAN DE SALLE ET CONVOCATION
+' ============================================================
+
+class Creneau {
+  - id : UUID
+  - session : UUID
+  - date : Date
+  - type : TypeRetard
+  - heureDebut : Time
+  - heureFin : Time
+  - ordre : Integer
+  + getDureeMinutes() : Integer
+  + getLibelle() : String
+}
+
+class PlanSalle {
+  - id : UUID
+  - session : UUID
+  - creneau : UUID
+  - salle : UUID
+  - capacite : Integer
+  - effectifAffecte : Integer
+  - surveillantPrincipal : UUID
+  - statut : StatutPlanSalle
+  + affecter(eleve : UUID, rang : Integer) : PlanSalle
+  + desaffecter(eleve : UUID) : PlanSalle
+  + estComplet() : Boolean
+  + getTauxRemplissage() : Decimal
+  + getPlaceLibre() : Integer
+}
+
+enum StatutPlanSalle {
+  PROVISOIRE
+  DEFINITIF
+  VERROUILLE
+}
+
+class Composition {
+  - id : UUID
+  - planSalle : UUID
+  - eleve : UUID
+  - rang : Integer
+  - numeroPlace : String
+  - anonymat : String?
+  - present : Boolean
+  - heureArrivee : Time?
+  - copieRemise : Boolean
+  - copieNonRemiseMotif : String?
+  - note : NoteExamen?
+  + pointer() : Composition
+  + setPresent() : Composition
+  + setAbsent(motif : String) : Composition
+  + deposerNote(valeur : Decimal) : Composition
+  + getNote() : Decimal?
+}
+
+class Convocation {
+  - id : UUID
+  - session : UUID
+  - eleve : UUID
+  - numero : String
+  - date : Date
+  - statut : StatutConvocation
+  - genereeLe : Instant?
+  - notifieeLe : Instant?
+  - canal : String?
+  - accuse : Boolean
+  - qrCode : String
+  - emplacement : String
+  - urlTelechargement : String
+  - signee : Boolean
+  + emettre() : Convocation
+  + notifier(canal : String) : Convocation
+  + getPlanningDetaille() : List<LigneConvocation>
+}
+
+class LigneConvocation {
+  - epreuve : UUID
+  - date : Date
+  - heureDebut : Time
+  - salle : String
+  - numeroPlace : String
+  + getLibelle() : String
+}
+
+' ============================================================
+' AGREGAT : SURVEILLANCE
+' ============================================================
+
+class Surveillant {
+  - id : UUID
+  - session : UUID
+  - enseignant : UUID
+  - role : RoleSurveillant
+  - creneau : UUID
+  - salle : UUID?
+  - date : Date
+  - accepte : Boolean
+  - dateAcceptation : Instant?
+  - refuseMotif : String?
+  + accepter() : Surveillant
+  + refuser(motif : String) : Surveillant
+  + getPerimetre() : List<Composition>
+}
+
+class Incident {
+  - id : UUID
+  - session : UUID
+  - composition : UUID?
+  - date : Date
+  - type : TypeIncident
+  - gravite : String
+  - description : String
+  - declarePar : UUID
+  - traite : Boolean
+  - suite : String?
+}
+
+enum TypeIncident {
+  RETARD
+  ABSENCE
+  CHEVAUCHEMENT
+  TENTATIVE_FRAUDE
+  BAVARDAGE
+  MOBIL
+  DOCUMENT_NON_AUTORISE
+  AUTRE
+}
+
+class ProcesVerbal {
+  - id : UUID
+  - session : UUID
+  - reference : String
+  - statut : StatutPV
+  - dateRedaction : Date
+  - redigePar : UUID
+  - presenceDirecteur : Boolean
+  - observations : String?
+  - nbAbsences : Integer
+  - nbIncidents : Integer
+  - signatureDirecteur : Signature?
+  - signatureSecretaire : Signature?
+  - dateCloture : Instant?
+  + rediger() : ProcesVerbal
+  + soumettre() : ProcesVerbal
+  + signer(utilisateur : UUID, role : String) : ProcesVerbal
+  + homologuer() : ProcesVerbal
+  + contester(motif : String) : ProcesVerbal
+  + estComplet() : Boolean
+}
+
+class Signature {
+  - signataire : UUID
+  - role : String
+  - dateSignature : Instant
+  - empreinte : String?
+  - validée : Boolean
+  + verifier(document : String) : Boolean
+}
+
+' ============================================================
+' AGREGAT : NOTES D EXAMEN
+' ============================================================
+
+class NoteExamen {
+  - id : UUID
+  - epreuve : UUID
+  - composition : UUID
+  - eleve : UUID
+  - valeur : Decimal?
+  - statut : StatutNoteExamen
+  - absent : Boolean
+  - horsMoyenne : Boolean
+  - exclue : Boolean
+  - motifExclusion : String?
+  - periodeImputation : UUID?
+  - correcteur : UUID
+  - secondeCorrection : Boolean
+  - coefficient : Decimal
+  - saisiLe : Instant
+  + getValeurNormalisee() : Decimal?
+  + estDefinitive() : Boolean
+  + exclure(motif : String) : NoteExamen
+  + contester(motif : String) : NoteExamen
+}
+
+enum StatutNoteExamen {
+  PROVISOIRE
+  DEFINITIVE
+  CONTESTEE
+  ANNULEE
+  RATTRAPAGE
+}
+
+class Correction {
+  - id : UUID
+  - epreuve : UUID
+  - correcteur : UUID
+  - date : Date
+  - statut : StatutCorrection
+  - nbNotesCorrigees : Integer
+  - moyenneBrute : Decimal?
+  - moyenneRetenue : Decimal?
+  - plusForteMoyenne : Decimal?
+  - plusFaibleMoyenne : Decimal?
+  + ouvrir() : Correction
+  + calculerStatistiques() : Correction
+  + cloturer() : Correction
+  + getEcartSignificatif() : Boolean
+}
+
+enum StatutCorrection {
+  OUVERTE
+  EN_COURS
+  CLOTUREE
+  REPRISE
+  HOMOLOGUEE
+}
+
+' ============================================================
+' AGREGAT : DELIBERATION (par UE en universite)
+' ============================================================
+
+class Deliberation {
+  - id : UUID
+  - session : UUID
+  - reference : String
+  - date : Date
+  - statut : StatutDeliberation
+  - president : UUID
+  - membres : List<UUID>
+  - quorumAtteint : Boolean
+  - grilleVersion : Integer
+  - dateCloture : Instant?
+  + planifier() : Deliberation
+  + ouvrir() : Deliberation
+  + decider(classe : UUID, eleve : UUID) : Decision
+  + delibererParUE(ue : UUID) : List<DecisionUE>
+  + delibererParClasse() : List<Decision>
+  + cloturer() : Deliberation
+  + getTauxReussite() : Decimal
+}
+
+class Decision {
+  - id : UUID
+  - deliberation : UUID
+  - eleve : UUID
+  - classe : UUID
+  - moyenneGenerale : Decimal
+  - moyennePeriode : Decimal?
+  - rang : Integer?
+  - effectif : Integer
+  - tauxReussite : Decimal?
+  - nbAbsences : Integer?
+  - decision : DecisionType
+  - mention : String?
+  - seuilApplique : String?
+  - cr : DecisionCode
+  - motif : String?
+  - dateDecision : Date
+  - notifie : Boolean
+  - dateNotification : Instant?
+  + getLibelleDecision() : String
+  + estFavorable() : Boolean
+  + getConsequenceInscription() : String
+}
+
+enum DecisionType {
+  ADMIS
+  ADMIS_MENTION
+  RATTAPAGE
+  REDOUBLANT
+  REJETE
+}
+enum DecisionCode {
+  P
+  R
+  V
+  M
+  E
+  A
+  B
+  C
+  D
+}
+
+class DecisionUE {
+  - id : UUID
+  - deliberation : UUID
+  - eleve : UUID
+  - ue : UUID
+  - moyenneUE : Decimal
+  - credits : Decimal?
+  - decision : DecisionType
+  - detail : List<DetailUE>
+  + estAcquise() : Boolean
+  + getCreditsAcquis() : Decimal
+  + estCompensee() : Boolean
+}
+
+class DetailUE {
+  - cours : UUID
+  - moyenneCours : Decimal
+  - coefficient : Decimal
+  - admis : Boolean
+  + estCompense() : Boolean
+}
+
+class ResultatOfficiel {
+  - id : UUID
+  - decision : UUID
+  - reference : String
+  - publie : Boolean
+  - datePublication : Instant?
+  - generateur : UUID
+  - urlDocument : String?
+  + publier() : ResultatOfficiel
+  + getClassementGeneral() : List<Decision>
+}
+
+class Rattrapage {
+  - id : UUID
+  - sessionOrigine : UUID
+  - sessionRattrapage : UUID
+  - eleve : UUID
+  - epreuvesConcernees : List<UUID>
+  - convocation : UUID?
+  - nePasPresenter : Boolean
+  - motif : String?
+  + inscrire() : Rattrapage
+  + declareExempt(motif : String) : Rattrapage
+}
+
+' ============================================================
+' REFERENCES INTER-SERVICES
+' ============================================================
+
+class AnneeScolaire <<tenant-service>>
+class Periode <<tenant-service>>
+class SeuilDecision <<tenant-service>>
+class GrilleNotation <<tenant-service>>
+class Salle <<academic-structure>>
+class Matiere <<academic-structure>>
+class UE <<academic-structure>>
+class CoursECUE <<academic-structure>>
+class Enseignant <<academic-people>>
+class Promotion <<academic-structure>>
+
+' ============================================================
+' RELATIONS ET CARDINALITES
+' ============================================================
+
+SessionExamen "1" *-- "1..*" Epreuve : comporte >
+SessionExamen "1" *-- "1..*" Creneau : organise >
+SessionExamen "1" *-- "0..*" PlanSalle : repartit >
+SessionExamen "1" *-- "0..*" Convocation : notifie >
+SessionExamen "1" *-- "0..*" Surveillant : surveille >
+SessionExamen "1" *-- "0..*" Incident : consigne >
+SessionExamen "1" o-- "0..1" ProcesVerbal : redige >
+SessionExamen "1" o-- "0..1" Deliberation : decide >
+SessionExamen "1" o-- "0..*" Rattrapage : ouvre >
+SessionExamen "1" -- "1" Classe : pour >
+SessionExamen "0..1" -- "0..1" Periode : rattachee a >
+SessionExamen "1" -- "1" GrilleNotation : applique >
+
+Epreuve "1" o-- "0..1" Evaluation : declenchee par >
+Epreuve "1" o-- "0..1" Matiere : porte >
+Epreuve "1" o-- "0..1" UE : porte >
+Epreuve "1" -- "1" Bareme : sanctionne >
+Epreuve "1" o-- "0..1" Salle : se tient en >
+Epreuve "0..*" -- "0..1" Periode : comptabilisee dans >
+Epreuve "1" -- "1..*" Correction : corrigee par >
+
+Creneau "1" -- "0..*" PlanSalle : occupe >
+PlanSalle "1" *-- "1..*" Composition : attribue >
+PlanSalle "1" -- "1" Salle : utilise >
+PlanSalle "1" -- "1" Enseignant : surveille >
+Surveillant "1" -- "0..1" PlanSalle : couvre >
+Surveillant "1" -- "1" Enseignant : est >
+Surveillant "1" -- "0..1" Creneau : sur >
+
+Composition "1" o-- "1" Convocation : fait l objet >
+Composition "1" -- "1" PlanSalle : est place >
+Composition "1" o-- "1" NoteExamen : donne >
+Convocation "1" *-- "1..*" LigneConvocation : detaille >
+LigneConvocation "1" -- "1" Epreuve : cite >
+Convocation "1" -- "1" SessionExamen : concerne >
+Convocation "1" -- "0..1" Rattrapage : declenche >
+
+NoteExamen "1" -- "1" Epreuve : porte >
+NoteExamen "1" -- "1" Composition : attribue >
+NoteExamen "1" o-- "0..1" Periode : imputee a >
+Correction "1" -- "0..*" NoteExamen : agrege >
+Deliberation "1" *-- "1..*" Decision : prononce >
+Deliberation "1" *-- "0..*" DecisionUE : prononce >
+DecisionUE "1" -- "1" UE : porte >
+DecisionUE "1" *-- "1..*" DetailUE : detaille >
+DetailUE "1" -- "1" CoursECUE : porte >
+Decision "1" -- "1" Periode : concerne >
+Decision "1" -- "0..1" SeuilDecision : applique >
+Decision "1" o-- "1" ResultatOfficiel : publie >
+Deliberation "1" -- "1" GrilleNotation : applique >
+ProcesVerbal "1" *-- "0..*" Signature : contresigne >
+Incident "1" o-- "0..1" Composition : concerne >
+Rattrapage "1" -- "1" SessionExamen : porte >
+Rattrapage "1" -- "0..1" Convocation : notifie >
+Rattrapage "0..1" -- "0..1" SessionExamen : ouvre >
+
+SessionExamen ..> TypeSession : type >
+SessionExamen ..> StatutSession : evolue selon >
+Epreuve ..> TypeEpreuve : type >
+Epreuve ..> StatutEpreuve : evolue selon >
+Surveillant ..> RoleSurveillant : role >
+ProcesVerbal ..> StatutPV : evolue selon >
+NoteExamen ..> StatutNoteExamen : evolue selon >
+Correction ..> StatutCorrection : evolue selon >
+Deliberation ..> StatutDeliberation : evolue selon >
+Decision ..> DecisionType : statue >
+DecisionUE ..> DecisionType : statue >
+Convocation ..> StatutConvocation : evolue selon >
+PlanSalle ..> StatutPlanSalle : evolue selon >
+DecisionType ..> DecisionCode : correspond a >
+
+' ============================================================
+' LES 3 DRAPEAUX DE RATTACHEMENT
+' ============================================================
+
+note right of Epreuve
+  <b>Drapeau 1 : comptabiliseDansMoyenne</b>
+  true  = la note pese dans une
+          moyenne (composition de
+          fin de trimestre)
+  false = examen blanc, session de
+          remede pedagogique
+
+  <b>Drapeau 2 : periodeRattachement</b>
+  renseigne = la note est imputee
+  a cette periode
+  null = hors de toute moyenne
+
+  <b>Drapeau 3 : evaluationOrigine</b>
+  renseigne = la session a ete
+  declenchee par une Evaluation
+  (type COMPOSITION du circuit
+  evaluation continue)
+
+  <b>Nullable : SessionExamen.periode</b>
+  null = session annuelle
+  (RESESSION, RATTAPAGE)
+  renseignee = session de periode
+</note
+
+note bottom of Deliberation
+  La deliberation N emporte aucun appel
+  synchrone vers academic-assessment.
+
+  Elle recoit l evenement
+  moyenne.periode.calculee et
+  decision.resultat.projetee, projetes
+  par le service evaluation.
+
+  En universite : une DecisionUE
+  par UE (unite d examen), car c est
+  l UE qui est validee ou non.
+  En secondaire : une Decision
+  par eleve pour la classe.
+
+  Le seuil applique est trace dans
+  Decision.seuilApplique : aucune
+  valeur en dur.
+end note
+
+note bottom of SessionExamen
+  Plusieurs sessions par annee :
+   - 1 SESSION_TRIMESTRIELLE ou
+     SESSION_SEMESTRIELLE par periode
+   - 1 SESSION_RATTRAPAGE
+   - 1 RESESSION_ANNUELLE
+   - N SESSION_EXTRAORDINAIRE
+     ou EXAMEN_BLANC
+
+  Le nombre et le type sont libres :
+  ils sont configures par l
+  etablissement, pas par le code.
+end note
+
+@enduml

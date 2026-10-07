@@ -1,0 +1,171 @@
+@startuml uc-fin-immobilisation-service
+skinparam packageStyle rectangle
+skinparam actorStyle stickman
+left to right direction
+
+title Diagramme des Cas d'Utilisation - fin-immobilisation-service
+
+actor "Directeur" as DIR
+actor "Directeur financier" as DAF
+actor "Comptable general" as CG
+actor "Comptable immobilisations" as CIM
+actor "Responsable informatique" as RI
+actor "Chef de parc" as PARC
+actor "Service des acquisitions" as DAC
+actor "Systeme Comptable" as CPT
+
+rectangle "Plateforme NexusGesti" {
+  rectangle "fin-immobilisation-service" {
+
+    ' ---- Immobilisations ----
+    usecase "Creer une immobilisation" as UC_CreerImmo
+    usecase "Enregistrer une acquisition" as UC_Acquerir
+    usecase "Rattacher une immobilisation a une facture" as UC_RattacherFacture
+    usecase "Mettre en service" as UC_MiseEnService
+    usecase "Choisir la duree d amortissement" as UC_Duree
+    usecase "Definir le plan d amortissement" as UC_Plan
+    usecase "Corriger une immobilisation" as UC_Corriger
+    usecase "Rechercher une immobilisation" as UC_Rechercher
+
+    ' ---- Amortissements ----
+    usecase "Calculer les dotations" as UC_CalculerDotations
+    usecase "Consulter le tableau d amortissement" as UC_TableauAmortissement
+    usecase "Valider les dotations" as UC_ValiderDotations
+    usecase "Comptabiliser les dotations" as UC_ComptabiliserDotations
+    usecase "Proceder a une mise en service partielle" as UC_MisePartielle
+    usecase "Simuler un amortissement degressif" as UC_SimulerDegressif
+    usecase "Verifier la coherence des amortissements" as UC_VerifierAmort
+
+    ' ---- Mouvements ----
+    usecase "Transferer une immobilisation" as UC_Transferer
+    usecase "Mettre hors service" as UC_HorsService
+    usecase "Ceder une immobilisation" as UC_Ceder
+    usecase "Enregistrer la cession" as UC_EnregistrerCession
+    usecase "Reformer une immobilisation" as UC_Reformer
+    usecase "Detruire une immobilisation" as UC_Detruire
+    usecase "Enregistrer un incident sur immobilisation" as UC_Incident
+
+    ' ---- Budget et projets ----
+    usecase "Definir un budget d investissement" as UC_Budget
+    usecase "Suivre un projet d investissement" as UC_Projet
+    usecase "Rattacher une immobilisation a un projet" as UC_RattacherProjet
+    usecase "Engager un budget" as UC_Engager
+    usecase "Realiser un projet" as UC_Realiser
+    usecase "Suivre le taux de realisation" as UC_TauxRealisation
+    usecase "Controler l enveloppe du budget" as UC_ControlerBudget
+
+    ' ---- Relations ----
+    UC_CreerImmo .> UC_Duree : <<include>>
+    UC_CreerImmo .> UC_Plan : <<include>>
+    UC_Acquerir .> UC_RattacherFacture : <<include>>
+    UC_Acquerir .> UC_CreerImmo : <<include>>
+    UC_MiseEnService .> UC_CalculerDotations : <<include>>
+    UC_CalculerDotations .> UC_VerifierAmort : <<include>>
+    UC_ValiderDotations .> UC_ComptabiliserDotations : <<include>>
+    UC_MisePartielle .> UC_CalculerDotations : <<include>>
+    UC_SimulerDegressif .> UC_CalculerDotations : <<extend>>
+    UC_TableauAmortissement .> UC_CalculerDotations : <<include>>
+    UC_Ceder .> UC_HorsService : <<include>>
+    UC_Ceder .> UC_EnregistrerCession : <<include>>
+    UC_Detruire .> UC_EnregistrerCession : <<include>>
+    UC_Reformer .> UC_HorsService : <<include>>
+    UC_Incident .> UC_HorsService : <<include>>
+    UC_Projet .> UC_Engager : <<include>>
+    UC_Projet .> UC_RattacherProjet : <<include>>
+    UC_Realiser .> UC_TauxRealisation : <<include>>
+    UC_Engager .> UC_ControlerBudget : <<include>>
+    UC_CreerImmo .> UC_Budget : <<require>>
+  }
+}
+
+DIR --> UC_CreerImmo
+DIR --> UC_MiseEnService
+DIR --> UC_Ceder
+DIR --> UC_Budget
+DIR --> UC_Projet
+DIR --> UC_TauxRealisation
+DIR --> UC_Realiser
+DAF --> UC_Acquerir
+DAF --> UC_Duree
+DAF --> UC_Ceder
+DAF --> UC_Budget
+DAF --> UC_Engager
+DAF --> UC_ControlerBudget
+CG --> UC_CalculerDotations
+CG --> UC_ValiderDotations
+CG --> UC_ComptabiliserDotations
+CG --> UC_EnregistrerCession
+CG --> UC_Reformer
+CG --> UC_Corriger
+CG --> UC_VerifierAmort
+CIM --> UC_CreerImmo
+CIM --> UC_RattacherFacture
+CIM --> UC_TableauAmortissement
+CIM --> UC_Transferer
+CIM --> UC_HorsService
+CIM --> UC_Detruire
+CIM --> UC_Rechercher
+CIM --> UC_Corriger
+RI --> UC_Incident
+RI --> UC_Rechercher
+RI --> UC_CalculerDotations
+PARC --> UC_Ceder
+PARC --> UC_HorsService
+PARC --> UC_Reformer
+PARC --> UC_Incident
+PARC --> UC_Transferer
+DAC --> UC_Acquerir
+DAC --> UC_RattacherFacture
+DAC --> UC_RattacherProjet
+CPT --> UC_ComptabiliserDotations
+CPT --> UC_Engager
+CPT --> UC_ControlerBudget
+
+note bottom of UC_Duree
+  <b>DUREES LEGALES</b>
+  Grille SYSCOHADA :
+   - batiments et usage mixte : 20 ans
+   - machines et outillages : 10 ans
+   - materiel informatique : 5 ans
+   - materiel de transport : 5 ans
+   - mobilier et agencement : 10 ans
+
+  Les durees sont des donnees de
+  configuration issues de la
+  grille, jamais des constantes.
+end note
+
+note bottom of UC_MiseEnService
+  L amortissement ne demarre qu a la
+  date de mise en service effective.
+
+  Une immobilisation acquise pour le
+  compte d un tiers et livree sans
+  transfert de propriete reste au
+  compte 26 de l acquereur et
+  n est pas immobilisee.
+end note
+
+note bottom of UC_ControlerBudget
+  <b>ENGAGEMENT BUDGETAIRE</B>
+    disponible = montant autorise
+                - montant engage
+
+  Depassement : bloque sans
+  autorisation du directeur
+  financier.
+end note
+
+note bottom of UC_VerifierAmort
+  Le calcul est verifie sur :
+   - la difference entre l assiette
+     et la base de calcul ;
+   - l unicite de la mise en service ;
+   - le total dotation plus valeur
+     residuelle egale a la base
+     sur la duree ;
+   - l absence de double dotation
+     apres transfert.
+end note
+
+@enduml

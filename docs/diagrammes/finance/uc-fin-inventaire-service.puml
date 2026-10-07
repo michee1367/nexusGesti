@@ -1,0 +1,170 @@
+@startuml uc-fin-inventaire-service
+skinparam packageStyle rectangle
+skinparam actorStyle stickman
+left to right direction
+
+title Diagramme des Cas d'Utilisation - fin-inventaire-service
+
+actor "Directeur financier" as DAF
+actor "Comptable general" as CG
+actor "Magasinier" as MAG
+actor "Commissaire aux comptes" as CAC
+actor "Auditeur" as AUD
+actor "Systeme Stock" as STK
+
+rectangle "Plateforme NexusGesti" {
+  rectangle "fin-inventaire-service" {
+
+    ' ---- Programmation ----
+    usecase "Programmer un inventaire" as UC_Programmer
+    usecase "Definir le perimetre" as UC_Perimetre
+    usecase "Definir les zones" as UC_Zones
+    usecase "Planifier les comptages" as UC_PlanifierComptage
+    usecase "Affecter les compteurs" as UC_AffecterCompteur
+    usecase "Generer les fiches de comptage" as UC_Fiches
+
+    ' ---- Realisation ----
+    usecase "Lancer un inventaire" as UC_Lancer
+    usecase "Realiser un comptage" as UC_Comptage
+    usecase "Saisir un comptage a deuxAgents" as UC_DoubleComptage
+    usecase "Saisir un comptage physique" as UC_ComptagePhysique
+    usecase "Saisir un comptage theorique" as UC_ComptageTheorique
+    usecase "Cloturer les comptages" as UC_CloturerComptages
+    usecase "Comparer le reel au theorique" as UC_Comparer
+
+    ' ---- Ecarts ----
+    usecase "Analyser les ecarts" as UC_AnalyserEcarts
+    usecase "Justifier un ecart" as UC_JustifierEcart
+    usecase "Valider un ecart" as UC_ValiderEcart
+    usecase "Constater un ecart definitif" as UC_EcartDefinitif
+    usecase "Regulariser un ecart" as UC_Regulariser
+    usecase "Rediger le proces-verbal" as UC_PV
+    usecase "Signer le proces-verbal" as UC_SignerPV
+
+    ' ---- Valorisation et cloture ----
+    usecase "Valoriser l inventaire" as UC_ValoriserInventaire
+    usecase "Choisir la methode de valorisation" as UC_Methode
+    usecase "Ajuster le stock theorique" as UC_AjusterStock
+    usecase "Cloturer l inventaire" as UC_CloturerInventaire
+    usecase "Consulter l historique des inventaires" as UC_Historique
+
+    ' ---- Relations ----
+    UC_Programmer .> UC_Perimetre : <<include>>
+    UC_Programmer .> UC_Zones : <<include>>
+    UC_Programmer .> UC_PlanifierComptage : <<include>>
+    UC_PlanifierComptage .> UC_AffecterCompteur : <<include>>
+    UC_Fiches .> UC_PlanifierComptage : <<include>>
+    UC_Lancer .> UC_Comptage : <<include>>
+    UC_Comptage .> UC_ComptagePhysique : <<include>>
+    UC_Comptage .> UC_ComptageTheorique : <<include>>
+    UC_Comptage .> UC_DoubleComptage : <<extend>>
+    UC_CloturerComptages .> UC_Comparer : <<include>>
+    UC_Comparer .> UC_AnalyserEcarts : <<include>>
+    UC_AnalyserEcarts .> UC_JustifierEcart : <<include>>
+    UC_JustifierEcart .> UC_ValiderEcart : <<include>>
+    UC_ValiderEcart .> UC_EcartDefinitif : <<include>>
+    UC_EcartDefinitif .> UC_Regulariser : <<include>>
+    UC_Regulariser .> UC_AjusterStock : <<include>>
+    UC_ValoriserInventaire .> UC_Methode : <<include>>
+    UC_PV .> UC_Comparer : <<include>>
+    UC_CloturerInventaire .> UC_PV : <<include>>
+    UC_CloturerInventaire .> UC_SignerPV : <<include>>
+    UC_CloturerInventaire .> UC_Regulariser : <<require>>
+    UC_AjusterStock .> UC_Historique : <<include>>
+  }
+}
+
+DAF --> UC_Programmer
+DAF --> UC_Perimetre
+DAF --> UC_Methode
+DAF --> UC_Regulariser
+DAF --> UC_CloturerInventaire
+DAF --> UC_Historique
+DAF --> UC_EcartDefinitif
+CG --> UC_Programmer
+CG --> UC_Lancer
+CG --> UC_Comparer
+CG --> UC_AnalyserEcarts
+CG --> UC_ValiderEcart
+CG --> UC_ValoriserInventaire
+CG --> UC_PV
+CG --> UC_SignerPV
+MAG --> UC_Zones
+MAG --> UC_AffecterCompteur
+MAG --> UC_Fiches
+MAG --> UC_Comptage
+MAG --> UC_ComptagePhysique
+MAG --> UC_DoubleComptage
+MAG --> UC_CloturerComptages
+MAG --> UC_AjusterStock
+CAC --> UC_Comparer
+CAC --> UC_AnalyserEcarts
+CAC --> UC_PV
+CAC --> UC_CloturerInventaire
+CAC --> UC_Historique
+AUD --> UC_Historique
+AUD --> UC_CloturerInventaire
+STK --> UC_ComptageTheorique
+STK --> UC_AjusterStock
+
+note bottom of UC_Perimetre
+  <b>INVENTAIRE PERMANENT</b>
+  L inventaire permanent est
+  different de l inventaire physique :
+   - permanent : theorique a jour en
+     permanence, ajustement automatique
+     des ecarts ;
+   - physique : un jour d arrete par
+     exercice, comptage reel general.
+
+  La methode est propre a chaque
+  etablissement.
+end note
+
+note bottom of UC_DoubleComptage
+  <b>DOUBLE COMPTAGE</B>
+  En mode double comptage, deux
+  compteurs distinctes interviennent
+  sans se connaitre.
+
+  Si l ecart entre les deux
+  comptages depasse le seuil de la
+  grille, un troisieme passage est
+  exige.
+end note
+
+note bottom of UC_Methode
+  Le stock est valorise selon :
+   - COUT MOYEN PONDERE
+   - PREMIER ENTREE PREMIER SORTIE
+   - DERNIER ENTREE PREMIER SORTIE
+   - COUT SPECIFIQUE
+
+  Le prix utilise pour l inventaire
+  physique est :
+   - le dernier prix d achat, ou
+   - la valeur du jour, ou
+   - la valeur de stock de l exercice
+     pour le stock et immobilisations.
+
+  L option retenue est un parametre
+  de configuration.
+end note
+
+note bottom of UC_Regulariser
+  <b>REGULARISATION A LA CLOTURE</B>
+  Le proces-verbal d inventaire
+  constate les ecarts et les
+  regularise avec une ecriture
+  d inventaire.
+
+  La regularisation est bloquee tant
+  qu une ligne avec ecart n a pas
+  de justification et de visa.
+
+  En cas d ecart significatif en
+  valeur d exploitation, le senior
+  comptable doit etre requis.
+end note
+
+@enduml

@@ -1,0 +1,159 @@
+@startuml uc-fin-stock-service
+skinparam packageStyle rectangle
+skinparam actorStyle stickman
+left to right direction
+
+title Diagramme des Cas d'Utilisation - fin-stock-service
+
+actor "Magasinier" as MAG
+actor "Acheteur" as ACH
+actor "Vendeur" as VEN
+actor "Comptable" as COM
+actor "Directeur financier" as DAF
+actor "Systeme Facturation" as FAC
+actor "Systeme Inventaire" as INV
+actor "Systeme Comptable" as CPT
+
+rectangle "Plateforme NexusGesti" {
+  rectangle "fin-stock-service" {
+
+    ' ---- Referentiel ----
+    usecase "Creer un article" as UC_CreerArticle
+    usecase "Classer un article" as UC_ClasserArticle
+    usecase "Gerer les depots" as UC_GererDepots
+    usecase "Gerer les lots" as UC_GererLots
+    usecase "Definir un seuil d alerte" as UC_SeuilAlerte
+    usecase "Consulter un article" as UC_ConsulterArticle
+    usecase "Rechercher un article" as UC_RechercherArticle
+    usecase "Verifier la conformite d un article" as UC_ConformiteArticle
+
+    ' ---- Mouvements ----
+    usecase "Enregistrer une entree en stock" as UC_EntreeStock
+    usecase "Enregistrer une sortie en stock" as UC_SortieStock
+    usecase "Transferer entre depots" as UC_Transfert
+    usecase "Ajuster une quantite" as UC_Ajuster
+    usecase "Enregistrer une perte" as UC_Perte
+    usecase "Valider un mouvement" as UC_ValiderMouvement
+    usecase "Annuler un mouvement" as UC_AnnulerMouvement
+
+    ' ---- Valorisation ----
+    usecase "Valoriser un stock" as UC_Valoriser
+    usecase "Recalculer le prix moyen" as UC_PrixMoyen
+    usecase "Consulter la valeur du stock" as UC_ValeurStock
+    usecase "Gerer les ecarts de prix" as UC_EcartPrix
+    usecase "Methodes de valorisation" as UC_MethodeValorisation
+
+    ' ---- Alertes et approvisionnement ----
+    usecase "Generer une alerte de stock" as UC_AlerteStock
+    usecase "Generer une alerte de rupture" as UC_AlerteRupture
+    usecase "Generer une alerte de peremption" as UC_AlertePeremption
+    usecase "Consulter le tableau de bord stock" as UC_TableauBord
+
+    ' ---- Relations ----
+    UC_CreerArticle .> UC_ClasserArticle : <<include>>
+    UC_CreerArticle .> UC_ConformiteArticle : <<include>>
+    UC_CreerArticle .> UC_SeuilAlerte : <<include>>
+    UC_EntreeStock .> UC_ValiderMouvement : <<include>>
+    UC_SortieStock .> UC_ValiderMouvement : <<include>>
+    UC_Ajuster .> UC_ValiderMouvement : <<include>>
+    UC_Perte .> UC_ValiderMouvement : <<include>>
+    UC_AnnulerMouvement .> UC_EntreeStock : <<include>>
+    UC_Transfert .> UC_Ajuster : <<include>>
+    UC_ValiderMouvement .> UC_PrixMoyen : <<include>>
+    UC_Valoriser .> UC_MethodeValorisation : <<include>>
+    UC_Valoriser .> UC_PrixMoyen : <<include>>
+    UC_ValeurStock .> UC_Valoriser : <<require>>
+    UC_EcartPrix .> UC_Valoriser : <<include>>
+    UC_EntreeStock .> UC_GererLots : <<include>>
+    UC_AlertePeremption .> UC_GererLots : <<require>>
+    UC_TableauBord .> UC_AlerteStock : <<include>>
+    UC_TableauBord .> UC_AlerteRupture : <<include>>
+    UC_TableauBord .> UC_AlertePeremption : <<include>>
+  }
+}
+
+MAG --> UC_CreerArticle
+MAG --> UC_GererDepots
+MAG --> UC_GererLots
+MAG --> UC_EntreeStock
+MAG --> UC_SortieStock
+MAG --> UC_Transfert
+MAG --> UC_Ajuster
+MAG --> UC_Perte
+MAG --> UC_ValiderMouvement
+MAG --> UC_AnnulerMouvement
+MAG --> UC_RechercherArticle
+ACH --> UC_CreerArticle
+ACH --> UC_SeuilAlerte
+ACH --> UC_TableauBord
+ACH --> UC_AlerteRupture
+ACH --> UC_MethodeValorisation
+VEN --> UC_ConsulterArticle
+VEN --> UC_ValeurStock
+COM --> UC_EntreeStock
+COM --> UC_SortieStock
+COM --> UC_Valoriser
+COM --> UC_PrixMoyen
+COM --> UC_EcartPrix
+COM --> UC_MethodeValorisation
+COM --> UC_ConsulterArticle
+DAF --> UC_MethodeValorisation
+DAF --> UC_ValeurStock
+DAF --> UC_TableauBord
+DAF --> UC_EcartPrix
+FAC --> UC_SortieStock
+FAC --> UC_EntreeStock
+INV --> UC_Ajuster
+INV --> UC_ValeurStock
+CPT --> UC_Valoriser
+CPT --> UC_EcartPrix
+
+note bottom of UC_MethodeValorisation
+  <b>METHODES SYSCOHADA</b>
+  A - COUT MOYEN PONDERE
+  B - PREMIER ENTREE PREMIER SORTIE
+  C - DERNIER ENTREE PREMIER SORTIE
+  D - COUT SPECIFIQUE
+
+  La methode est propre a chaque
+  article et modifiable seulement
+  avant sa premiere sortie.
+end note
+
+note bottom of UC_PrixMoyen
+  <b>PRIX MOYEN PONDERE</b>
+    CM = (Q anterieur x CM anterieur
+          + Q entree x PU entree)
+          / (Q anterieur + Q entree)
+
+  Exemple :
+   avant : 100 unites a 2,00 = 200
+   entree : 50 unites a 3,00 = 150
+   CM = 350 / 150 = 2,33
+end note
+
+note bottom of UC_Ajuster
+  Un ajustement genere une
+  regularisation du stock et donc une
+  ecriture. L origine est obligatoire
+  et l operation est tracee.
+end note
+
+note bottom of UC_ValiderMouvement
+  <b>MOVEMENT SANS VALEUR = INVISIBLE</b>
+  Un mouvement de stock n existe
+  comptablement que s il porte une
+  valeur. Sinon il reste un simple
+  mouvement physique.
+end note
+
+note bottom of UC_AlertePeremption
+  L alerte de peremption declenche
+  le meme processus de rappel que
+  la pharmacie hospitaliere :
+  blocage du lot, recherche des
+  mouvements, des patients et des
+  prescripteurs.
+end note
+
+@enduml

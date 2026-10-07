@@ -1,0 +1,235 @@
+@startuml uc-hopital-hospitalisation-service
+skinparam packageStyle rectangle
+skinparam actorStyle stickman
+left to right direction
+
+title Diagramme des Cas d'Utilisation - hopital-hospitalisation-service (Sejour et Lits)
+
+actor "Patient" as PAT
+actor "Medecin" as MED
+actor "Infirmier" as INF
+actor "Medecin-chef de service" as MEDSEC
+actor "Administrateur" as ADM
+actor "Service demandeur" as SRV
+actor "Service Facturation" as FACT
+actor "Systeme Comptable" as COM
+actor "Systeme Notifications" as NOT
+
+rectangle "Plateforme NexusGesti" {
+  rectangle "hopital-hospitalisation-service" {
+
+    ' ---- Service et lits ----
+    usecase "Declarer un service" as UC_DeclarerService
+    usecase "Definir une chambre" as UC_DefinirChambre
+    usecase "Definir un lit" as UC_DefinirLit
+    usecase "Mettre un lit hors service" as UC_LitHorsService
+    usecase "Rendre un lit disponible" as UC_LitDisponible
+    usecase "Bloquer un type d admission" as UC_BlocAdmission
+    usecase "Consulter le taux d occupation" as UC_TauxOccupation
+
+    ' ---- Decision d hospitalisation ----
+    usecase "Decider une hospitalisation" as UC_DeciderHospitalisation
+    usecase "Verifier un lit disponible" as UC_VerifierLit
+    usecase "Verifier la compatibilite du lit" as UC_Compatibilite
+    usecase "Programmer la sortie" as UC_ProgrammerSortie
+
+    ' ---- Admission ----
+    usecase "Enregistrer une admission" as UC_Admettre
+    usecase "Renseigner le motif d admission" as UC_MotifAdmission
+    usecase "Declarer une allergie" as UC_Allergie
+    usecase "Obtenir le consentement de soins" as UC_Consentement
+    usecase "Afficher le bon d admission" as UC_BonAdmission
+
+    ' ---- Pendant le sejour ----
+    usecase "Affecter un lit" as UC_AffecterLit
+    usecase "Changer de lit" as UC_ChangerLit
+    usecase "Transfert interne entre services" as UC_TransfertInterne
+    usecase "Permutation entre chambres" as UC_Permutation
+    usecase "Escalade de soins" as UC_Escalade
+    usecase "Transfert pour soins non prevus" as UC_SoinsNonPrevus
+    usecase "Consulter le sejour" as UC_ConsulterSejour
+    usecase "Consulter la duree de sejour" as UC_DureeSejour
+
+    ' ---- Sortie et cloture ----
+    usecase "Enregistrer la sortie" as UC_EnregistrerSortie
+    usecase "Autoriser la sortie" as UC_AutoriserSortie
+    usecase "Refuser la sortie" as UC_RefuserSortie
+    usecase "Organiser un transfert externe" as UC_TransfertExterne
+    usecase "Enregistrer un deces" as UC_Deces
+    usecase "Sortie contre avis" as UC_SortieContreAvis
+    usecase "Rediger le compte rendu" as UC_CompteRendu
+    usecase "Signer le compte rendu" as UC_SignerCR
+    usecase "Editer l ordonnance de sortie" as UC_OrdonnanceSortie
+    usecase "Cloturer le sejour" as UC_Cloturer
+
+    ' ---- Valorisation et facturation ----
+    usecase "Valoriser le sejour" as UC_Valoriser
+    usecase "Figer la grille tarifaire" as UC_FigerGrille
+    usecase "Emettre l acte facturable" as UC_EmettreActe
+    usecase "Suspendre la facturation" as UC_SuspendreFacturation
+
+    ' ---- Relations ----
+    UC_DeciderHospitalisation .> UC_VerifierLit : <<include>>
+    UC_VerifierLit .> UC_Compatibilite : <<include>>
+    UC_Admettre .> UC_MotifAdmission : <<include>>
+    UC_Admettre .> UC_AffecterLit : <<include>>
+    UC_Admettre .> UC_Consentement : <<include>>
+    UC_AffecterLit .> UC_VerifierLit : <<include>>
+    UC_EnregistrerSortie .> UC_AutoriserSortie : <<include>>
+    UC_AutoriserSortie .> UC_CompteRendu : <<include>>
+    UC_CompteRendu .> UC_SignerCR : <<include>>
+    UC_Cloturer .> UC_CompteRendu : <<include>>
+    UC_Cloturer .> UC_Valoriser : <<include>>
+    UC_Valoriser .> UC_EmettreActe : <<include>>
+    UC_EmettreActe .> UC_FigerGrille : <<include>>
+    UC_Valoriser .> UC_SuspendreFacturation : <<extend>>
+    UC_TransfertInterne .> UC_AffecterLit : <<include>>
+    UC_SoinsNonPrevus .> UC_TransfertInterne : <<extend>>
+    UC_Deces .> UC_EnregistrerSortie : <<extend>>
+    UC_SortieContreAvis .> UC_EnregistrerSortie : <<extend>>
+    UC_DeciderHospitalisation .> UC_ProgrammerSortie : <<extend>>
+    UC_TauxOccupation .> UC_DefinirLit : <<extend>>
+  }
+}
+
+MED --> UC_DeciderHospitalisation
+MED --> UC_ProgrammerSortie
+MED --> UC_AutoriserSortie
+MED --> UC_RefuserSortie
+MED --> UC_CompteRendu
+MED --> UC_SignerCR
+MED --> UC_Deces
+MED --> UC_TransfertExterne
+MED --> UC_Escalade
+INF --> UC_Admettre
+INF --> UC_MotifAdmission
+INF --> UC_Allergie
+INF --> UC_AffecterLit
+INF --> UC_ChangerLit
+INF --> UC_TransfertInterne
+INF --> UC_Permutation
+INF --> UC_EnregistrerSortie
+INF --> UC_ConsulterSejour
+INF --> UC_DureeSejour
+INF --> UC_Consentement
+MEDSEC --> UC_DeciderHospitalisation
+MEDSEC --> UC_TransfertInterne
+MEDSEC --> UC_Escalade
+MEDSEC --> UC_TauxOccupation
+MEDSEC --> UC_ProgrammerSortie
+SRV --> UC_DeciderHospitalisation
+PAT --> UC_Consentement
+PAT --> UC_EnregistrerSortie
+PAT --> UC_ConsulterSejour
+PAT --> UC_DureeSejour
+ADM --> UC_DeclarerService
+ADM --> UC_DefinirChambre
+ADM --> UC_DefinirLit
+ADM --> UC_LitHorsService
+ADM --> UC_LitDisponible
+ADM --> UC_BlocAdmission
+ADM --> UC_TauxOccupation
+FACT --> UC_Valoriser
+FACT --> UC_EmettreActe
+FACT --> UC_SuspendreFacturation
+FACT --> UC_FigerGrille
+COM --> UC_Valoriser
+COM --> UC_Cloturer
+NOT --> UC_EmettreActe
+NOT --> UC_TransfertInterne
+
+note bottom of UC_VerifierLit
+  <b>RESOLUTION D UN LIT</b>
+  Trois controles dans cet ordre :
+   1. un lit libre du service cible
+   2. un type de chambre compatible
+      avec le type d admission
+   3. aucun BlocAdmission actif sur
+      ce lit
+
+  Un patient en isolement n entre pas
+  dans une chambre double. Un
+  patient en reanimation exige une
+  chambre de soins continus. Ce
+  controle appartient au service
+  hospitalisation, pas au rdv.
+end note
+
+note bottom of UC_SuspendreFacturation
+  <b>QUAND LA FACTURATION EST SUSPENDUE</B>
+  Un sejour sans sortie effective, ou
+  une sortie refusee, ou une sortie
+  dont le compte rendu est absent
+  alors qu il est exige : la
+  valorisation est bloquee.
+
+  Le sejour reste visible du pilotage
+  au statut SORTI. Aucun montant
+  n est calcule avant la levee du
+  blocage.
+end note
+
+note bottom of UC_EmettreActe
+  <b>CONTRAT AVEC LA COMPTABILITE</B>
+  Apres cloture, le service publie
+  hopital.acte.facturable sur le
+  topic hopital.events.
+
+  fin-compta-core consomme l evenement
+  et produit l ecriture :
+   - produit d exploitation :
+     D 411 / C 706
+
+  La cle d idempotence derive de
+  sourceId et codeActe : deux
+  emissions du meme sejour ne creent
+  qu une seule entree.
+
+  L encaissement n est pas ici. Il
+  appartient a fin-facturation-service.
+end note
+
+note bottom of UC_Cloturer
+  <b>CLOTURE CONTROLEE</b>
+  cloturer refuse un sejour :
+   - sans sortie effective
+   - sans compte rendu quand le type
+     de sortie l exige
+   - dont la sortie a ete refusee
+
+  Le compte rendu porte une empreinte
+  SHA-256 : une reouverture apres
+  signature est detectee. figer()
+  le rend non modifiable.
+end note
+
+note bottom of UC_SoinsNonPrevus
+  <b>SOINS NON PREVUS AU PLATEAU</b>
+  Un soin realise au lit du patient et
+  non couvert par une DemandeExamen du
+  plateau technique ouvre un
+  MouvementInterne de type
+  MAINTENANCE.
+
+  Il ne cree pas d acte facturable
+  propre : le soin est facture avec la
+  journee d hospitalisation. C est ce
+  qui evite de facturer deux fois le
+  meme acte.
+end note
+
+note bottom of UC_Deces
+  <b>DECES : JAMAIS UN EFFET DE BORD</b>
+  L enregistrement d un deces est un
+  acte humain nominatif. Il n est
+  jamais declenche par une absence de
+  resultat ni par un evenement
+  technique.
+
+  Il bloque la cloture automatique et
+  declenche l information reglementaire.
+  La sortie porte alors destination
+  DECES et exige un compte rendu.
+end note
+
+@enduml

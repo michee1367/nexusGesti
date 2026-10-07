@@ -1,0 +1,191 @@
+name: CI/CD Pipeline — VillageSat Fintech
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+env:
+  JAVA_VERSION: "21"
+  REGISTRY: ghcr.io
+  IMAGE_PREFIX: ghcr.io/nexusgesti
+
+jobs:
+  lint-and-sast:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: temurin
+          cache: maven
+
+      - name: Run Checkstyle
+        run: mvn checkstyle:check -B || true
+
+      - name: Semgrep SAST
+        uses: semgrep/semgrep-action@v1
+        with:
+          config: p/java p/owasp-top-ten
+
+      - name: Gitleaks secret scan
+        uses: gitleaks/gitleaks-action@v2
+
+  test:
+    runs-on: ubuntu-latest
+    needs: lint-and-sast
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: nexusgesti_test
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: temurin
+          cache: maven
+
+      - name: Run tests with coverage
+        run: mvn verify -B
+        env:
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_NAME: nexusgesti_test
+          DB_USER: test
+          DB_PASSWORD: test
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v4
+        with:
+          files: target/site/jacoco/jacoco.xml
+
+  security-scan:
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Trivy filesystem scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: fs
+          scan-ref: .
+          severity: CRITICAL,HIGH
+          exit-code: 1
+
+      - name: Snyk dependency scan
+        uses: snyk/actions/maven@master
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --severity-threshold=high
+
+  build-and-push:
+    runs-on: ubuntu-latest
+    needs: security-scan
+    if: github.ref == 'refs/heads/main'
+    strategy:
+      matrix:
+        service: [api-gateway, auth-service, user-service, wallet-service, transaction-service, notification-service, payment-service, merchant-service, card-service, compliance-service, fraud-service, admin-service, audit-service, reporting-service, mobile-money-integration, banking-integration]
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: temurin
+          cache: maven
+
+      - name: Build JAR
+        run: mvn package -pl services/${{ matrix.service }} -am -DskipTests -B
+
+      - name: Build Docker image
+        run: |
+          docker build -t ${{ env.IMAGE_PREFIX }}/${{ matrix.service }}:${{ github.sha }} \
+            -f services/${{ matrix.service }}/Dockerfile .
+
+      - name: Trivy image scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ env.IMAGE_PREFIX }}/${{ matrix.service }}:${{ github.sha }}
+          severity: CRITICAL,HIGH
+          exit-code: 1
+
+      - name: Sign image with Cosign
+        uses: sigstore/cosign-installer@v3
+
+      - name: Push and sign
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+          docker push ${{ env.IMAGE_PREFIX }}/${{ matrix.service }}:${{ github.sha }}
+          cosign sign --yes ${{ env.IMAGE_PREFIX }}/${{ matrix.service }}:${{ github.sha }}
+
+  deploy-staging:
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    environment: staging
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure kubectl
+        uses: azure/setup-kubectl@v4
+
+      - name: Deploy to staging (rolling update)
+        run: |
+          kubectl set image deployment/wallet-service \
+            wallet-service=${{ env.IMAGE_PREFIX }}/wallet-service:${{ github.sha }} \
+            -n nexusgesti-staging
+          kubectl rollout status deployment/wallet-service -n nexusgesti-staging --timeout=300s
+
+  deploy-production:
+    runs-on: ubuntu-latest
+    needs: deploy-staging
+    environment: production
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Blue/Green deploy to production
+        run: |
+          # Deploy to preview (green)
+          helm upgrade --install wallet-service ./infrastructure/kubernetes/helm/wallet-service \
+            --namespace nexusgesti \
+            --set image.tag=${{ github.sha }} \
+            --set blueGreen.enabled=true \
+            --set blueGreen.autoPromotionEnabled=false \
+            --wait
+
+      - name: Run smoke tests
+        run: |
+          curl -f https://api-staging.nexusgesti.com/actuator/health
+          # Synthetic transaction test script here
+
+      - name: Promote to active (manual gate via GitHub environment)
+        run: |
+          kubectl argo rollouts promote wallet-service -n nexusgesti

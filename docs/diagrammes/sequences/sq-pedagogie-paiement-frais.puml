@@ -1,0 +1,107 @@
+@startuml sq-pedagogie-paiement-frais
+title Sequence - Encaissement des frais scolaires avec coupon de paiement
+autonumber
+skinparam sequenceMessageAlign center
+
+actor "Parent" as PAR
+participant "API Gateway" as GW
+participant "ped-people" as PEOPLE
+participant "ped-fees" as FEES
+participant "ped-enrollment" as ENR
+participant "post-compta-core" as CPTE
+participant "Banque / Mobile Money" as PAY
+participant "post-notification" as NOTIF
+participant "audit-service" as AUD
+database "PostgreSQL" as DB
+
+== Etape 1 : Emission de l'avis de paiement ==
+
+PAR -> GW : GET /api/v1/frais/avis/{id}
+GW -> FEES : lecture avis
+FEES -> DB : select AvisPaiement + LigneFrais + Echeance
+DB --> FEES : lignes, echeances, solde
+FEES -> FEES : verifier GrilleTarifaire active et version applicable
+FEES --> GW : AvisPaiementDetail
+GW --> PAR : avis, lignes, echeances
+
+== Etape 2 : Paiement multi-moyens ==
+
+PAR -> GW : POST /api/v1/frais/paiements\n{avisId, moyens[]}
+GW -> FEES : paiement multi-moyens
+activate FEES
+
+FEES -> FEES : controler idempotency-key
+FEES -> ENR : verifier inscription active et hors blocage
+ENR --> FEES : inscription valide
+
+loop Pour chaque moyen de paiement
+  alt ESPECE
+    FEES -> FEES : valider encaissement tresorerie
+  else CHEQUE
+    FEES -> PAY : verifier numero et provision
+    PAY --> FEES : statut cheque
+  else VIREMENT
+    FEES -> PAY : demander reference de suivi
+    PAY --> FEES : reference
+  else MOBILE_MONEY
+    FEES -> PAY : initier push payment
+    PAY --> FEES : confirmation operateur
+  end
+end
+
+FEES -> FEES : somme des lignes Paiement
+alt Somme != montant attendu
+  FEES --> GW : 422 REGLEMENT_INCOMPLET
+  GW --> PAR : rejected, montant restant
+else Somme == montant attendu
+  FEES -> DB : insert Paiement + LigneImputation
+  FEES -> DB : update LigneFrais.acquittee
+  FEES -> DB : update Echeance.montantRegle
+end
+
+== Etape 3 : Ticket de caisse et coupon ==
+
+FEES -> CPTE : evenement comptabilite.paiement.recu
+CPTE --> FEES : accuse de comptabilisation
+
+FEES -> DB : generer CouponPaiement\n(numero sequentiel, QR, SHA-256)
+FEES -> DB : insert Recu
+FEES -> NOTIF : evenement coupon.genere
+NOTIF --> FEES : notification envoyee
+
+FEES -> AUD : evenement paiement.enregistre\n{montant, moyen, tiers, empreinte}
+AUD --> FEES : trace
+
+deactivate FEES
+
+FEES --> GW : Paiement + CouponPaiement + Recu
+GW --> PAR : ticket, coupon a imprimer
+
+== Etape 4 : Restitution du coupon ==
+
+PAR -> GW : POST /api/v1/frais/coupons/{numero}/remise
+GW -> FEES : declarer remise du coupon
+FEES -> FEES : verifier empreinte SHA-256
+alt Empreinte invalide
+  FEES --> GW : 409 COUPON_ALTERE
+  GW --> PAR : anomalie signalee, audit cree
+else Empreinte valide
+  FEES -> DB : update CouponPaiement.remis
+  FEES --> GW : coupon valide
+  GW --> PAR : confirmation
+end
+
+note over FEES,DB
+  <b>REGLE UNIQUE DE PAIEMENT</b>
+  L Idempotency-Key est obligatoire
+  sur POST paiements. Deux requetes
+  identiques ne creent qu une seule
+  entree et ne declenchent qu une
+  seule ecriture comptable.
+
+  Le numero de coupon est sequentiel
+  par annee : toute reimpression est
+  detectee par l empreinte SHA-256.
+end note
+
+@enduml

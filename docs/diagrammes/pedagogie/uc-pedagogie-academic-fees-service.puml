@@ -1,0 +1,242 @@
+@startuml uc-pedagogie-academic-fees-service
+skinparam packageStyle rectangle
+skinparam actorStyle stickman
+left to right direction
+
+title Diagramme des Cas d'Utilisation - Service Frais Scolaires (academic-fees-service)
+
+actor "Parent / Tuteur payeur" as PAR
+actor "Eleve / Etudiant" as ELE
+actor "Secretaire Scolarité" as SCO
+actor "Proviseur / Directeur" as DIR
+actor "Tresorerie / Comptable" as TRE
+actor "Comptable General" as CG
+actor "Banque" as BAN
+actor "Systeme Comptable" as CPT
+
+rectangle "Plateforme NexusGesti" {
+  rectangle "academic-fees-service" {
+
+    ' ---- Grille tarifaire ----
+    usecase "Definir une grille tarifaire" as UC_Grille
+    usecase "Definir un type de frais" as UC_TypeFrais
+    usecase "Definir un beneficiaire" as UC_Beneficiaire
+    usecase "Definir une remise" as UC_DefinirRemise
+    usecase "Definir un plafond" as UC_Plafond
+    usecase "Parametrer une tranche de remise" as UC_TrancheRemise
+    usecase "Activer une grille tarifaire" as UC_ActiverGrille
+    usecase "Cloturer une grille tarifaire" as UC_CloturerGrille
+    usecase "Simuler une facture" as UC_Simuler
+
+    ' ---- Avis et facture ----
+    usecase "Creer un avis de paiement" as UC_Avis
+    usecase "Decomposer en lignes de frais" as UC_Lignes
+    usecase "Affecter une remise ou une bourse" as UC_AffecterRemise
+    usecase "Eclater en echeances" as UC_Echeances
+    usecase "Generer un numero de facture" as UC_Facture
+    usecase "Emettre la facture" as UC_Emettre
+    usecase "Annuler une facture" as UC_AnnulerFacture
+    usecase "Emettre un avoir" as UC_Avoir
+    usecase "Realiser un avoir sur facture" as UC_FaireAvoir
+
+    ' ---- Paiement ----
+    usecase "Enregistrer un paiement" as UC_Payer
+    usecase "Enregistrer un paiement multi-moyens" as UC_PayerMulti
+    usecase "Enregistrer un cheque" as UC_Cheque
+    usecase "Encaisser un espece" as UC_Espece
+    usecase "Recevoir un virement" as UC_Virement
+    usecase "Encaisser une mobile money" as UC_MobileMoney
+    usecase "Verifier la correspondance lot / cheque" as UC_VerifierLot
+    usecase "Affecter une imputation comptable" as UC_Imputer
+    usecase "Generer un recu" as UC_Recu
+    usecase "Generer un coupon de paiement" as UC_CouponPaiement
+    usecase "Enregistrer la remise du coupon" as UC_CouponRemis
+    usecase "Constater un coupon non rendu" as UC_CouponNonRendu
+    usecase "Reimprimer un coupon" as UC_ReimprimerCoupon
+    usecase "Verifier l empreinte d un coupon" as UC_VerifierEmpreinte
+    usecase "Echouer un paiement" as UC_EchecPaiement
+    usecase "Gerer un litige de paiement" as UC_Litige
+
+    ' ---- Impaye et recouvrement ----
+    usecase "Detecter les impayes" as UC_DetecterImpayes
+    usecase "Generer les relances" as UC_Relances
+    usecase "Activer le recouvrement" as UC_Recouvrement
+    usecase "Suspendre pour impaye" as UC_Suspendre
+    usecase "Bloquer une inscription pour impaye" as UC_Bloquer
+    usecase "Lever un blocage" as UC_LeverBlocage
+
+    ' ---- Bourses ----
+    usecase "Definir un programme de bourses" as UC_ProgrammeBourse
+    usecase "Attribuer une bourse" as UC_AttribuerBourse
+    usecase "Evaluer un dossier social" as UC_EvaluerDossier
+    usecase "Etablir le dossier social" as UC_DossierSocial
+    usecase "Verser la bourse" as UC_VerserBourse
+    usecase "Cloturer un dossier social" as UC_CloturerDossier
+
+    ' ---- Reporting ----
+    usecase "Consulter l etat des paiements" as UC_EtatPaiements
+    usecase "Consulter les encaissements du jour" as UC_Encaissements
+    usecase "Exporter un etat de recouvrement" as UC_ExporterRecouvrement
+    usecase "Rapprocher le journal des encaissements" as UC_Rapprocher
+
+    ' ---- Relations ----
+    UC_Grille .> UC_TypeFrais : <<include>>
+    UC_Grille .> UC_Beneficiaire : <<include>>
+    UC_Grille .> UC_DefinirRemise : <<include>>
+    UC_Grille .> UC_Plafond : <<include>>
+    UC_DefinirRemise .> UC_TrancheRemise : <<include>>
+    UC_Grille .> UC_ActiverGrille : <<include>>
+    UC_Simuler .> UC_Grille : <<require>>
+    UC_Avis .> UC_Lignes : <<include>>
+    UC_Avis .> UC_AffecterRemise : <<include>>
+    UC_Lignes .> UC_Echeances : <<include>>
+    UC_Emettre .> UC_Facture : <<include>>
+    UC_Emettre .> UC_Grille : <<require>>
+    UC_FaireAvoir .> UC_AnnulerFacture : <<extend>>
+    UC_FaireAvoir .> UC_Avoir : <<include>>
+    UC_Avoir .> UC_AnnulerFacture : <<include>>
+    UC_Payer .> UC_Imputer : <<include>>
+    UC_PayerMulti .> UC_Imputer : <<include>>
+    UC_Payer .> UC_Recu : <<include>>
+    UC_PayerMulti .> UC_Recu : <<include>>
+    UC_PayerMulti .> UC_Cheque : <<extend>>
+    UC_PayerMulti .> UC_Espece : <<extend>>
+    UC_PayerMulti .> UC_Virement : <<extend>>
+    UC_PayerMulti .> UC_MobileMoney : <<extend>>
+    UC_Espece .> UC_VerifierLot : <<include>>
+    UC_Cheque .> UC_VerifierLot : <<include>>
+    UC_VerifierLot .> UC_EchecPaiement : <<extend>>
+    UC_AnnulerFacture .> UC_Litige : <<extend>>
+    UC_Recu .> UC_CouponPaiement : <<include>>
+    UC_CouponRemis .> UC_CouponPaiement : <<include>>
+    UC_CouponNonRendu .> UC_Recouvrement : <<include>>
+    UC_VerifierEmpreinte .> UC_ReimprimerCoupon : <<extend>>
+    UC_Avis .> UC_DetecterImpayes : <<include>>
+    UC_DetecterImpayes .> UC_Relances : <<include>>
+    UC_Relances .> UC_Recouvrement : <<extend>>
+    UC_Recouvrement .> UC_Suspendre : <<include>>
+    UC_Recouvrement .> UC_Bloquer : <<include>>
+    UC_LeverBlocage .> UC_Recouvrement : <<extend>>
+    UC_AttribuerBourse .> UC_DossierSocial : <<include>>
+    UC_AttribuerBourse .> UC_EvaluerDossier : <<include>>
+    UC_CloturerDossier .> UC_DossierSocial : <<include>>
+    UC_VerserBourse .> UC_AttribuerBourse : <<include>>
+    UC_VerserBourse .> UC_Payer : <<include>>
+    UC_Rapprocher .> UC_Encaissements : <<include>>
+  }
+}
+
+DIR --> UC_Grille
+DIR --> UC_TypeFrais
+DIR --> UC_Beneficiaire
+DIR --> UC_DefinirRemise
+DIR --> UC_Plafond
+DIR --> UC_TrancheRemise
+DIR --> UC_ActiverGrille
+DIR --> UC_CloturerGrille
+DIR --> UC_Simuler
+DIR --> UC_ProgrammeBourse
+DIR --> UC_AttribuerBourse
+DIR --> UC_AnnulerFacture
+DIR --> UC_FaireAvoir
+DIR --> UC_Recouvrement
+DIR --> UC_EtatPaiements
+DIR --> UC_ExporterRecouvrement
+SCO --> UC_Avis
+SCO --> UC_Lignes
+SCO --> UC_AffecterRemise
+SCO --> UC_Echeances
+SCO --> UC_Emettre
+SCO --> UC_AnnulerFacture
+SCO --> UC_Simuler
+SCO --> UC_EtatPaiements
+SCO --> UC_ExporterRecouvrement
+TRE --> UC_Payer
+TRE --> UC_PayerMulti
+TRE --> UC_Cheque
+TRE --> UC_Espece
+TRE --> UC_Virement
+TRE --> UC_MobileMoney
+TRE --> UC_VerifierLot
+TRE --> UC_Imputer
+TRE --> UC_Recu
+TRE --> UC_CouponRemis
+TRE --> UC_CouponNonRendu
+TRE --> UC_ReimprimerCoupon
+TRE --> UC_Encaissements
+TRE --> UC_Rapprocher
+CG --> UC_Imputer
+CG --> UC_VerserBourse
+CG --> UC_EtatPaiements
+CG --> UC_Rapprocher
+PAR --> UC_Payer
+PAR --> UC_PayerMulti
+PAR --> UC_CouponRemis
+PAR --> UC_CouponNonRendu
+PAR --> UC_VerifierEmpreinte
+PAR --> UC_DossierSocial
+PAR --> UC_Litige
+ELE --> UC_Payer
+ELE --> UC_PayerMulti
+ELE --> UC_CouponRemis
+ELE --> UC_EtatPaiements
+ELE --> UC_VerifierEmpreinte
+ELE --> UC_DossierSocial
+CPT --> UC_Imputer
+CPT --> UC_VerserBourse
+CPT --> UC_ExporterRecouvrement
+BAN --> UC_Virement
+
+note bottom of UC_Grille
+  <b>GRILLE TARIFAIRE VERSIONNEE</b>
+  Une grille par etablissement, par
+  annee, par profil d etablissement.
+
+  Montants, plafonds, remises et
+  tranches sont des donnees, jamais
+  des constantes dans le code.
+
+  Toute modification post-activation
+  cree une nouvelle version : les
+  factures deja emises gardent la
+  version d origine.
+end note
+
+note bottom of UC_CouponPaiement
+  <b>COUPON DE PAIEMENT</b>
+  Recu numerote et sequentiel par
+  annee : COUPON-PAIEMENT-2025-00123.
+
+  Porte : numero, QR de verification,
+  code-barres, montant en lettres,
+  moyen de paiement, mention.
+
+  L empreinte est un SHA-256 du
+  contenu : toute reimpression est
+  detectee. Un coupon annule garde sa
+  place dans la sequence et porte un
+  bandeau ANNULE.
+end note
+
+note bottom of UC_Suspendre
+  <b>IMPACT SCOLAIRE</b>
+  Une suspension ou un blocage pour
+  impaye est publie sous forme
+  d evenement. academic-people-service
+  le consomme pour gerer le
+  statut de l eleve et
+  academic-attendance-service pour
+  l assiduite.
+end note
+
+note bottom of UC_DossierSocial
+  <b>CONFORMITE</b>
+  Le dossier social ne stocke pas de
+  donnees sensibles en clair : il
+  pointe vers les pieces chiffrees
+  deposees par la famille et
+  conserve la decision motivee de
+  la commission.
+end note
+
+@enduml

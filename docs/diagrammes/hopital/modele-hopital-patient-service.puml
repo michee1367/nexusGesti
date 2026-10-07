@@ -1,0 +1,221 @@
+@startuml modele-hopital-patient-service
+hide empty members
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+
+title Modele de classes - hopital-patient-service (Dossier Patient)
+
+package "hopital-patient-service" {
+
+  enum Genre {
+    MASCULIN
+    FEMININ
+    AUTRE
+    NON_PRECISE
+  }
+
+  enum TypePieceIdentite {
+    CNI
+    PASSEPORT
+    PERMIS_CONDUIRE
+    ACTE_NAISSANCE
+    CARTE_SEJOUR
+    AUTRE
+  }
+
+  enum StatutDossier {
+    PROVISOIRE
+    ACTIF
+    ARCHIVE
+    FUSIONNE
+  }
+
+  enum TypeAdresse {
+    DOMICILE
+    RESIDENCE
+    ASSURANCE
+    AUTRE
+  }
+
+  enum CategoriePatient {
+    EXTERNE
+    INTERNE
+    URGENCE
+  }
+
+  enum SexeAdministratif {
+    M
+    F
+    AUTRE
+  }
+
+  class Adresse {
+    + id : UUID
+    + type : TypeAdresse
+    + ligne1 : String
+    + ligne2 : String
+    + ville : String
+    + codePostal : String
+    + pays : String
+    + telephone : String
+  }
+
+  class PieceIdentite {
+    + id : UUID
+    + type : TypePieceIdentite
+    + numero : String
+    + dateDelivrance : Date
+    + dateExpiration : Date
+    + fichierReference : String
+    + verifie : Boolean
+  }
+
+  class Patient <<aggregate root>> {
+    + id : UUID
+    + codePatient : String
+    + nom : String
+    + prenom : String
+    + nomJeuneFille : String
+    + dateNaissance : Date
+    + genre : Genre
+    + sexeAdministratif : SexeAdministratif
+    + categorie : CategoriePatient
+    + statut : StatutDossier
+    + dateCreation : DateTime
+    + dateMaj : DateTime
+    + mergeSource : UUID
+    + version : Long
+    + tiersId : UUID
+    + tiersResoluLe : DateTime?
+    --
+    + nomComplet() : String
+    + age() : Integer
+    + estMineur() : Boolean
+    + calculerAge() : Integer
+    + aTiers() : Boolean
+    + resoudreTiers() : UUID
+  }
+
+  class AssuranceMaladie {
+    + numero : String
+    + organisme : String
+    + numeroAdherent : String
+    + dateFinValidite : Date
+    + tauxCouverture : Decimal
+  }
+
+  class ContactUrgence {
+    + nom : String
+    + lienParente : String
+    + telephone : String
+    + telephoneSecondaire : String
+  }
+
+  class AnticedententsMedical {
+    + allergies : List<String>
+    + maladiesChroniques : List<String>
+    + surgeries : List<String>
+    + traitements : List<String>
+    + groupeSanguin : String
+    +.vaccinations : List<String>
+    + observations : String
+  }
+
+  class HistoriquePatient {
+    + ancienCode : String
+    + ancienNom : String
+    + motif : String
+    + dateRattachement : DateTime
+    + realisePar : UUID
+  }
+
+  class Consentement {
+    + id : UUID
+    + type : String
+    + accepte : Boolean
+    + dateSignature : DateTime
+    + signataire : String
+    + ip : String
+  }
+
+  ' ---- Relations ----
+  Patient "1" *-- "1" Genre : sexe >
+  Patient "1" o-- "1..*" Adresse : reside a >
+  Patient "1" o-- "0..*" Adresse : domicilie >
+  Patient "1" o-- "0..*" PieceIdentite : identifie par >
+  Patient "1" *-- "0..1" AssuranceMaladie : couvert par >
+  Patient "1" o-- "0..*" ContactUrgence : contact >
+  Patient "1" *-- "1" AnticedententsMedical : anticedents >
+  Patient "1" o-- "0..*" HistoriquePatient : historique >
+  Patient "1" o-- "0..*" Consentement : consent >
+  Patient "0..1" -- "0..*" Patient : fusionne dans >
+  Patient "0..1" -- "0..1" Tiers : facture par >
+  class Tiers <<external>> #transparent
+}
+
+note right of Patient
+  <b>IDENTITE SCOLAIRE</b>
+  Si le patient est aussi eleve,
+  le code etabissement est partage
+  avec academic-people-service.
+  Aucun montant, aucun resultat
+  scolaire dans ce service.
+end note
+
+note bottom of Patient
+  <b>FUSION DE DOSSIERS</b>
+  La fusion ne supprime rien :
+  le dossier fusionne passe a
+  ARCHIVE, la source est tracee
+  dans HistoriquePatient.
+
+  Meme regle pour academic-people :
+  les archives pedagogiques sont
+  conservees et pointees, jamais
+  deplacees.
+end note
+
+note bottom of AnticedententsMedical
+  Donnees de sante sensibles :
+  chiffrement au repos, acces
+  trace par audit-service, retention
+  parametrable par la
+  GrilleConformite.
+end note
+
+note bottom of Tiers
+  <b>LE PONT VERS LA COMPTABILITE</B>
+  Avant cet ajout, Patient et Tiers
+  etaient deux agregats isoles : aucun
+  acte hospitalier ne pouvait produire
+  une facture.
+
+  tiersId est le seul lien entre les
+  deux mondes. Il est nul la plupart du
+  temps, et se cree au premier acte
+  facturable.
+
+  <b>CREATION PARESSEUSE</b>
+  resoudreTiers() est appele a la
+  premiere emission d un
+  hopital.acte.facturable, pas a
+  l admission. Un patient qui ne doit
+  rien ne cree aucun tiers.
+
+  <b>CE QUE CE SERVICE NE FAIT PAS</B>
+  Ce service ne cree pas le tiers et ne
+  connait pas ses encours. Il enregistre
+  l identifiant et rend la main. La
+  creation, le controle d encours et la
+  suspension d un tiers restent la
+  propriete de fin-facturation-service.
+
+  <b>FUSION ET TIERS</B>
+  lors d une fusion de dossiers, le
+  tiers du dossier archive est conserve
+  tel quel : les factures deja emises
+  doivent continuer de pointer un tiers
+  existant.
+end note
+
+@enduml

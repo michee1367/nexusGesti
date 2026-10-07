@@ -1,0 +1,184 @@
+@startuml modele-fin-inventaire-service
+hide empty members
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+
+title Modele de classes - fin-inventaire-service (Inventaires, Ecarts et Regularisations)
+
+package "fin-inventaire-service" {
+
+  enum TypeInventaire {
+    ANNUEL
+    ROTATIF
+    PERMANENT
+    A_LA_CHAINE
+    SPECIAL
+  }
+
+  enum StatutInventaire {
+    BROUILLON
+    PROGRAMME
+    EN_COURS
+    COMPTAGE_TERMINE
+    VALIDE
+    CLOTURE
+    REGULARISE
+  }
+
+  enum MotifEcart {
+    ERREUR_SAISIE
+    ECART_ENTREE
+    ECART_SORTIE
+    PERTE
+    CASSAGE
+    OUBLI_LOT
+    LOT_PERIME
+    AUTRE
+  }
+
+  enum MethodePrixMoyen {
+    MOYEN_PONDERE
+    MOUVEMENT_PONDERE
+    SPECIFIQUE
+    DERNIER_PRIX
+  }
+
+  enum SourcePrix {
+    DERNIER_ACHAT
+    PRIX_MOYEN
+    VALEUR_DU_JOUR
+    PRIX_FACTURE
+  }
+
+  class Inventaire <<aggregate root>> {
+    + id : UUID
+    + reference : String
+    + type : TypeInventaire
+    + statut : StatutInventaire
+    + dateDebut : Date
+    + dateFin : Date
+    + dateProgrammation : Date
+    + dateComptage : Date
+    + dateCloture : DateTime
+    + depotCode : String
+    + devise : String
+    + methodeValorisation : MethodePrixMoyen
+    + totalEcartQuantite : Decimal
+    + totalEcartValeur : Decimal
+    + totalEcartSortant : Decimal
+    + libelle : String
+    + cloturePar : UUID
+    --
+    + estClos() : Boolean
+    + aDesEcarts() : Boolean
+    + recalculer() : void
+  }
+
+  class LigneInventaire {
+    + id : UUID
+    + numeroLigne : Integer
+    + articleCode : String
+    + designation : String
+    + lotNumero : String
+    + quantiteTheorique : Decimal
+    + quantiteComptee : Decimal
+    + quantiteCorrigee : Decimal
+    + ecart : Decimal
+    + prixMoyen : Decimal
+    + prixUtilise : Decimal
+    + sourcePrix : SourcePrix
+    + montantEcart : Decimal
+    + sensEcart : String
+    + motif : MotifEcart
+    + compteRegularisation : String
+    + journalRegularisation : String
+    + regularise : Boolean
+  }
+
+  class Compteage {
+    + id : UUID
+    + numero : String
+    + date : DateTime
+    + compteur : UUID
+    + zone : String
+    + observations : String
+    + signee : Boolean
+    + dateSignature : DateTime
+  }
+
+  class JustificationInventaire {
+    + id : UUID
+    + motif : MotifEcart
+    + commentaire : String
+    + pieceJustificative : String
+    + validePar : UUID
+    + date : DateTime
+  }
+
+  class CumulAValoriser {
+    + id : UUID
+    + articleCode : String
+    + depotCode : String
+    + dateDebut : Date
+    + dateFin : Date
+    + quantiteEntree : Decimal
+    + quantiteSortie : Decimal
+    + montantEntree : Decimal
+    + valeurADuStocker : Decimal
+    + statut : StatutInventaire
+  }
+
+  class ServiceInventaire <<external>> #transparent
+
+  ' ---- Relations ----
+  Inventaire "1" *-- "1..*" LigneInventaire : lignes >
+  Inventaire "1" *-- "0..*" Compteage : comptages >
+  Inventaire "1" o-- "0..*" JustificationInventaire : justifie >
+  Inventaire "1" *-- "0..1" CumulAValoriser : valorise >
+  Inventaire "1" --> "1" Depot : porte >
+  LigneInventaire "1" o-- "0..*" JustificationInventaire : motif >
+  LigneInventaire "0..*" --> "1" Article : article >
+  class Depot <<external>> #transparent
+  class Article <<external>> #transparent
+}
+
+note bottom of LigneInventaire
+  <b>ECART = COMPTE - THEORIQUE</b>
+  ecart positif  = surplus physique
+  ecart negatif  = manquants
+
+  Le montant d ecart est calcule
+  avec le prix retenu a la date
+  d arrete, celui de la source
+  indiquee.
+end note
+
+note bottom of Inventaire
+  <b>INVENTAIRE PERMANENT</b>
+  Chaque ecriture de stock genere un
+  comptage sans intervention : le
+  stock theorique est incremente
+  automatiquement, le stock reel
+  est saisi en continu.
+end note
+
+note bottom of CumulAValoriser
+  <b>PROVISOIRES ET INVENTAIRE PERMANENT</b>
+  En inventaire permanent, la valeur
+  du stock est figee le jour de
+  l arrete et ne bouge plus.
+end note
+
+note bottom of Inventaire
+  <b>REGULARISATION A LA CLOTURE</B>
+  Le proces-verbal d inventaire
+  constate les ecarts et les
+  regularise avec une ecriture
+  d inventaire.
+
+  La regularisation est bloquee
+  tant qu une ligne avec ecart n a
+  pas de justification et de visa.
+end note
+
+@enduml

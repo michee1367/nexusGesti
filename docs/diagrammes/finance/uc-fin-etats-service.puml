@@ -1,0 +1,216 @@
+@startuml uc-fin-etats-service
+skinparam packageStyle rectangle
+skinparam actorStyle stickman
+left to right direction
+
+title Diagramme des Cas d'Utilisation - fin-etats-service
+
+actor "Comptable" as COM
+actor "Comptable general" as CG
+actor "Directeur financier" as DAF
+actor "Auditeur externe" as AUD
+actor "Commissaire aux comptes" as CAC
+actor "Controleur de gestion" as CGEST
+actor "Administration fiscale" as FIS
+actor "Systeme Comptable" as CPT
+
+rectangle "Plateforme NexusGesti" {
+  rectangle "fin-etats-service" {
+
+    ' ---- Modeles de saisie ----
+    usecase "Creer un modele d ecriture" as UC_CreerModele
+    usecase "Definir les champs de saisie" as UC_DefinirChamps
+    usecase "Definir les lignes du modele" as UC_DefinirLignes
+    usecase "Definir une regle de calcul" as UC_DefinirRegle
+    usecase "Activer un modele" as UC_ActiverModele
+
+    ' ---- Saisie ----
+    usecase "Saisir une ecriture" as UC_SaisirEcriture
+    usecase "Saisir une operation diverse" as UC_OD
+    usecase "Previsualiser une ecriture" as UC_Previsualiser
+    usecase "Enregistrer une piece justificative" as UC_Piece
+    usecase "Valider une ecriture" as UC_ValiderEcriture
+    usecase "Comptabiliser une ecriture" as UC_Comptabiliser
+    usecase "Refuser une ecriture" as UC_RefuserEcriture
+    usecase "Regulariser une ecriture" as UC_RegulariserEcriture
+    usecase "Creer une ecriture recurrente" as UC_EcritureRecurrente
+    usecase "Creer une ecriture periodique" as UC_EcriturePeriodique
+
+    ' ---- Controles ----
+    usecase "Verifier l equilibre" as UC_VerifierEquilibre
+    usecase "Verifier la TVA" as UC_VerifierTVA
+    usecase "Verifier la devise" as UC_VerifierDevise
+    usecase "Verifier la piece justificative" as UC_VerifierPiece
+    usecase "Signaler une anomalie" as UC_Anomalie
+
+    ' ---- Lettrage ----
+    usecase "Lettrer une ecriture" as UC_LettrerEcriture
+    usecase "Lettrage automatique" as UC_LettrageAuto
+    usecase "Consulter un compte courant" as UC_CompteCourant
+
+    ' ---- Editions ----
+    usecase "Editer le journal general" as UC_JournalGeneral
+    usecase "Editer un journalier" as UC_Journalier
+    usecase "Editer le grand livre" as UC_GrandLivre
+    usecase "Editer la balance" as UC_Balance
+    usecase "Editer la balance auxiliaire" as UC_BalanceAuxiliaire
+    usecase "Editer la balance agee" as UC_BalanceAgee
+    usecase "Editer le recapitulatif de caisse" as UC_RecapCaisse
+
+    ' ---- Etats financiers ----
+    usecase "Editer le bilan" as UC_Bilan
+    usecase "Editer le compte de resultat" as UC_CompteResultat
+    usecase "Editer le tableau de financement" as UC_TableauFinancement
+    usecase "Editer l etat de tresorerie" as UC_EtatTresorerie
+    usecase "Editer l etat des charges par nature" as UC_ChargesNature
+    usecase "Generer le fichier FEC" as UC_FEC
+    usecase "Generer la liste des dossiers comptables" as UC_ListDossiers
+    usecase "Certifier un etat" as UC_Certifier
+    usecase "Verrouiller un etat" as UC_Verrouiller
+    usecase "Consulter un etat" as UC_ConsulterEtat
+
+    ' ---- Relations ----
+    UC_CreerModele .> UC_DefinirChamps : <<include>>
+    UC_CreerModele .> UC_DefinirLignes : <<include>>
+    UC_CreerModele .> UC_DefinirRegle : <<include>>
+    UC_ActiverModele .> UC_VerifierEquilibre : <<require>>
+    UC_SaisirEcriture .> UC_Previsualiser : <<include>>
+    UC_SaisirEcriture .> UC_Piece : <<include>>
+    UC_SaisirEcriture .> UC_VerifierEquilibre : <<include>>
+    UC_SaisirEcriture .> UC_VerifierTVA : <<include>>
+    UC_SaisirEcriture .> UC_VerifierDevise : <<include>>
+    UC_VerifierEquilibre .> UC_Anomalie : <<extend>>
+    UC_VerifierTVA .> UC_Anomalie : <<extend>>
+    UC_VerifierDevise .> UC_Anomalie : <<extend>>
+    UC_VerifierPiece .> UC_Anomalie : <<extend>>
+    UC_ValiderEcriture .> UC_VerifierEquilibre : <<require>>
+    UC_ValiderEcriture .> UC_VerifierPiece : <<require>>
+    UC_Comptabiliser .> UC_ValiderEcriture : <<require>>
+    UC_RefuserEcriture .> UC_Anomalie : <<include>>
+    UC_RegulariserEcriture .> UC_ValiderEcriture : <<include>>
+    UC_EcriturePeriodique .> UC_EcritureRecurrente : <<extend>>
+    UC_LettrageAuto .> UC_LettrerEcriture : <<include>>
+    UC_CompteCourant .> UC_LettrerEcriture : <<include>>
+    UC_Journalier .> UC_JournalGeneral : <<include>>
+    UC_GrandLivre .> UC_JournalGeneral : <<require>>
+    UC_Balance .> UC_GrandLivre : <<require>>
+    UC_BalanceAuxiliaire .> UC_Balance : <<require>>
+    UC_BalanceAgee .> UC_BalanceAuxiliaire : <<require>>
+    UC_Bilan .> UC_Balance : <<require>>
+    UC_CompteResultat .> UC_Balance : <<require>>
+    UC_TableauFinancement .> UC_Bilan : <<require>>
+    UC_EtatTresorerie .> UC_Journalier : <<require>>
+    UC_ChargesNature .> UC_CompteResultat : <<require>>
+    UC_FEC .> UC_GrandLivre : <<require>>
+    UC_ListDossiers .> UC_FEC : <<include>>
+    UC_Certifier .> UC_ConsulterEtat : <<require>>
+    UC_Verrouiller .> UC_Certifier : <<include>>
+  }
+}
+
+COM --> UC_CreerModele
+COM --> UC_DefinirChamps
+COM --> UC_DefinirLignes
+COM --> UC_DefinirRegle
+COM --> UC_ActiverModele
+COM --> UC_SaisirEcriture
+COM --> UC_OD
+COM --> UC_Previsualiser
+COM --> UC_Piece
+COM --> UC_ValiderEcriture
+COM --> UC_RefuserEcriture
+COM --> UC_RegulariserEcriture
+COM --> UC_EcritureRecurrente
+COM --> UC_EcriturePeriodique
+COM --> UC_Anomalie
+COM --> UC_LettrerEcriture
+COM --> UC_LettrageAuto
+COM --> UC_CompteCourant
+COM --> UC_Journalier
+COM --> UC_RecapCaisse
+CG --> UC_Comptabiliser
+CG --> UC_Certifier
+CG --> UC_Verrouiller
+CG --> UC_Anomalie
+CG --> UC_Bilan
+CG --> UC_CompteResultat
+CG --> UC_TableauFinancement
+CG --> UC_EtatTresorerie
+CG --> UC_ChargesNature
+CG --> UC_JournalGeneral
+CG --> UC_GrandLivre
+DAF --> UC_Bilan
+DAF --> UC_CompteResultat
+DAF --> UC_TableauFinancement
+DAF --> UC_EtatTresorerie
+DAF --> UC_ConsulterEtat
+CGEST --> UC_ConsulterEtat
+CGEST --> UC_Balance
+CGEST --> UC_BalanceAgee
+AUD --> UC_ConsulterEtat
+AUD --> UC_JournalGeneral
+AUD --> UC_GrandLivre
+AUD --> UC_Balance
+CAC --> UC_Certifier
+CAC --> UC_Verrouiller
+CAC --> UC_ListDossiers
+FIS --> UC_FEC
+FIS --> UC_ListDossiers
+CPT --> UC_Comptabiliser
+CPT --> UC_SaisirEcriture
+
+note bottom of UC_Anomalie
+  <b>ANOMALIES DETECTEES</b>
+   - ecriture des equilibree
+   - ligne sans compte imputable
+   - compte inexistant ou inactif
+   - devise absente ou taux manquant
+   - piece justificative manquante
+   - date posterieure a l exercice clos
+   - ecriture a un compte d ordre
+   - TVA non declaree
+
+  Chaque anomalie est classee
+  BLOQUANTE, ALERTE ou
+  INFORMATIONNELLE selon le
+  profil de controle.
+end note
+
+note bottom of UC_Certifier
+  <b>ETAT CERTIFIE</b>
+  Un etat certifie est fige :
+   - il porte une signature numerique ;
+   - il ne peut etre ni regenere ni
+     modifie ;
+   - il est seul accepte par
+     l administration fiscale.
+
+  La certification est un acte
+  nominatif et irreversible.
+end note
+
+note bottom of UC_SaisirEcriture
+  <b>SAISIE GUIDEE PAR MODELE</B>
+  L objectif est de rendre l ecriture
+  au journal facile : le comptable
+  choisit un modele, saisit deux ou
+  trois champs, et le modele genere
+  les lignes equilibrees, la TVA,
+  le compte tiers et le compte
+  tresorerie.
+
+  Sans modele, la saisie manuelle
+  reste possible avec controle
+  d equilibre.
+end note
+
+note bottom of UC_FEC
+  Le fichier FEC est produit a la
+  demande de l administration
+  fiscale, au format SYSCOHADA,
+  avec le journal, le compte, le
+  tiers, la date, le libelle et le
+  montant de chaque ligne.
+end note
+
+@enduml

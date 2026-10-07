@@ -1,0 +1,227 @@
+@startuml modele-fin-stock-service
+hide empty members
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+
+title Modele de classes - fin-stock-service (Articles, Depots, Mouvements et Valorisation)
+
+package "fin-stock-service" {
+
+  enum NatureArticle {
+    MARCHANDISE
+    MATIERE_PREMERE
+    PRODUIT_FINI
+    EMBALLAGE
+    FOURNITURE
+    PIECE_RECHANGE
+    MATERIEL
+  }
+
+  enum ModeValorisationStock {
+    COUT_MOYEN_PONDERE
+    FIFO
+    LIFO
+    COUT_SPECIFIQUE
+  }
+
+  enum TypeMouvementStock {
+    ENTREE_ACHAT
+    ENTREE_PRODUCTION
+    ENTREE_RETOUR
+    SORTIE_VENTE
+    SORTIE_CONSOMMATION
+    SORTIE_PERTE
+    TRANSFERT_SORTIE
+    TRANSFERT_ENTREE
+    AJUSTEMENT
+    INVENTAIRE
+  }
+
+  enum StatutCumul {
+      EN_COURS
+      CLOTURE
+      REGULARISE
+  }
+
+  enum UniteStock {
+    PIECE
+    KG
+    LITRE
+    METRE
+    CARTON
+    PAQUET
+    SAC
+    BOITE
+    FUTEILLE
+  }
+
+  enum TypeAlerte {
+    RUPTURE
+    SOUS_SEUIL
+    SURSTOCK
+    PEREMPTION
+    DORMANCE
+  }
+
+  class Article <<aggregate root>> {
+    + code : String
+    + designation : String
+    + nature : NatureArticle
+    + unite : UniteStock
+    + prixAchat : Decimal
+    + prixVenteHT : Decimal
+    + prixVenteTTC : Decimal
+    + tauxTva : Decimal
+    + stockAlerte : Decimal
+    + stockMax : Decimal
+    + depotParDefaut : String
+    + rayon : String
+    + actif : Boolean
+    + compteStock : String
+    + compteResultat : String
+    + lotControle : Boolean
+    + dureePeremption : Integer
+    --
+    + valeurStock() : Decimal
+    + estSousSeuil() : Boolean
+      + estEnRupture() : Boolean
+  }
+
+  class Depot {
+    + code : String
+    + nom : String
+    + adresse : String
+    + responsable : UUID
+    + actif : Boolean
+  }
+
+  class TarifArticle {
+    + id : UUID
+    + articleCode : String
+    + tiersCode : String
+    + prixUnitaire : Decimal
+    + quantiteMini : Decimal
+    + devise : String
+    + dateDebut : Date
+    + dateFin : Date
+  }
+
+  class Lot {
+    + numero : String
+    + articleCode : String
+    + dateReception : Date
+    + datePeremption : Date
+    + quantiteInitiale : Decimal
+    + quantiteDisponible : Decimal
+    + statut : String
+    + prixAchat : Decimal
+  }
+
+  class MouvementStock {
+    + id : UUID
+    + numero : String
+    + date : DateTime
+    + type : TypeMouvementStock
+    + articleCode : String
+    + lotNumero : String
+    + depotCode : String
+    + depotDestination : String
+    + quantite : Decimal
+    + prixUnitaire : Decimal
+    + montant : Decimal
+    + devise : String
+    + documentSource : String
+    + tiersCode : String
+    + comptabilise : Boolean
+    + utilisateurId : UUID
+  }
+
+  class PrixMoyenCalcule {
+    + articleCode : String
+    + depotCode : String
+    + dateCalcul : Date
+    + cumulQuantiteEntree : Decimal
+    + cumulMontantEntree : Decimal
+    + prixMoyenUnitaire : Decimal
+    + cumulAValoriser : Decimal
+    + statutCumul : StatutCumul
+    --
+    + calculer() : Decimal
+  }
+
+  class AlerteStock {
+    + id : UUID
+    + articleCode : String
+    + type : TypeAlerte
+    + date : DateTime
+    + quantiteActuelle : Decimal
+    + seuil : Decimal
+    + acquittee : Boolean
+    + acquitteePar : UUID
+  }
+
+  class FournisseurHabituel {
+    + articleCode : String
+    + tiersCode : String
+    + delaiLivraisonJours : Integer
+    + quantiteMini : Decimal
+    + reference : String
+  }
+
+  ' ---- Relations ----
+  Article "1" o-- "0..*" Lot : lots >
+  Article "1" o-- "0..*" PrixMoyenCalcule : valorise >
+  Article "1" o-- "0..*" AlerteStock : alerte >
+  Article "1" o-- "0..*" FournisseurHabituel : fournisseur >
+  Article "1" --> "1" Depot : depot par defaut >
+  Article "1" o-- "0..*" Depot : stocke >
+  Article "0..*" -- "0..*" TarifArticle : tarif >
+  TarifArticle "0..*" --> "1" Tiers : client >
+  Lot "1" o-- "0..*" MouvementStock : trace >
+  Depot "1" o-- "0..*" MouvementStock : mouvement >
+  PrixMoyenCalcule "0..*" --> "1" Depot : depot >
+  class Tiers <<external>> #transparent
+}
+
+note bottom of Article
+  <b>VALEUR = QUANTITE x PRIX MOYEN</b>
+  A chaque entree, le prix moyen de
+  l article dans le depot est recalcule :
+
+    CM = (Q anterieur x CM anterieur
+          + Q entree x PU entree)
+          / (Q anterieur + Q entree)
+
+  Ce calcul est incremental : il ne
+  recalcule pas tout l historique.
+end note
+
+note bottom of Article
+  <b>PRIX DIFFERES</b>
+  Les ecarts de prix d achat sont
+  enregistres dans un compte de
+  regularisation de stock, puis
+  soldes a la cloture de l exercice.
+end note
+
+note bottom of MouvementStock
+  <b>MOVEMENT SANS VALEUR = INVISIBLE</b>
+  Un mouvement n existe comptablement
+  que s il porte une valeur.
+  Sinon il reste un simple
+  mouvement de stock physique.
+
+  Les transfert ne creent pas de
+  marge : seule la date et le depot
+  changent.
+end note
+
+note bottom of Lot
+  <b>NUMEROTATION DES LOTS</b>
+  Format : ARTICLE-Fournisseur-Annee
+           -NumeroSequentiel
+
+  Exemple : MED-001-2026-0421
+end note
+
+@enduml

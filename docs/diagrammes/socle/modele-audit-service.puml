@@ -1,0 +1,191 @@
+@startuml modele-audit-service
+title Diagramme de Classes - Service Audit et Tracabilite (audit-service)
+skinparam classAttributeIconSize 0
+hide empty members
+
+' ============================================================
+' ENUMS
+' ============================================================
+
+enum TypeEvenement {
+  CREATION
+  MODIFICATION
+  SUPPRESSION
+  CONSULTATION
+  EXPORT
+  IMPRESSION
+  CONNEXION
+  DECONNEXION
+  CHANGEMENT_ETAT
+  PUBLICATION
+  ENREGISTREMENT
+  GENERATION_DOCUMENT
+  ACCES_DONNEES_SENSIBLES
+}
+enum Criticite {
+  INFORMATION
+  AVERTISSEMENT
+  BLOQUANT
+}
+enum CategorieEvenement {
+  SECURITE
+  DONNEES_PERSONNELLES
+  FINANCIER
+  MEDICAL
+  PEDAGOGIQUE
+  ADMINISTRATIF
+  SYSTEME
+  CONFORMITE
+}
+
+' ============================================================
+' AGREGAT : EVENEMENT D AUDIT (immuable)
+' ============================================================
+
+class EvenementAudit {
+  - idEvenement : UUID
+  - numeroSequence : Long
+  - type : TypeEvenement
+  - categorie : CategorieEvenement
+  - criticite : Criticite
+  - etablissement : UUID
+  - service : String
+  - ressource : String
+  - ressourceId : String
+  - action : String
+  - acteur : UUID
+  - acteurType : String
+  - horodatage : Instant
+  - dateEvenement : Instant
+  - adresseIp : String
+  - correlationId : String
+  - payloadAvant : Map<String,String>?
+  - payloadApres : Map<String,String>?
+  - differences : List<Difference>?
+  - verrouille : Boolean
+  + estVerrouille() : Boolean
+  + obtenirDifferences() : List<Difference>
+  + aConcerne(ressource : String, id : String) : Boolean
+}
+
+class Difference {
+  - champ : String
+  - valeurAvant : String?
+  - valeurApres : String?
+  + estDonneeSensible() : Boolean
+}
+
+' ============================================================
+' ACCES AUX DONNEES SENSIBLES
+' ============================================================
+
+class AccesDonneeSensible {
+  - id : UUID
+  - evenement : UUID
+  - acteur : UUID
+  - patient : UUID?
+  - eleve : UUID?
+  - tiers : UUID?
+  - finalite : FinaliteAcces
+  - baseLegale : String?
+  - consentementRef : String?
+  - horodatage : Instant
+  + estRegularisee() : Boolean
+}
+
+enum FinaliteAcces {
+  SOIN
+  PEDAGOGIE
+  ADMINISTRATION
+  RECHERCHE
+  AUDIT
+  QUALITE
+  STATISTIQUE
+  FORCE_MAJEURE
+  HABILITATION
+}
+
+class Anomalie {
+  - idAnomalie : UUID
+  - type : String
+  - criticite : Criticite
+  - ressource : String
+  - ressourceId : String
+  - acteur : UUID
+  - dateDetection : Instant
+  - dateResolution : Instant?
+  - statut : String
+  - description : String
+  - regleDeclaree : String?
+  + estOuverte() : Boolean
+  + resoudre(commentaire : String) : Anomalie
+}
+
+' ============================================================
+' RETENTION ET CONFORMITE
+' ============================================================
+
+class PolitiqueRetention {
+  - id : UUID
+  - categorie : CategorieEvenement
+  - dureeConservationJours : Integer
+  - archivageApres : Integer?
+  - purgeApres : Integer?
+  - justifieePar : String
+  + estExpirable(evenement : EvenementAudit, date : Instant) : Boolean
+  + doitArchiver(date : Instant) : Boolean
+}
+
+class JournalIntegrite {
+  - id : UUID
+  - periode : Date
+  - nbEvenements : Long
+  - empreinteChaine : String
+  - empreinteAncienne : String?
+  - dateScellement : Instant
+  - scellePar : UUID
+  + verifierChaine() : Boolean
+  + sceller(empreinte : String) : JournalIntegrite
+}
+
+class ExportAudit {
+  - id : UUID
+  - format : String
+  - periodeDebut : Instant
+  - periodeFin : Instant
+  - filtres : Map<String,String>
+  - demandeur : UUID
+  - dateCreation : Instant
+  - nbLignes : Long
+  - empreinte : String
+  - uri : String
+  - dateExpiration : Instant
+  + estExpire(date : Instant) : Boolean
+}
+
+' ============================================================
+' RELATIONS ET CARDINALITES
+' ============================================================
+
+EvenementAudit "1" o-- "0..*" Difference : detaille >
+EvenementAudit "1" o-- "0..1" AccesDonneeSensible : encadre >
+EvenementAudit "1" o-- "0..*" Anomalie : genere >
+EvenementAudit "1" -- "1..*" PolitiqueRetention : retenu par >
+PolitiqueRetention "1" *-- "0..*" Anomalie : surveille >
+AccesDonneeSensible ..> FinaliteAcces : justifie par >
+JournalIntegrite "1" *-- "0..*" EvenementAudit : scelle >
+ExportAudit "1" o-- "0..*" EvenementAudit : agrege >
+Anomalie "0..1" -- "1" EvenementAudit : detecte dans >
+EvenementAudit ..> TypeEvenement : type >
+EvenementAudit ..> Criticite : classe >
+EvenementAudit ..> CategorieEvenement : categorise >
+AccesDonneeSensible ..> Criticite : justifie >
+
+note right of EvenementAudit
+  Append-only : aucun UPDATE ni DELETE.
+  Une correction passe par un nouvel
+  evenement lie par correlationId.
+  Verrouille = scelle dans JournalIntegrite.
+end note
+
+@enduml

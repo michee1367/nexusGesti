@@ -1,0 +1,132 @@
+@startuml uc-socle-reporting-service
+skinparam packageStyle rectangle
+skinparam actorStyle stickman
+left to right direction
+
+title Diagramme des Cas d'Utilisation - Service Production de Documents (reporting-service)
+
+actor "Eleve" as ELE
+actor "Parent" as PAR
+actor "Enseignant" as ENS
+actor "Proviseur / Directeur" as DIR
+actor "Medecin" as MED
+actor "Comptable" as COM
+actor "Service Scolarité" as SCO
+actor "Service Metier" as MET
+
+rectangle "Plateforme NexusGesti" {
+  rectangle "reporting-service" {
+
+    ' ---- Documents pedagogiques ----
+    usecase "Generer le bulletin de notes" as UC_Bulletin
+    usecase "Generer le coupon de notes detachable" as UC_CouponNotes
+    usecase "Generer le releve de notes" as UC_Releve
+    usecase "Generer une attestation de scolarite" as UC_Attestation
+    usecase "Generer un certificat de scolarite" as UC_Certificat
+    usecase "Generer la carte d eleve" as UC_Carte
+    usecase "Generer une liste d emargement" as UC_Emargement
+    usecase "Generer une convocation" as UC_Convocation
+
+    ' ---- Documents financiers et medicaux ----
+    usecase "Generer un coupon de paiement" as UC_CouponPaiement
+    usecase "Generer un recu de paiement" as UC_Recu
+    usecase "Generer une facture" as UC_Facture
+    usecase "Generer un ticket de caisse" as UC_Ticket
+    usecase "Generer une ordonnance" as UC_Ordonnance
+    usecase "Generer les etats financiers OHADA" as UC_EtatsFinanciers
+    usecase "Generer une balance ou un journal general" as UC_Balance
+    usecase "Generer le fichier FEC" as UC_Fec
+    usecase "Generer un etat de stock" as UC_EtatStock
+
+    ' ---- Lots ----
+    usecase "Lancer une generation en masse" as UC_Lot
+    usecase "Suivre l avancement d un lot" as UC_SuiviLot
+    usecase "Rejouer les echecs d un lot" as UC_Rejouer
+
+    ' ---- Modeles ----
+    usecase "Creer un modele de document" as UC_Modele
+    usecase "Versionner un modele" as UC_Versionner
+    usecase "Tester un modele" as UC_Tester
+    usecase "Configurer les sections et variables" as UC_Sections
+    usecase "Televerser une entete et un pied de page" as UC_EnTete
+
+    ' ---- Signature et diffusion ----
+    usecase "Faire signer un document" as UC_Signer
+    usecase "Verifier la signature" as UC_VerifierSignature
+    usecase "Diffuser a un destinataire" as UC_Diffuser
+    usecase "Telecharger un document" as UC_Telecharger
+    usecase "Annuler une generation" as UC_Annuler
+
+    ' ---- Relations ----
+    UC_Bulletin .> UC_CouponNotes : <<include>>
+    UC_CouponPaiement .> UC_Recu : <<extend>>
+    UC_Versionner .> UC_Tester : <<include>>
+    UC_Lot .> UC_SuiviLot : <<include>>
+    UC_Lot .> UC_Rejouer : <<extend>>
+    UC_Signer .> UC_VerifierSignature : <<include>>
+    UC_CouponNotes .> UC_Signer : <<extend>>
+    UC_Recu .> UC_Signer : <<extend>>
+    UC_Certificat .> UC_Signer : <<extend>>
+    UC_Modele .> UC_Sections : <<include>>
+    UC_Modele .> UC_EnTete : <<include>>
+    UC_EtatsFinanciers .> UC_Signer : <<extend>>
+  }
+}
+
+ELE --> UC_Bulletin
+ELE --> UC_Releve
+ELE --> UC_Carte
+ELE --> UC_Emargement
+ELE --> UC_Convocation
+ELE --> UC_Telecharger
+PAR --> UC_CouponNotes
+PAR --> UC_Recu
+PAR --> UC_Attestation
+ENS --> UC_Bulletin
+ENS --> UC_Releve
+ENS --> UC_Convocation
+ENS --> UC_Emargement
+ENS --> UC_Ticket
+DIR --> UC_Bulletin
+DIR --> UC_Attestation
+DIR --> UC_Certificat
+DIR --> UC_Lot
+DIR --> UC_SuiviLot
+DIR --> UC_Modele
+DIR --> UC_Signer
+DIR --> UC_Diffuser
+DIR --> UC_Versionner
+DIR --> UC_Tester
+MED --> UC_Ordonnance
+MED --> UC_Facture
+MED --> UC_Signer
+COM --> UC_Facture
+COM --> UC_CouponPaiement
+COM --> UC_EtatsFinanciers
+COM --> UC_Balance
+COM --> UC_Fec
+COM --> UC_Recu
+SCO --> UC_Bulletin
+SCO --> UC_Lot
+SCO --> UC_Rejouer
+SCO --> UC_Carte
+SCO --> UC_Recu
+MET --> UC_Emettre
+MET --> UC_Annuler
+
+note bottom of UC_Bulletin
+  Le service collecte les donnees via
+  SourceDonnees (academic-assessment-service,
+  academic-exam-service) puis rend le
+  gabarit Bulletin du ModeleDocument
+  dans sa version courante.
+end note
+
+note bottom of UC_Lot
+  Une generation en masse est un
+  LotGeneration : une Generation par
+  eleve / par mois. L archive ZIP est
+  conservee 30 jours (parametrable).
+end note
+
+@enduml

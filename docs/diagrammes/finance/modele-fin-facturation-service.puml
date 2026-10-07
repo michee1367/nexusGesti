@@ -1,0 +1,297 @@
+@startuml modele-fin-facturation-service
+hide empty members
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+
+title Modele de classes - fin-facturation-service (Tiers, Commandes, Factures et Avoirs)
+
+package "fin-facturation-service" {
+
+  ' ================= TIERS =================
+  package "tiers" {
+
+    enum TypeTiers {
+      CLIENT
+      FOURNISSEUR
+      SALARIE
+      ETABLISSEMENT
+      GOUVERNEMENT
+      BANQUE
+      AUTRE
+    }
+
+    enum StatutTiers {
+      ACTIF
+      SUSPENDU
+      RADIE
+      INACTIF
+    }
+
+    enum ModeReglement {
+      ESPECE
+      CHEQUE
+      VIREMENT
+      MOBILE_MONEY
+      TRAITE
+      A_TERME
+    }
+
+    class Tiers <<aggregate root>> {
+      + code : String
+      + type : TypeTiers
+      + raisonSociale : String
+      + nomContact : String
+      + adresse : String
+      + telephone : String
+      + email : String
+      + ville : String
+      + pays : String
+      + nif : String
+      + rccm : String
+      + statut : StatutTiers
+      + plafondCredit : Decimal
+      + encours : Decimal
+      + devise : String
+      + solde : Decimal
+      --
+      + client() : Boolean
+      + fournisseur() : Boolean
+      + estEnBlocage() : Boolean
+    }
+
+    class EcheancePaiement {
+      + numero : String
+      + dateEcheance : Date
+      + montant : Decimal
+      + montantRegle : Decimal
+      + devise : String
+      + relance : Integer
+      + dateDerniereRelance : Date
+    }
+  }
+
+  ' ================= VENTE =================
+  package "cycle" {
+
+    enum TypeFacture {
+      PROFORMA
+      DEFINITIVE
+      CREDIT_NOTE
+    }
+
+    enum StatutFacture {
+      BROUILLON
+      VALIDEE
+      PARTIELLEMENT_REGLEE
+      REGLEE
+      ANNULEE
+      EN_RETARD
+      PROTESTEE
+    }
+
+    enum StatutCommande {
+      BROUILLON
+      VALIDEE
+      EN_PREPARATION
+      LIVREE
+      FACTUREE
+      ANNULEE
+    }
+
+    enum MotifAvoir {
+      RETOUR_DE_MARCHANDISE
+      ERREUR_DE_SAISIE
+      REMISE_COMMERCIALE
+      LITIGE
+      AVANT_VENTE
+    }
+
+    enum TauxTVA {
+      ZERO
+      TVA_5
+      TVA_10
+      TVA_16
+      EXONERE
+    }
+
+    class Commande {
+      + numero : String
+      + date : Date
+      + statut : StatutCommande
+      + tiersCode : String
+      + montantHT : Decimal
+      + montantTTC : Decimal
+      + devise : String
+      + observation : String
+      + validéePar : UUID
+    }
+
+    class LigneCommande {
+      + numeroLigne : Integer
+      + articleCode : String
+      + designation : String
+      + quantite : Decimal
+      + prixUnitaire : Decimal
+      + tauxTva : TauxTVA
+      + montantHT : Decimal
+    }
+
+    class Livraison {
+      + numero : String
+      + date : Date
+      + commandeNumero : String
+      + tiersCode : String
+      + statut : String
+      + bonLivraison : String
+      + dateReception : Date
+      + observePar : UUID
+    }
+
+    class Facture <<aggregate root>> {
+      + numero : String
+      + date : Date
+      + dateEcheance : Date
+      + type : TypeFacture
+      + statut : StatutFacture
+      + tiersCode : String
+      + commandeNumero : String
+      + montantHT : Decimal
+      + montantTVA : Decimal
+      + montantTTC : Decimal
+      + montantNetAPayer : Decimal
+      + devise : String
+      + tauxChange : Decimal
+      + conditionReglement : String
+      + echeances : List<String>
+      + pointVente : String
+      + exporte : Boolean
+      + journalSource : String
+      --
+      + estReglee() : Boolean
+      + estEnRetard() : Boolean
+      + calculerEquilibre() : Boolean
+      + totalTva() : Decimal
+    }
+
+    class LigneFacture {
+      + numeroLigne : Integer
+      + articleCode : String
+      + designation : String
+      + quantite : Decimal
+      + prixUnitaireHT : Decimal
+      + tauxTva : TauxTVA
+      + montantHT : Decimal
+      + montantTVA : Decimal
+      + remisePct : Decimal
+      + compteProduit : String
+      + compteTva : String
+      + compteTiers : String
+      + lotNumero : String
+    }
+
+    class Avoir {
+      + numero : String
+      + date : Date
+      + factureOrigine : String
+      + motif : MotifAvoir
+      + montantHT : Decimal
+      + montantTVA : Decimal
+      + montantTTC : Decimal
+      + devise : String
+      + comptabilise : Boolean
+      + journalSource : String
+    }
+
+    class Reglement {
+      + numero : String
+      + date : Date
+      + tiersCode : String
+      + factureNumero : String
+      + montant : Decimal
+      + devise : String
+      + mode : ModeReglement
+      + referenceExterne : String
+      + banque : String
+      + comptabilise : Boolean
+    }
+  }
+
+  ' ================= Relations =================
+  Commande "1" *-- "1..*" LigneCommande : lignes >
+  Commande "1" --> "1" Tiers : client >
+  Livraison "1" --> "1" Commande : honore >
+  Livraison "1" --> "1" Tiers : destinataire >
+  Facture "1" *-- "1..*" LigneFacture : lignes >
+  Facture "1" --> "1" Tiers : client >
+  Facture "1" o-- "0..*" EcheancePaiement : echeances >
+  Facture "0..1" --> "0..1" Commande : facture >
+  Facture "0..*" -- "0..*" Reglement : regle >
+  Reglement "1" --> "1" Tiers : concerne >
+  Reglement "1" o-- "0..*" EcheancePaiement : impute >
+  Avoir "1" --> "1" Facture : corrige >
+  Avoir "1" --> "1" Tiers : concerne >
+  class Article <<external>> #transparent
+  LigneFacture "0..*" --> "0..1" Article : article >
+  LigneCommande "0..*" --> "0..1" Article : article >
+}
+
+note bottom of Facture
+  <b>EQUILIBRE COMPTABLE</b>
+  A la validation, la facture genere
+  l ecriture :
+
+    611 / 6111  Achats de marchandises   HT
+    4451      TVA debitee               TVA
+    4452      TVA due                   - TVA
+    70 / 701   Ventes de marchandises  - HT
+    411        Client                   - TTC
+
+  Le taux de change et la devise
+  d origine sont memorises pour
+  permettre la conversion au taux
+  moyen de cloture.
+end note
+
+note bottom of Tiers
+  <b>PLAFOND DE CREDIT</b>
+  Le controle d encours s applique
+  avant validation d une facture :
+    encours + montantTTC <= plafond
+
+  Un tiers en SUSPENDU ne peut plus
+  etre facture. La suspension est
+  positionnee automatiquement au
+  depot d un mandat de surfaces.
+end note
+
+note bottom of Avoir
+  Un avoir est une ecriture
+  symetrique : il reprend les
+  comptes de la facture d origine,
+  en sens inverse, et decremente
+  l encours du tiers.
+
+  Un avoir reste MEME non comptabilise
+  tant que le comptage n est pas
+  confirme.
+end note
+
+note bottom of Facture
+  <b>INCOHERENCES BLOQUANTES</b>
+  - valeur devise inferieure a 1
+    ou non presente
+  - remise superieure au total HT
+  - quantite nulle ou negative sur
+    une ligne
+  - facture non equilibree
+  - tiers inactif ou suspendu
+  - commande non honoree
+  - ligne sans article actif
+  - reference lot inconnue
+
+  Ces controles sont actives par
+  profil de controle : BLOQUANT,
+  ALERTE ou INFORMATIONNEL.
+end note
+
+@enduml

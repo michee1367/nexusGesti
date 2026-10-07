@@ -1,0 +1,110 @@
+@startuml uc-socle-audit-service
+skinparam packageStyle rectangle
+skinparam actorStyle stickman
+left to right direction
+
+title Diagramme des Cas d'Utilisation - Service Audit et Tracabilite (audit-service)
+
+actor "Administrateur" as ADM
+actor "Medecin" as MED
+actor "Secretaire" as SEC
+actor "Comptable" as COM
+actor "Auditeur externe" as AUD
+actor "Direction Generale" as DG
+actor "Service Metier" as MET
+
+rectangle "Plateforme NexusGesti" {
+  rectangle "audit-service" {
+
+    ' ---- Collecte ----
+    usecase "Consigner un evenement" as UC_Consigner
+    usecase "Tracer une modification de donnee" as UC_TracerModif
+    usecase "Tracer une consultation" as UC_TracerConsult
+    usecase "Tracer un acces a une donnee sensible" as UC_TracerSensible
+    usecase "Tracer une impression ou un export" as UC_TracerExport
+
+    ' ---- Consultation ----
+    usecase "Consulter la piste d audit d un objet" as UC_Piste
+    usecase "Rechercher des evenements" as UC_Rechercher
+    usecase "Filtrer par acteur, service ou periode" as UC_Filtrer
+    usecase "Consulter le journal d un etablissement" as UC_Journal
+
+    ' ---- Confidentialite ----
+    usecase "Declarer la finalite d un acces" as UC_Finalite
+    usecase "Verifier le consentement du patient" as UC_Consentement
+    usecase "Generer un acces regulierise" as UC_Reguliser
+
+    ' ---- Conformite ----
+    usecase "Detecter une anomalie" as UC_Anomalie
+    usecase "Resoudre une anomalie" as UC_Resoudre
+    usecase "Sceller un journal d integrite" as UC_Sceller
+    usecase "Verifier la chaine d integrite" as UC_VerifierChaine
+    usecase "Configurer la politique de retention" as UC_Retention
+    usecase "Archiver les evenements expires" as UC_Archiver
+
+    ' ---- Exports ----
+    usecase "Exporter la piste d audit" as UC_Exporter
+    usecase "Produire un export signe" as UC_ExportSigne
+
+    ' ---- Relations ----
+    UC_TracerModif .> UC_Consigner : <<include>>
+    UC_TracerConsult .> UC_Consigner : <<include>>
+    UC_TracerSensible .> UC_Finalite : <<include>>
+    UC_TracerSensible .> UC_Consentement : <<include>>
+    UC_TracerSensible .> UC_Reguliser : <<include>>
+    UC_Consigner .> UC_Anomalie : <<include>>
+    UC_Anomalie .> UC_Resoudre : <<include>>
+    UC_Sceller .> UC_VerifierChaine : <<include>>
+    UC_Retention .> UC_Archiver : <<include>>
+    UC_Exporter .> UC_ExportSigne : <<extend>>
+  }
+}
+
+MET --> UC_Consigner
+MET --> UC_TracerModif
+MET --> UC_TracerConsult
+MET --> UC_TracerSensible
+MET --> UC_TracerExport
+SEC --> UC_Piste
+SEC --> UC_Rechercher
+SEC --> UC_Filtrer
+SEC --> UC_Journal
+SEC --> UC_Finalite
+COM --> UC_Piste
+COM --> UC_Rechercher
+COM --> UC_Filtrer
+COM --> UC_Exporter
+MED --> UC_Piste
+MED --> UC_Finalite
+MED --> UC_Consentement
+MED --> UC_Reguliser
+AUD --> UC_Exporter
+AUD --> UC_ExportSigne
+AUD --> UC_VerifierChaine
+AUD --> UC_Piste
+AUD --> UC_Retention
+ADM --> UC_Retention
+ADM --> UC_Archiver
+ADM --> UC_Sceller
+ADM --> UC_Resoudre
+ADM --> UC_Journal
+DG --> UC_Journal
+DG --> UC_Exporter
+
+note bottom of UC_TracerSensible
+  Tout acces au dossier medical, aux
+  donnees de paiement ou au releve de
+  notes est trace avec sa finalite
+  (soin, administration, recherche...).
+  Un acces sans finalite declaree est
+  une anomalie BLOQUANTE.
+end note
+
+note bottom of UC_Sceller
+  Le scellement fige la chaine de
+  valeurs de hash : toute insertion
+  ulterieure ne peut plus modifier
+  le perimetre deja scelle.
+end note
+
+@enduml

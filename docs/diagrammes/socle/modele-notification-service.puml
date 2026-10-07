@@ -1,0 +1,189 @@
+@startuml modele-notification-service
+title Diagramme de Classes - Service Notifications (notification-service)
+skinparam classAttributeIconSize 0
+hide empty members
+
+' ============================================================
+' ENUMS
+' ============================================================
+
+enum Canal {
+  EMAIL
+  SMS
+  WHATSAPP
+  PUSH
+  IN_APP
+  WEBHOOK
+}
+enum StatutNotification {
+  BROUILLON
+  PROGRAMMEE
+  EN_ATTENTE
+  ENVOYEE
+  PARTIELLEMENT_ENVOYEE
+  ECHEC
+  ANNULEE
+  EXPIREE
+}
+enum CategorieNotification {
+  SCOLARITE
+  PRESENCE
+  EVALUATION
+  EXAMEN
+  FACTURATION
+  MEDICALE
+  STOCK
+  SYSTEME
+  SECURITE
+}
+enum Priorite {
+  BASSE
+  NORMALE
+  HAUTE
+  CRITIQUE
+}
+
+' ============================================================
+' AGREGAT : NOTIFICATION
+' ============================================================
+
+class Notification {
+  - idNotification : UUID
+  - categorie : CategorieNotification
+  - priorite : Priorite
+  - statut : StatutNotification
+  - sujet : String
+  - corps : String
+  - corpsHtml : String?
+  - donnees : Map<String,String>
+  - dateProgrammation : Instant?
+  - dateEnvoi : Instant?
+  - dateExpiration : Instant?
+  - emetteur : String
+  - etablissement : UUID
+  + programmer(date : Instant) : Notification
+  + envoyer() : Notification
+  + annuler(motif : String) : Notification
+  + estExpiree(date : Instant) : Boolean
+  + getTauxReussite() : Decimal
+}
+
+class Destinataire {
+  - id : UUID
+  - notification : UUID
+  - canal : Canal
+  - adresse : String
+  - nom : String?
+  - statut : StatutNotification
+  - dateTentative : Instant?
+  - nbTentatives : Integer
+  - dateDerniereErreur : Instant?
+  - erreur : String?
+  + marquerEchec(erreur : String) : Destinataire
+  + marquerReussite() : Destinataire
+  + echouerDefinitive() : Destinataire
+}
+
+' ============================================================
+' AGREGAT : GABARIT
+' ============================================================
+
+class ModeleMessage {
+  - idModele : UUID
+  - code : String
+  - libelle : String
+  - categorie : CategorieNotification
+  - canal : Canal
+  - sujet : String
+  - corpsTexte : String
+  - corpsHtml : String?
+  - langue : String
+  - variables : List<String>
+  - active : Boolean
+  + rendre(variables : Map<String,String>) : String
+  + validerVariables() : List<String>
+}
+
+class PieceJointeNotification {
+  - nomFichier : String
+  - typeMime : String
+  - taille : Long
+  - uri : String
+  - expiration : Instant?
+}
+
+class RegleDiffusion {
+  - id : UUID
+  - code : String
+  - categorie : CategorieNotification
+  - canaux : List<Canal>
+  - destinataires : List<TypeDestinataire>
+  - delaiEnvoi : Integer?
+  - heuresAutorisees : List<PlageHoraire>
+  - active : Boolean
+  + resoudre(canaux : List<Canal>, destinataires : List<TypeDestinataire>)
+        : List<Canal>
+}
+
+enum TypeDestinataire {
+  ELEVE
+  PARENT
+  TUTEUR
+  ENSEIGNANT
+  TITULAIRE
+  PROVISEUR
+  SECRETAIRE
+  MEDECIN
+  INFIRMIER
+  PHARMACIEN
+  COMPTABLE
+  CAISSIER
+  DIRECTEUR
+  SERVICE_GENERAL
+}
+
+class PlageHoraire {
+  - heureDebut : Time
+  - heureFin : Time
+}
+
+class PreferenceNotification {
+  - utilisateur : UUID
+  - categorie : CategorieNotification
+  - canauxActifs : List<Canal>
+  - active : Boolean
+  - heureSilenceDebut : Time?
+  - heureSilenceFin : Time?
+}
+
+class ConsommationCanal {
+  - canal : Canal
+  - date : Date
+  - envoyes : Integer
+  - echecs : Integer
+  - coutTotal : Decimal
+  + getTauxEchec() : Decimal
+}
+
+' ============================================================
+' RELATIONS ET CARDINALITES
+' ============================================================
+
+Notification "1" *-- "1..*" Destinataire : cible >
+Notification "1" *-- "0..*" PieceJointeNotification : joint >
+Notification "1" -- "0..1" ModeleMessage : rend par >
+Notification "1" -- "0..1" RegleDiffusion : applique >
+Notification "1" -- "1" CategorieNotification : categorise >
+Notification "1" -- "1" Priorite : priorise >
+
+ModeleMessage "1" -- "0..*" Notification : alimente >
+RegleDiffusion "1" *-- "1..*" PlageHoraire : limite >
+PreferenceNotification "0..1" -- "0..*" Destinataire : filtre >
+Canal "1" -- "0..*" ConsommationCanal : agrege >
+Canal "1" -- "0..*" Notification : utilise >
+PreferenceNotification ..> Canal : restreint >
+Destinataire ..> StatutNotification : suit >
+Notification ..> StatutNotification : suit >
+Notification ..> Priorite : escalade selon >
+
+@enduml
