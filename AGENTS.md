@@ -181,7 +181,7 @@ Ordre des phases validé : **socle → pédagogie → hôpital → finance.** Un
 | Phase | Périmètre | État |
 |---|---|---|
 | 0 | Rendu SVG des 56 diagrammes | **écartée par l'utilisateur** |
-| 1 | Socle technique (`shared/*` + passerelle + infra) | **EN COURS** — services bootent, `/actuator/health` → 200, Prometheus 5 cibles `up`, **RLS prouvé de bout en bout** (§11, 2026-10-07), D3 et D4 appliqués ; reste le commit |
+| 1 | Socle technique (`shared/*` + passerelle + infra) | **VALIDÉE** — 5 services bootent, `/actuator/health` → 200, Prometheus 5 cibles `up`, **RLS prouvé de bout en bout** (§11, 2026-10-07), D3 et D4 appliqués, `mvn test` vert (59), **commit `5158d45`** |
 | 2 | `tenant-service` (agégat `Etablissement`, `ProfilEtablissement`, grilles) | à faire |
 | 3 | reste du socle (`identity`, `auth`, `notification`, `audit`, `reporting`) | à faire |
 | 4 | pédagogie (7 services `academic-*`) | à faire |
@@ -382,7 +382,7 @@ Aujourd'hui : `health` → **200 `{"status":"UP"}`** sur les 5 services, `info` 
   passerelle avant tout renvoi vers `auth-service`.
 - `mvn test` : **BUILD SUCCESS** après ces modifications.
 
-2026-10-07 — **RLS prouvé de bout en bout**, D3 appliqué, contrat villagesat nettoyé.
+2026-10-07 — **RLS prouvé de bout en bout**, D3 et D4 appliqués, contrat villagesat nettoyé.
 
 Le RLS existait déjà (migrations `V*__rls.sql` + `V*__app_role.sql` des 4 services) ; il était
 inerte pour une raison différente : le bean qui enveloppe le DataSource n'était **jamais créé**.
@@ -463,10 +463,9 @@ tenant A → 1 ligne, tenant B → **[]** ; `POST` sans `format` → **400**. Co
 
 ### Restant
 
-- `backend/` et `.gitignore` **untracked**, docs en `staged`, **0 commit** — à commiter avec les
-  corrections D4 et `@enduml`.
+- **Commit `5158d45` (251 fichiers)** : docs + `.gitignore` + `backend/`. Phase 1 close.
 - `@Async` de `ReportService.generateAsync` inerte (self-invocation) : génération synchrone.
   À corriger si le rapport doit vraiment être émis hors du thread de requête.
 - `"kyc_level": ["0"]` dans `realm-nexusgesti.json` et `ReportType.KYC_SUMMARY` /
   templates `kyc.*` : restes villagesat signalés hors périmètre par l'utilisateur.
-- Phase 1 non close : services OK, monitoring OK, RLS prouvé, D3 et D4 appliqués — reste le commit.
+- Prochaine étape §9 : phase 2 (`tenant-service`).
