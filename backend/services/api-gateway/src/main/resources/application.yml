@@ -148,6 +148,10 @@ nexusgesti:
   gateway:
     # Reseau de confiance : chaque client porte son etablissement
     require-tenant-header: true
+  cors:
+    # Origines autorisees pour le navigateur (console). Surchargeable par
+    # NEXUSGESTI_CORS_ALLOWED_ORIGINS si le port du frontend change.
+    allowed-origins: ${NEXUSGESTI_CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:3001,http://localhost:3002,http://localhost:3003,http://localhost:3004}
 
 management:
   endpoints:

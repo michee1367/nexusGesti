@@ -16,9 +16,11 @@ Plateforme SaaS multi-tenant pour trois domaines :
 | **Hôpital** | patients, RDV, consultations, pharmacie |
 | **Finance** | comptabilité OHADA / SYSCOHADA RDC |
 
-**Périmètre actuel : documentation + backend `./backend` en cours d'implémentation.**
-Le frontend `./frontend` n'existe **pas** encore : ne pas supposer de `package.json`, de Next ou de tests front.
-Les 25 services sont déclarés en routes sur la passerelle, mais **seuls 7 modules Maven sont construits** (voir §9).
+**Périmètre actuel : documentation + backend `./backend` + console socle `./frontend` (phases 1-2).**
+La console couvre phases 1-2 (auth direct-grant, tenancy, grilles, années, référentiels, pages ADMIN).
+Toute phase suit la règle **back d'abord, front ensuite** (D13 + colonne Front en §9) :
+le travail front d'une phase ne s'ouvre qu'une fois la brique backend validée.
+Les 25 services sont déclarés en routes sur la passerelle, mais **seuls 8 modules Maven sont construits** (voir §9).
 Ne pas supposer qu'un service existe sous prétexte que sa route existe.
 
 ---
@@ -35,7 +37,8 @@ docs/diagrammes/
   finance/     6 modèles + 6 cas d'utilisation
   sequences/   6 séquences (paiement, délibération, rappel lot, clôture, séjour, acte → facture)
   rendu/       56 SVG à générer — ACTUELLEMENT VIDE
-backend/       Maven parent + 7 modules construits (voir §9)
+backend/       Maven parent + 8 modules construits (voir §9)
+frontend/      console socle Next.js 16 (phases 1-2) — mémo dédié dans frontend/AGENTS.md
 ```
 
 **56 fichiers `.puml`.** Ne pas casser le compte.
@@ -177,17 +180,18 @@ Pour les classes issues du dépôt, préférer le stéréotype du propriétaire 
 ## 9. État de l'implémentation backend
 
 Ordre des phases validé : **socle → pédagogie → hôpital → finance.** Une brique = un commit.
+**Règle (D13) : back d'abord, front ensuite** — une phase n'ouvre sa console frontend
+qu'une fois sa brique backend validée (build + `mvn test` + E2E passerelle + commit).
 
-| Phase | Périmètre | État |
-|---|---|---|
-| 0 | Rendu SVG des 56 diagrammes | **écartée par l'utilisateur** |
-| 1 | Socle technique (`shared/*` + passerelle + infra) | **VALIDÉE** — 5 services bootent, `/actuator/health` → 200, Prometheus 5 cibles `up`, **RLS prouvé de bout en bout** (§11, 2026-10-07), D3 et D4 appliqués, `mvn test` vert (59), **commit `5158d45`** |
-| 2 | `tenant-service` (agégat `Etablissement`, `ProfilEtablissement`, grilles) | **VALIDÉE** — plan §12 exécuté le 2026-10-08 : 8+e module, 24 tables + RLS, 54 tests, grille activer/figer → 409 `GRILLE_FIGEE`, E2E passerelle complet (§11 2026-10-08) |
-| 3 | reste du socle (`identity`, `auth`, `notification`, `audit`, `reporting`) | à faire |
-| 4 | pédagogie (7 services `academic-*`) | à faire |
-| 5 | hôpital (6 services) | à faire |
-| 6 | finance (6 services, OHADA) | à faire |
-| 7 | frontend `./frontend` (copie de `ged_ministere/front`) | à faire |
+| Phase | Périmètre | État back | État front |
+|---|---|---|---|
+| 0 | Rendu SVG des 56 diagrammes | **écartée par l'utilisateur** | — |
+| 1 | Socle technique (`shared/*` + passerelle + infra) | **VALIDÉE** — 5 services bootent, `/actuator/health` → 200, Prometheus 5 cibles `up`, **RLS prouvé de bout en bout** (§11, 2026-10-07), D3 et D4 appliqués, `mvn test` vert (59), **commit `5158d45`** | Console socle (base) : layout, auth direct-grant, tenancy — **livrée avec la console (phases 1-2)** |
+| 2 | `tenant-service` (agégat `Etablissement`, `ProfilEtablissement`, grilles) | **VALIDÉE** — plan §12 exécuté le 2026-10-08 : 8+e module, 24 tables + RLS, 54 tests, grille activer/figer → 409 `GRILLE_FIGEE`, E2E passerelle complet (§11 2026-10-08), **commit `e25283e`** | pages socle : dashboard, tenant, grilles + `[type]`, annees, referentiels — **livrée avec la console (phases 1-2)** |
+| 3 | reste du socle (`identity`, `auth`, `notification`, `audit`, `reporting`) | à faire | à faire (après validation back) |
+| 4 | pédagogie (7 services `academic-*`) | à faire | à faire (après validation back) |
+| 5 | hôpital (6 services) | à faire | à faire (après validation back) |
+| 6 | finance (6 services, OHADA) | à faire | à faire (après validation back) |
 
 ### Modules réellement construits (8)
 
@@ -248,6 +252,7 @@ Pas de `fin-tresorerie` : la trésorerie est un préfixe de `fin-compta-core` (`
 | D10 | Doc §6 | Nettoyage **complet** des 9 duplications pédagogie, pas seulement `Filiere`/`Programme` : classes `Bareme`, `ConfigCascade`, `ReglePonderation`, `CandidatPonderation`, `Mention`, `PrincipeEquivalence` + enums `TypeBareme`, `NiveauAcalcul`, `StrategieAggregation`, `TypePrincipe`, `TypePortee`, `Decision`. |
 | D11 | Tests phase 2 | Unitaires du domaine + 1 `@WebMvcTest` de sécurité. Pas de Testcontainers. |
 | D12 | `GrilleStock.choisirLot` | **Non codée côté socle** : le socle expose la stratégie et les seuils ; `Lot` reste `<<fin-stock>>`, le choix du lot sera codé chez le propriétaire du stock (phase 5/6). |
+| D13 | Règle de livraison | **Back d'abord, front ensuite.** Chaque phase est d'abord validée côté backend (build + `mvn test` + E2E passerelle + commit = une brique), puis sa console frontend est développée et vérifiée (`tsc` + lint + build + smoke). Le front monolithique (ex-ligne 7) est remplacé par une console livrée **par phase** (suivi dans la colonne Front du tableau §9). |
 
 ### Points de vigilance payés
 
@@ -276,6 +281,13 @@ Pas de `fin-tresorerie` : la trésorerie est un préfixe de `fin-compta-core` (`
   nexusgesti -d nexusgesti -v ON_ERROR_STOP=1 < Vx.sql`) puis booter avec
   `SPRING_FLYWAY_BASELINE_ON_MIGRATE=true SPRING_FLYWAY_BASELINE_VERSION=3`. **Un `DROP SCHEMA
   tenant CASCADE` puis login boot normal retombe dans le deadlock** — garder les var env de baseline.
+- **CORS passerelle 2026-10-08 — les préflights OPTIONS des routes protégées partaient en 401
+  sans `Access-Control-Allow-Origin`** (`/socle/annees` bloqué depuis le navigateur). Cause : le
+  `CorsWebFilter` tournait **après** Spring Security — la chaîne exigeait le token et rejetait le
+  préflight (qui n'en porte jamais) avant l'ajout des en-têtes CORS. Correctif : `@Order(HIGHEST_PRECEDENCE)`
+  sur le bean `CorsWebFilter` + `OPTIONS / **` permitAll dans `SecurityConfig`, et origines listées dans
+  `nexusgesti.cors.allowed-origins` (surcharge `NEXUSGESTI_CORS_ALLOWED_ORIGINS`, défaut
+  `http://localhost:3000`→`3004`). Vérifié : préflight 200 + ACAO pour une origine listée, 403 sinon.
 - **Pas de commentaires superflus dans le code.**
 
 ---
@@ -508,10 +520,27 @@ tenant A → 1 ligne, tenant B → **[]** ; `POST` sans `format` → **400**. Co
   notation activer→figer→modification **409 `GRILLE_FIGEE`** ; `GET /grilles/notation/applicable` A→200
   (NOT-PRIM-01), B→404.
 
+### CORS passerelle — corrigé (2026-10-08)
+
+Symptôme navigateur : `NETWORK_ERROR` / « Response to preflight request doesn't pass access control check:
+No 'Access-Control-Allow-Origin' header ». Le préflight OPTIONS des routes **protégées**
+(`/socle/annees`, `/socle/grilles`…) répondait **401** (Spring Security exige le token, un préflight n'en
+porte jamais) **sans** en-têtes CORS — le `CorsWebFilter` était déclaré sans ordre, donc exécuté **après**
+la `WebFilterChainProxy` (ordre -100). Les routes `/auth/**` (permitAll) passaient par hasard,
+d'où un comportement incohérent entre endpoints.
+
+Correctif (commit CORS) :
+- `CorsConfig` : `@Order(Ordered.HIGHEST_PRECEDENCE)` sur le bean `CorsWebFilter` → court-circuite le
+  préflight avant Spring Security ; origines configurables `nexusgesti.cors.allowed-origins`
+  (env `NEXUSGESTI_CORS_ALLOWED_ORIGINS`, défaut `http://localhost:3000`→`3004`).
+- `SecurityConfig` : `.pathMatchers(HttpMethod.OPTIONS, "/**").permitAll()` (filet si l'ordre change).
+- Vérifié : OPTIONS `/api/v1/socle/annees` `Origin 3001` → **200 + ACAO**, `3002` → 200, hors liste → **403** ;
+  login + GET réels → 200 avec ACAO en réponse ; `/annees/courante` 404 porte aussi l'ACAO.
+
 ### Restant
 
 - **Commit `5158d45` (251 fichiers)** : docs + `.gitignore` + `backend/`. Phase 1 close.
-- **Phase 2 non commitée** : ~54 fichiers tenant-service + doc (§12 étape 11) — **commit sur demande**.
+- **Phase 2 commitée le 2026-10-08** : `e25283e` (tenant-service + doc D7/D10 + E2E + colonne Front).
 - `@Async` de `ReportService.generateAsync` inerte (self-invocation) : génération synchrone.
   À corriger si le rapport doit vraiment être émis hors du thread de requête.
 - `"kyc_level": ["0"]` dans `realm-nexusgesti.json` et `ReportType.KYC_SUMMARY` /
