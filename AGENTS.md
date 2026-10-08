@@ -520,6 +520,25 @@ tenant A → 1 ligne, tenant B → **[]** ; `POST` sans `format` → **400**. Co
   notation activer→figer→modification **409 `GRILLE_FIGEE`** ; `GET /grilles/notation/applicable` A→200
   (NOT-PRIM-01), B→404.
 
+### Console socle (frontend) — livrée (2026-10-08)
+
+Console `./frontend` (Next.js 16 + React 19 + TS + Tailwind v4, copiée de `ged_ministere/front`,
+contenu GED supprimé) :
+- **plomberie** : `src/types/index.ts` (DTO alignés Java), `src/services/api.ts` (wrapper + refresh
+  auto + groupes d'API), `auth-provider` (direct-grant, `realm_access.roles`, `isAdmin`),
+  `tenant-provider` (`x_tenant_id`, UUID par défaut `11111111-2222-3333-4444-555555555570`),
+  `layout`/`login`/`(app)/layout` + `AppShell` (sidebar/header).
+- **pages socle : 1** dashboard, tenant (identité/sites/filières-programmes/cycles/paramètres/
+  grille-presets), annees (+ périodes), grilles (liste + détail `[type]` : notation/stock/conformité,
+  activer/figer/dupliquer), referentiels (17 conteneurs + items).
+- **pages ADMIN** : tenants (création = `X-Tenant-Id`, D8), notifications, audit, rapports.
+- **vérifs** : `npx tsc --noEmit` 0 erreur ; `npm run lint` 0 erreur (2 règles réactives strictes
+  désactivées dans `eslint.config.mjs` : hydratation localStorage + ref du fetcher) ; `npm run build` OK.
+- **route group `(app)` aplati** : URLs `/dashboard`, `/tenant`, `/grilles/[type]?id=…` (pas `/app/...`).
+- **smoke passerelle** : login direct-grant `demo.admin` → 200 ; `GET /socle/{grilles,annees,
+  referentiels(17),etablissements/*,notifications,reports,audit/search}` → 200 ; `/annees/courante` →
+  404 métier (aucune année courante) ; CORS ci-dessus.
+
 ### CORS passerelle — corrigé (2026-10-08)
 
 Symptôme navigateur : `NETWORK_ERROR` / « Response to preflight request doesn't pass access control check:
@@ -541,6 +560,10 @@ Correctif (commit CORS) :
 
 - **Commit `5158d45` (251 fichiers)** : docs + `.gitignore` + `backend/`. Phase 1 close.
 - **Phase 2 commitée le 2026-10-08** : `e25283e` (tenant-service + doc D7/D10 + E2E + colonne Front).
+- **Console socle commitée le 2026-10-08** : décrite au journal §11 (plomberie + pages socle + ADMIN,
+  D13 appliqué).
+- Prochaine étape (§9) : **phase 3** (reste du socle `identity`, `auth`, `notification`, `audit`,
+  `reporting`) — back d'abord, front ensuite.
 - `@Async` de `ReportService.generateAsync` inerte (self-invocation) : génération synchrone.
   À corriger si le rapport doit vraiment être émis hors du thread de requête.
 - `"kyc_level": ["0"]` dans `realm-nexusgesti.json` et `ReportType.KYC_SUMMARY` /
@@ -549,13 +572,12 @@ Correctif (commit CORS) :
   contournement : migrations appliquées manuellement (psql) puis boot avec
   `SPRING_FLYWAY_BASELINE_ON_MIGRATE=true SPRING_FLYWAY_BASELINE_VERSION=3`. À recodifier quand le
   problème Flyway 10 + Postgres sera compris, ou à documenter comme procédure d'installation.
-- **Utilisateurs Keycloak de test (runtime, rien au dépôt)** : mot de passe `demo.customer@nexusgesti.com`
-  réinitialisé à `demo_secret_customer` ; le rôle `ADMIN` a été attribué au **service account**
-  `nexusgesti-service` pour produire un token ADMIN à l'E2E. `demo.admin` n'a pas pu être provisionné par
-  l'API admin (Keycloak « Account is not fully set up » sur les utilisateurs créés par admin) et la route
-  `register` répond **403** : le service account `nexusgesti-service` n'a pas les rôles
-  `realm-management` dans le realm importé (faille du realm à corriger avant la phase 3).
-- Prochaine étape §9 : phase 3 (reste du socle).
+- **Utilisateurs Keycloak de test (runtime, rien au dépôt)** : `demo.admin@nexusgesti.com`/`Admin_pass123!`
+  (ADMIN) et `demo.customer@nexusgesti.com`/`demo_secret_customer` (CUSTOMER) provisionnés par
+  `provision.sh`. Les rôles `realm-management` du service account `nexusgesti-service` sont accordés au
+  runtime (non importables via KC25) ; la route `register` répond **403** tant que la faille du realm
+  (rôles `realm-management` non importés) n'est pas corrigée — à faire avant la phase 3.
+- Prochaine étape §9 : phase 3 (reste du socle) — back d'abord, front ensuite.
 
 ---
 
