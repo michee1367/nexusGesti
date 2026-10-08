@@ -182,14 +182,14 @@ Ordre des phases validé : **socle → pédagogie → hôpital → finance.** Un
 |---|---|---|
 | 0 | Rendu SVG des 56 diagrammes | **écartée par l'utilisateur** |
 | 1 | Socle technique (`shared/*` + passerelle + infra) | **VALIDÉE** — 5 services bootent, `/actuator/health` → 200, Prometheus 5 cibles `up`, **RLS prouvé de bout en bout** (§11, 2026-10-07), D3 et D4 appliqués, `mvn test` vert (59), **commit `5158d45`** |
-| 2 | `tenant-service` (agégat `Etablissement`, `ProfilEtablissement`, grilles) | à faire |
+| 2 | `tenant-service` (agégat `Etablissement`, `ProfilEtablissement`, grilles) | **VALIDÉE** — plan §12 exécuté le 2026-10-08 : 8+e module, 24 tables + RLS, 54 tests, grille activer/figer → 409 `GRILLE_FIGEE`, E2E passerelle complet (§11 2026-10-08) |
 | 3 | reste du socle (`identity`, `auth`, `notification`, `audit`, `reporting`) | à faire |
 | 4 | pédagogie (7 services `academic-*`) | à faire |
 | 5 | hôpital (6 services) | à faire |
 | 6 | finance (6 services, OHADA) | à faire |
 | 7 | frontend `./frontend` (copie de `ged_ministere/front`) | à faire |
 
-### Modules réellement construits (7)
+### Modules réellement construits (8)
 
 ```
 shared/common-domain     noyau pur, aucune dépendance Spring
@@ -199,9 +199,10 @@ services/auth-service
 services/notification-service
 services/audit-service
 services/reporting-service
+services/tenant-service   socle métier : etablissement, grilles, referentiels (8101)
 ```
 
-`mvn test` au niveau racine : **BUILD SUCCESS**, ~59 tests verts sur ces 7 modules.
+`mvn test` au niveau racine : **BUILD SUCCESS**, ~113 tests verts (59 socle + 54 tenant-service).
 
 ### Les 25 routes de la passerelle ≠ les modules construits
 
@@ -240,6 +241,13 @@ Pas de `fin-tresorerie` : la trésorerie est un préfixe de `fin-compta-core` (`
 | D3 | `GrilleTarifaire` | Reste propriété de `academic-fees-service`, **mais** ajouter `version : Integer` + `figer()` à `pedagogie/modele-academic-fees-service.puml:91` (exigé par `sq-hopital-acte-facturation.puml:23` et `modele-hopital-plateau-technique-service.puml:600`). Les deux déclarations `<<tenant-service>>` à `hopital/modele-hopital-hospitalisation-service.puml:318` et `hopital/modele-hopital-plateau-technique-service.puml:580` sont donc à corriger en `<<academic-fees>>`. **Appliqué le 2026-10-07.** |
 | D4 | `Ecriture` | **Tranché et appliqué le 2026-10-07 : propriétaire `fin-compta-core`.** La classe complète (attributs + méthodes) et les enums `StatutEcriture` / `OrigineEcriture` sont déclarées dans `finance/modele-fin-compta-core-service.puml` (package `ecritures`), avec `Ecriture --> Journal` et `Ecriture --> Exercice`. `finance/modele-fin-etats-service.puml` ne garde qu'une référence `class Ecriture <<fin-compta-core>> #transparent`, ses relations (`*-- LigneEcriture`, `--> Piece`, `--> ModeleEcriture`, `o-- Lettrage`) et sa note `REGLE D EQUILIBRE`. `SensEcriture` reste dans `fin-etats` (type de `LigneEcriture`). |
 | D5 | Idempotence | `IdempotencyService` prend une clé `String`. Clé composite `sourceId` + `codeActe` via `SourceId.compositeWith(CodeActe)`. |
+| D6 | Portée phase 2 | Modèle **complet** de `modele-tenant-service.puml` (~24 tables). Aucun seed en migration : les lignes sont scopées tenant → les 17 conteneurs `Referentiel` sont créés dans `POST /tenants`. |
+| D7 | `Filiere` / `Programme` / `Cycle` | **Propriétaire = tenant-service** (décidé le 2026-10-07). `pedagogie/modele-academic-structure-service.puml` les passe en `<<tenant-service>> #transparent` (étape 8 du plan §12). |
+| D8 | Création cross-tenant | `X-Tenant-Id` = **UUID du nouveau tenant**, `Etablissement.id = tenant_id = l'en-tête`. Aucun bypass RLS, `409` si déjà présent. |
+| D9 | Rôles `tenant-service` | Écriture `ADMIN`, lecture `ADMIN` ou `CUSTOMER`. |
+| D10 | Doc §6 | Nettoyage **complet** des 9 duplications pédagogie, pas seulement `Filiere`/`Programme` : classes `Bareme`, `ConfigCascade`, `ReglePonderation`, `CandidatPonderation`, `Mention`, `PrincipeEquivalence` + enums `TypeBareme`, `NiveauAcalcul`, `StrategieAggregation`, `TypePrincipe`, `TypePortee`, `Decision`. |
+| D11 | Tests phase 2 | Unitaires du domaine + 1 `@WebMvcTest` de sécurité. Pas de Testcontainers. |
+| D12 | `GrilleStock.choisirLot` | **Non codée côté socle** : le socle expose la stratégie et les seuils ; `Lot` reste `<<fin-stock>>`, le choix du lot sera codé chez le propriétaire du stock (phase 5/6). |
 
 ### Points de vigilance payés
 
@@ -259,6 +267,15 @@ Pas de `fin-tresorerie` : la trésorerie est un préfixe de `fin-compta-core` (`
   ce qui masque la vraie cause.
 - **`TenantFilter` exige un UUID** dans `X-Tenant-Id` : `demo` produit 400
   (`Invalid X-Tenant-Id header: expected a UUID`). Ne pas interpréter ce 401/400 comme un défaut de routage.
+- **Piège tenant-service 2026-10-08 — Flyway 10 + Postgres : le batch de 3 migrations se bloque.**
+  Au boot de `tenant-service`, une connexion Flyway reste `idle in transaction` après le check
+  `SELECT COUNT(*) FROM pg_namespace` (advisory lock + ACCESS SHARE sur `flyway_tenant_history`)
+  et bloque la migration suivante (`Lock/relation`), attente infinie. Les types de migration
+  (V1→V3, dont le `DO` de V2) ne sont pas en cause : reproduit 3 boots de suite. **Contournement
+  validé** : appliquer V1/V2/V3 manuellement (psql `docker exec -i nexusgesti-postgres-1 psql -U
+  nexusgesti -d nexusgesti -v ON_ERROR_STOP=1 < Vx.sql`) puis booter avec
+  `SPRING_FLYWAY_BASELINE_ON_MIGRATE=true SPRING_FLYWAY_BASELINE_VERSION=3`. **Un `DROP SCHEMA
+  tenant CASCADE` puis login boot normal retombe dans le deadlock** — garder les var env de baseline.
 - **Pas de commentaires superflus dans le code.**
 
 ---
@@ -461,11 +478,128 @@ tenant A → 1 ligne, tenant B → **[]** ; `POST` sans `format` → **400**. Co
 
 `mvn test` : **BUILD SUCCESS, 59 tests, 0 échec**.
 
+2026-10-08 — **phase 2 terminée** (tenant-service, plan §12 exécuté) :
+- **squelette** : `<module>services/tenant-service</module>`, pom clone d'`audit-service` sans Kafka,
+  `TenantApplication`, `JpaConfig`, `SecurityConfig` (`@EnableMethodSecurity`, `oauth2ResourceServer`
+  avec `KeycloakJwtConfig.jwtAuthenticationConverter`), `*ExceptionHandler` miroir d'`AuthExceptionHandler`,
+  port **8101**, `spring.flyway.url` explicite, `nexusgesti.security.oauth2.enabled: false`.
+- **migrations** : `V1__tenant_schema.sql` (24 tables + RLS), `V2__rls.sql` (boucle `DO` : column
+  `tenant_id`, index, `ENABLE`+`FORCE ROW LEVEL SECURITY`, policy `USING`/`WITH CHECK`) et
+  `V3__app_role.sql`. **Aucun seed** (D6).
+- **contenu** : domaine pur (Etablissement, AnneeScolaire/Periode, GrilleNotation/Stock/Conformite avec
+  activer/figer/dupliquer, baremes/regles/mentions, Referentiel), 5 repositories + adapters (hexagonal),
+  services `EtablissementService` (création = id du header + 17 conteneurs `Referentiel`), `AnneeService`,
+  `GrilleService` (+ `GET /grilles/{type}/applicable`), `ReferentielService` ; 6 contrôleurs sur les routes
+  passerelle `/api/v1/socle/{tenants,etablissements,annees,grilles,referentiels}/**`.
+- **correction au boot** : `GrilleStockJpaRepository.deleteByGrilleId` → `deleteById` (l'entité est
+  l'agrégat racine, son `id` EST l'id de grille — défaut latent invisible en `@WebMvcTest`, trouvé au
+  premier démarrage réel).
+- **tests : 54 verts** (domaine + `TenantControllerSecurityTest` `@WebMvcTest` + `KeycloakRoleConverterTest`).
+- **doc §6 (D7+D10 appliqués)** : `Filiere`/`Programme`/`Cycle`, `Bareme`, `ConfigCascade`,
+  `PrincipeEquivalence`, `ReglePonderation`, `CandidatPonderation`, `Mention` + enums
+  `TypeBareme`/`NiveauAcalcul`/`StrategieAggregation`/`TypePrincipe`/`TypePortee`/`Decision` passés en
+  références `<<tenant-service>> #transparent` (exam/assessment refused local bodies). **56/56 diagrammes
+  valident** (smetana, sortie temporaire, rien dans `rendu/` — D1).
+- **observabilité** : 6e cible Prometheus `host.docker.internal:8101` → **6 cibles `up`**.
+- **`mvn clean test` racine : BUILD SUCCESS, 113 tests**.
+- **E2E passerelle** (2026-10-08) : CUSTOMER→`POST /tenants` **403** ; sans `X-Tenant-Id` **400** ;
+  ADMIN→`POST` uuidA **201** (17 référentiels auto) ; re-POST **409** ; `GET /tenants/{id}` **200** ;
+  isolation A/B/C (referentiél A lu depuis B **404**, tenant B lu depuis A **404**) ; grille
+  notation activer→figer→modification **409 `GRILLE_FIGEE`** ; `GET /grilles/notation/applicable` A→200
+  (NOT-PRIM-01), B→404.
+
 ### Restant
 
 - **Commit `5158d45` (251 fichiers)** : docs + `.gitignore` + `backend/`. Phase 1 close.
+- **Phase 2 non commitée** : ~54 fichiers tenant-service + doc (§12 étape 11) — **commit sur demande**.
 - `@Async` de `ReportService.generateAsync` inerte (self-invocation) : génération synchrone.
   À corriger si le rapport doit vraiment être émis hors du thread de requête.
 - `"kyc_level": ["0"]` dans `realm-nexusgesti.json` et `ReportType.KYC_SUMMARY` /
   templates `kyc.*` : restes villagesat signalés hors périmètre par l'utilisateur.
-- Prochaine étape §9 : phase 2 (`tenant-service`).
+- **Démarrage `tenant-service` en dev : batch Flyway bloqué** (voir §9 « Piège tenant-service 2026-10-08 ») —
+  contournement : migrations appliquées manuellement (psql) puis boot avec
+  `SPRING_FLYWAY_BASELINE_ON_MIGRATE=true SPRING_FLYWAY_BASELINE_VERSION=3`. À recodifier quand le
+  problème Flyway 10 + Postgres sera compris, ou à documenter comme procédure d'installation.
+- **Utilisateurs Keycloak de test (runtime, rien au dépôt)** : mot de passe `demo.customer@nexusgesti.com`
+  réinitialisé à `demo_secret_customer` ; le rôle `ADMIN` a été attribué au **service account**
+  `nexusgesti-service` pour produire un token ADMIN à l'E2E. `demo.admin` n'a pas pu être provisionné par
+  l'API admin (Keycloak « Account is not fully set up » sur les utilisateurs créés par admin) et la route
+  `register` répond **403** : le service account `nexusgesti-service` n'a pas les rôles
+  `realm-management` dans le realm importé (faille du realm à corriger avant la phase 3).
+- Prochaine étape §9 : phase 3 (reste du socle).
+
+---
+
+## 12. Plan phase 2 — `tenant-service` (validé 2026-10-07, **exécuté le 2026-10-08**, voir §11)
+
+Ordre = build vert après chaque étape.
+
+1. **Squelette** : `<module>services/tenant-service</module>` dans le pom racine, pom clone d'
+   `audit-service` **sans** `spring-kafka` (actuator + prometheus conservés), `TenantApplication`,
+   `JpaConfig`, `SecurityConfig` (`@EnableMethodSecurity`, rôles par `@PreAuthorize`,
+   `oauth2ResourceServer` avec `KeycloakJwtConfig.jwtAuthenticationConverter`),
+   `application.yml` port **8101**, `default_schema: tenant`, **`spring.flyway.url` explicite**,
+   `nexusgesti.security.oauth2.enabled: false`, `*ExceptionHandler` miroir d'`AuthExceptionHandler`.
+2. **Migrations** : `V1__tenant_schema.sql` (24 tables : `etablissement`, `site`, `parametre`,
+   `grille_preset`, `annee_scolaire`, `periode`, `grille_notation`, `bareme`, `regle_ponderation`,
+   `config_cascade`, `regle_equivalence`, `principe_equivalence`, `seuil_decision`,
+   `regle_assiduite`, `mention`, `regle_appreciation`, `grille_stock`, `alerte_stock`,
+   `grille_conformite`, `referentiel`, `referentiel_item`, `filiere`, `programme`, `cycle` ;
+   `metaDonnees` en jsonb, `Adresse` en colonnes) ; `V2__rls.sql` (boucle `DO` sur le schéma
+   `tenant` : `tenant_id UUID`, `ENABLE`+`FORCE ROW LEVEL SECURITY`, policy `USING`/`WITH CHECK`) ;
+   `V3__app_role.sql` (grant `nexusgesti_app`, même `DO` de création de rôle que les autres services).
+3. **Domaine pur + tests JUnit** (aucun Spring) : transitions `Etablissement`, `GrilleNotation`
+   `activer()`/`figer()` + nouvelle version à la correction, `resoudreRegle()` par spécificité
+   décroissante (§7), `SeuilDecision.contient`, arrondis `TypeArrondi`, `Mention`,
+   `RegleAssiduite`, agrégation `ConfigCascade`, cycles de vie `AnneeScolaire`/`Periode`,
+   retentions `GrilleConformite`, seuils `GrilleStock`, `Referentiel`. Exceptions à codes
+   (`TENANT_ALREADY_EXISTS` 409, `GRILLE_FIGEE` 409, `TRANSITION_INVALIDE` 409).
+4. **Persistence** : entités + repositories + adapters par agrégat (structure `audit-service`) ;
+   `@JdbcTypeCode(SqlTypes.JSON)` sur `metaDonnees` ; tout passe par `TenantContext.require()`.
+5. **Services applicatifs** : `EtablissementService` (création = id du header + 17 conteneurs),
+   `AnneeService`, `GrilleService` (+ `GET /grilles/applicable` = UC *Consulter la grille
+   applicable*), `ReferentielService`.
+6. **Contrôleurs** — le service voit `/api/v1/...` après `RewritePath` :
+
+   | Route passerelle | Contrôleur service | Rôles |
+   |---|---|---|
+   | `/socle/tenants/**` | `POST /` création, `GET /{id}`, `PATCH /{id}/statut` | ADMIN · ADMIN\|CUSTOMER · ADMIN |
+   | `/socle/etablissements/**` | `/{id}/sites`, `/filieres`, `/programmes`, `/cycles`, `/parametres`, `/grille-presets` (+ `/dupliquer`) | écriture ADMIN, lecture ADMIN\|CUSTOMER |
+   | `/socle/annees/**` | CRUD + `/{id}/cloturer`, `/{id}/periodes`, `/{id}/periodes/{pid}/cloturer`, `/courante` | idem |
+   | `/socle/grilles/**` | `GET /applicable`, CRUD par type (notation/stock/conformite) + enfants + `/activer` `/figer` `/dupliquer`, `/{id}/alertes` | idem |
+   | `/socle/referentiels/**` | conteneurs + `POST /{id}/items` + désactivation d'item | idem |
+
+   L'id de `POST /tenants` vient **de l'en-tête**, jamais du corps.
+7. **`@WebMvcTest(TenantController)`** : `@Import(SecurityConfig.class)` + `jwt()` de
+   spring-security-test : 403 sans rôle, 200 CUSTOMER en lecture, 2xx ADMIN.
+8. **Doc §6 (D7 + D10)** :
+   - `pedagogie/modele-academic-structure-service.puml` : `Filiere` (:111) et `Programme` (:122)
+     → `class X <<tenant-service>> #transparent` sans membres, déplacés dans le bloc
+     « REFERENCES INTER-SERVICES » (:275) ; suppression de `enum StatutProgramme` (:55) ;
+     relations :287-289 conservées.
+   - `pedagogie/modele-academic-assessment-service.puml` : classes `Bareme` (:198),
+     `ConfigCascade` (:210), `PrincipeEquivalence` (:223), `ReglePonderation` (:238),
+     `CandidatPonderation` (:282), `Mention` (:367) → externes transparents **sans membres** ;
+     enums `TypeBareme` (:44), `NiveauAcalcul` (:53), `StrategieAggregation` (:61),
+     `TypePrincipe` (:230), `TypePortee` (:265) → déclarations externes **sans corps**
+     (`enum X <<tenant-service>>`, sinon `class X <<tenant-service>> #transparent`) ;
+     commentaire :180-182 réécrit (« projections spécialisées » → « références ») ;
+     **toutes les relations conservées**.
+   - `pedagogie/modele-academic-exam-service.puml` : `Bareme` (:146) et `enum Decision` (:69)
+     → externes ; les `DecisionType`/`DecisionCode` locaux (valeurs identiques) restent.
+   - Validation : **56/56 en sortie temporaire** (`-Playout=smetana`), rien dans `rendu/` (D1).
+9. **Observabilité + build** : `infrastructure/docker/prometheus/prometheus.yml` → 6e cible
+   `host.docker.internal:8101` (relancer prometheus/grafana) ; `mvn clean test` racine vert ;
+   `mvn -q -DskipTests package` puis démarrage **8101** (tuer d'abord les `java -jar *SNAPSHOT.jar`
+   : verrou sur le `.jar`).
+10. **E2E par la passerelle** : health 200 + Prometheus 6 `up` ; CUSTOMER → `POST /api/v1/socle/tenants`
+    **403** ; `demo.admin` créé via l'API admin Keycloak (`admin/admin_secret`, runtime, rien au dépôt)
+    → POST `X-Tenant-Id: uuidA` → **201**, re-POST → **409**, 17 référentiels auto ; isolation A/B ;
+    grille `activer` → `figer` → modification → **409 GRILLE_FIGEE** ; `GET /grilles/applicable` A/B ;
+    sans `X-Tenant-Id` → **400**.
+11. **AGENTS.md** (phase 2 VALIDÉE, 8 modules construits, journal, Restant → phase 3) +
+    **commit sur demande**.
+
+**Vigilance** : `spring.flyway.url` obligatoire, aucun seed (lignes scopées tenant),
+`@JdbcTypeCode(SqlTypes.JSON)`, aucun Kafka ni `IdempotencyService` en phase 2, port 8101,
+pas de commentaires superflus dans le code.

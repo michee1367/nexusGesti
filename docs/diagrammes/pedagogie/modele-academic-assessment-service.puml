@@ -41,31 +41,8 @@ enum TypeSourceNote {
   CONTROLE_CONTINU
   EXCEPTION
 }
-enum TypeBareme {
-  POINTS
-  SUR_5
-  SUR_10
-  SUR_20
-  SUR_100
-  LETTRE
-  MENTION
-}
-enum NiveauAcalcul {
-  EVALUATION
-  COURS_ECUE
-  UE
-  PERIODE
-  ANNEE
-  CYCLE
-}
-enum StrategieAggregation {
-  MOYENNE_PONDEREE
-  MOYENNE_NON_PONDEREE
-  SOMME_PONDEREE
-  MEILLEURE_NOTE
-  MOYENNE_TRONQUEE
-  DERNIERE_NOTE
-}
+' TypeBareme, NiveauAcalcul et StrategieAggregation sont detenus
+' par tenant-service : declares en references plus bas.
 enum StatutBulletin {
   BROUILLON
   CALCULE
@@ -177,9 +154,9 @@ class Note {
 ' ============================================================
 
 ' La grille elle-meme n est pas redefinie ici :
-' elle est propriete de hopital/socle tenant-service.
-' Les classes locales ci-dessous en sont la projection
-' pedagogique specialisee.
+' elle est propriete de tenant-service.
+' Les classes et enums de la cascade ci-dessous sont des
+' references inter-services vers le modele tenant-service.
 
 class GrilleNotation <<tenant-service>> #transparent {
   - id : UUID
@@ -195,106 +172,8 @@ class GrilleNotation <<tenant-service>> #transparent {
   + getMention(moyenne : Decimal) : Mention
 }
 
-class Bareme {
-  - type : TypeBareme
-  - baremeMax : Decimal
-  - noteMinimale : Decimal
-  - precision : Integer
-  - arrondi : TypeArrondi
-  + normaliser(valeur : Decimal) : Decimal
-  + convertir(versType : TypeBareme) : Decimal
-  + estAtteignable(valeur : Decimal) : Boolean
-  + formater(valeur : Decimal) : String
-}
-
-class ConfigCascade {
-  - niveauxActifs : List<NiveauAcalcul>
-  - strategie : StrategieAggregation
-  - arrondi : TypeArrondi
-  - precision : Integer
-  - seuilAbsorption : Decimal?
-  - principesEquivalence : List<PrincipeEquivalence>
-  + agreger(niveau : NiveauAcalcul, valeurs : List<NotePonderee>) : Decimal
-  + normaliser(valeur : Decimal, bareme : Bareme) : Decimal
-  + estActif(niveau : NiveauAcalcul) : Boolean
-  + verifierEquilibrage(resultat : ResultatCascade) : List<AlerteCascade>
-}
-
-class PrincipeEquivalence {
-  - type : TypePrincipe
-  - cible : String?
-  - ponderation : Decimal?
-  + appliquer(valeurs : List<NotePonderee>) : List<NotePonderee>
-}
-
-enum TypePrincipe {
-  MATIERE_EQUIVALENTE
-  UE_EQUIVALENTE
-  MEILLEUR_GROUPE
-  IGNORER_LA_MOYENNE_FAIBLE
-  PRENDRE_LA_MEILLEURE
-}
-
-class ReglePonderation {
-  - libelle : String
-  - portee : TypePortee
-  - profil : String?
-  - cycle : String?
-  - niveau : String?
-  - parcours : String?
-  - programme : String?
-  - semestre : String?
-  - ue : String?
-  - cours : String?
-  - matiere : String?
-  - enseignant : UUID?
-  - classe : UUID?
-  - typeEvaluation : String?
-  - typeSourceNote : TypeSourceNote?
-  - coefficient : Decimal?
-  - seuilInclusion : Decimal?
-  - plafondContribution : Decimal?
-  - poidsMax : Decimal?
-  - priorite : Integer
-  - active : Boolean
-  + sApplique(candidat : CandidatPonderation) : Boolean
-  + estPlusSpecifique(autre : ReglePonderation) : Boolean
-  + getCoefficient() : Decimal
-}
-
-enum TypePortee {
-  GLOBALE
-  PAR_PROFIL
-  PAR_CYCLE
-  PAR_NIVEAU
-  PAR_PARCOURS
-  PAR_PROGRAMME
-  PAR_SEMESTRE
-  PAR_UE
-  PAR_COURS
-  PAR_MATIERE
-  PAR_ENSEIGNANT
-  PAR_CLASSE
-  PAR_TYPE_EVALUATION
-  PAR_TYPE_SESSION
-}
-
-class CandidatPonderation {
-  - profil : String
-  - cycle : String?
-  - niveau : String?
-  - parcours : String?
-  - programme : String?
-  - semestre : String?
-  - ue : String?
-  - cours : String?
-  - matiere : String?
-  - enseignant : UUID?
-  - classe : UUID?
-  - typeEvaluation : String?
-  - typeSourceNote : TypeSourceNote?
-  - niveauAcalcul : NiveauAcalcul
-}
+' TypePrincipe et TypePortee sont detenus par tenant-service
+' (declares en references plus bas).
 
 class NotePonderee {
   - eleve : UUID
@@ -364,14 +243,7 @@ enum Criticite {
   INFORMATION
 }
 
-class Mention {
-  - code : String
-  - libelle : String
-  - symbole : String
-  - seuilMinimum : Decimal
-  - couleur : String
-  + contient(moyenne : Decimal) : Boolean
-}
+' Mention est detenue par tenant-service (reference plus bas).
 
 class Appreciation {
   - libelle : String
@@ -501,6 +373,17 @@ class CouponNotes {
 class SeuilDecision <<tenant-service>>
 class RegleAssiduite <<tenant-service>>
 class Periode <<tenant-service>>
+class Bareme <<tenant-service>> #transparent
+class ConfigCascade <<tenant-service>> #transparent
+class PrincipeEquivalence <<tenant-service>> #transparent
+class ReglePonderation <<tenant-service>> #transparent
+class CandidatPonderation <<tenant-service>> #transparent
+class Mention <<tenant-service>> #transparent
+enum TypeBareme <<tenant-service>>
+enum NiveauAcalcul <<tenant-service>>
+enum StrategieAggregation <<tenant-service>>
+enum TypePrincipe <<tenant-service>>
+enum TypePortee <<tenant-service>>
 class Matiere <<academic-structure>>
 class CoursECUE <<academic-structure>>
 class UE <<academic-structure>>

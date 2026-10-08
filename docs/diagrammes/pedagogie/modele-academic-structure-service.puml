@@ -52,11 +52,6 @@ enum TypeMatiere {
   LIBRE
   RENFORCEMENT
 }
-enum StatutProgramme {
-  ACTIF
-  INACTIF
-  ARCHIVE
-}
 
 ' ============================================================
 ' AGREGAT : ARBRE PEDAGOGIQUE
@@ -107,28 +102,8 @@ class Promotion {
 ' ============================================================
 ' UNIVERSITE : FILIERE > PROGRAMME > SEMESTRE > UE > COURS
 ' ============================================================
-
-class Filiere {
-  - idFiliere : UUID
-  - code : String
-  - libelle : String
-  - departement : String
-  - diplome : String
-  - dureeAnnees : Integer
-  - totalCredits : Decimal?
-  - active : Boolean
-}
-
-class Programme {
-  - idProgramme : UUID
-  - code : String
-  - libelle : String
-  - filiere : Filiere
-  - parcours : List<String>
-  - statut : StatutProgramme
-  + getUe() : List<UE>
-  + getCreditsTotal() : Decimal
-}
+' Filiere, Programme et Cycle sont detenus par tenant-service
+' (references inter-services, declarations plus bas).
 
 class Semestre {
   - idSemestre : UUID
@@ -277,6 +252,9 @@ class AnneeScolaire <<tenant-service>>
 class Site <<tenant-service>>
 class NiveauAcalcul <<tenant-service>>
 class Bareme <<tenant-service>>
+class Filiere <<tenant-service>> #transparent
+class Programme <<tenant-service>> #transparent
+class Cycle <<tenant-service>> #transparent
 class Enseignant <<academic-people>>
 class AffectationEnseignant <<academic-people>>
 

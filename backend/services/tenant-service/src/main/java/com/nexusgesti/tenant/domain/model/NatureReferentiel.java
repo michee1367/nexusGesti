@@ -1,0 +1,21 @@
+package com.nexusgesti.tenant.domain.model;
+
+public enum NatureReferentiel {
+    BAREME,
+    MENTION,
+    LIBELLE,
+    MOTIF_ABSENCE,
+    MOTIF_RETARD,
+    MOTIF_REJET,
+    TYPE_CANAL,
+    TYPE_FRAIS,
+    MOTIF_FRAIS,
+    MODE_REGLEMENT,
+    MOTIF_ADMISSION,
+    MOTIF_SORTIE,
+    MOTIF_TRANSFERT_INTERNE,
+    NATURE_PRODUIT,
+    TYPE_ACTE_HOSPITALIER,
+    TYPE_CHAMBRE,
+    DELAI_VALIDATION
+}

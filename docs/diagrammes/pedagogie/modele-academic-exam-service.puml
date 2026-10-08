@@ -66,13 +66,7 @@ enum StatutPV {
   CONTESTE
   HOMOLOGUE
 }
-enum Decision {
-  ADMIS
-  ADMIS_MENTION
-  RATTAPAGE
-  REDOUBLANT
-  REJETE
-}
+' Decision est detenue par tenant-service (reference plus bas).
 enum StatutDeliberation {
   PLANIFIEE
   EN_COURS
@@ -143,15 +137,7 @@ class Epreuve {
   + declarerHorsMoyenne() : Epreuve
 }
 
-class Bareme {
-  - type : String
-  - baremeMax : Decimal
-  - noteMinimale : Decimal
-  - precision : Integer
-  - arrondi : String
-  + normaliser(valeur : Decimal) : Decimal
-  + formater(valeur : Decimal) : String
-}
+' Bareme est detenue par tenant-service (reference plus bas).
 
 ' ============================================================
 ' AGREGAT : PLAN DE SALLE ET CONVOCATION
@@ -495,6 +481,8 @@ class AnneeScolaire <<tenant-service>>
 class Periode <<tenant-service>>
 class SeuilDecision <<tenant-service>>
 class GrilleNotation <<tenant-service>>
+class Bareme <<tenant-service>> #transparent
+enum Decision <<tenant-service>>
 class Salle <<academic-structure>>
 class Matiere <<academic-structure>>
 class UE <<academic-structure>>
