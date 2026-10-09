@@ -20,7 +20,7 @@ Plateforme SaaS multi-tenant pour trois domaines :
 La console couvre phases 1-2 (auth direct-grant, tenancy, grilles, années, référentiels, pages ADMIN).
 Toute phase suit la règle **back d'abord, front ensuite** (D13 + colonne Front en §9) :
 le travail front d'une phase ne s'ouvre qu'une fois la brique backend validée.
-Les 25 services sont déclarés en routes sur la passerelle, mais **seuls 8 modules Maven sont construits** (voir §9).
+Les 25 services sont déclarés en routes sur la passerelle, mais **seuls 9 modules Maven sont construits** (voir §9).
 Ne pas supposer qu'un service existe sous prétexte que sa route existe.
 
 ---
@@ -37,7 +37,7 @@ docs/diagrammes/
   finance/     6 modèles + 6 cas d'utilisation
   sequences/   6 séquences (paiement, délibération, rappel lot, clôture, séjour, acte → facture)
   rendu/       56 SVG à générer — ACTUELLEMENT VIDE
-backend/       Maven parent + 8 modules construits (voir §9)
+backend/       Maven parent + 9 modules construits (voir §9)
 frontend/      console socle Next.js 16 (phases 1-2) — mémo dédié dans frontend/AGENTS.md
 ```
 
@@ -188,12 +188,12 @@ qu'une fois sa brique backend validée (build + `mvn test` + E2E passerelle + co
 | 0 | Rendu SVG des 56 diagrammes | **écartée par l'utilisateur** | — |
 | 1 | Socle technique (`shared/*` + passerelle + infra) | **VALIDÉE** — 5 services bootent, `/actuator/health` → 200, Prometheus 5 cibles `up`, **RLS prouvé de bout en bout** (§11, 2026-10-07), D3 et D4 appliqués, `mvn test` vert (59), **commit `5158d45`** | Console socle (base) : layout, auth direct-grant, tenancy — **livrée avec la console (phases 1-2)** |
 | 2 | `tenant-service` (agégat `Etablissement`, `ProfilEtablissement`, grilles) | **VALIDÉE** — plan §12 exécuté le 2026-10-08 : 8+e module, 24 tables + RLS, 54 tests, grille activer/figer → 409 `GRILLE_FIGEE`, E2E passerelle complet (§11 2026-10-08), **commit `e25283e`** | pages socle : dashboard, tenant, grilles + `[type]`, annees, referentiels — **livrée avec la console (phases 1-2)** |
-| 3 | reste du socle (`identity`, `auth`, `notification`, `audit`, `reporting`) | à faire | à faire (après validation back) |
+| 3 | reste du socle (`identity`, `auth`, `notification`, `audit`, `reporting`) | **en cours** — `identity-service` construit le 2026-10-09 (lot 1 : utilisateurs + rôles/permissions, miroir Keycloak) ; `auth` reste à faire | à faire (après validation back) |
 | 4 | pédagogie (7 services `academic-*`) | à faire | à faire (après validation back) |
 | 5 | hôpital (6 services) | à faire | à faire (après validation back) |
 | 6 | finance (6 services, OHADA) | à faire | à faire (après validation back) |
 
-### Modules réellement construits (8)
+### Modules réellement construits (9)
 
 ```
 shared/common-domain     noyau pur, aucune dépendance Spring
@@ -204,9 +204,10 @@ services/notification-service
 services/audit-service
 services/reporting-service
 services/tenant-service   socle métier : etablissement, grilles, referentiels (8101)
+services/identity-service socle identité : utilisateurs + rôles/permissions, miroir Keycloak (8102)
 ```
 
-`mvn test` au niveau racine : **BUILD SUCCESS**, ~113 tests verts (59 socle + 54 tenant-service).
+`mvn test` au niveau racine : **BUILD SUCCESS**, ~129 tests verts (59 socle + 54 tenant-service + 16 identity-service).
 
 ### Les 25 routes de la passerelle ≠ les modules construits
 
@@ -556,14 +557,54 @@ Correctif (commit CORS) :
 - Vérifié : OPTIONS `/api/v1/socle/annees` `Origin 3001` → **200 + ACAO**, `3002` → 200, hors liste → **403** ;
   login + GET réels → 200 avec ACAO en réponse ; `/annees/courante` 404 porte aussi l'ACAO.
 
+### identity-service — lot 1 construit (2026-10-09)
+
+`identity-service` (port **8102**, schéma `identity`) réécrit de stub à service réel : **couche admin
+mince au-dessus de Keycloak**. Périmètre lot 1 = utilisateurs + rôles/permissions ; délégation
+temporaire, delombok, rattachement profil métier / `PersonneLien` et annuaire avancé restent à faire.
+
+**Répartition source de vérité (Option A, arbitrée)** :
+- **Keycloak** = identité native (`username`/`email`/`nom`/`prenom`/`enabled`), préférences
+  (`attributes`), rôles (realm roles), `requiredActions` (`doitChangerMotDePasse` ← `UPDATE_PASSWORD`),
+  `lastLogin` (events admin).
+- **Postgres (entité proxy `utilisateur`, `tenant_id` RLS)** = attributs non natifs :
+  `telephone`, `post_nom`, `sexe`, `date_naissance`, `nationalite`, `photo_url`, `type_compte`,
+  `langue_preferee`, `statut`, `derniere_connexion`, `delombok` + adresse éclatée. Le lien est
+  `keycloak_user_id`. **1 utilisateur Keycloak = 1 tenant.**
+- Tables locales `permission`, `role_permission`, `role_template` (schéma `identity`) ; `role_code`
+  référence le realm role. `JournalAccesUtilisateur` reste **domaine** : l'`audit-service` journalise.
+- Client admin Keycloak : `nexusgesti.keycloak` + `nexusgesti-service` (repris d'`auth-service`),
+  HTTP via **`RestClient`** (spring-web, pas de WebFlux).
+
+**Livré** : `application.yml` (`default_schema: identity`, `spring.flyway.url`, `flyway_identity_history`,
+`nexusgesti.security.oauth2.enabled: false`), `IdentityApplication` (`@ConfigurationPropertiesScan`),
+`KeycloakProperties`, `SecurityConfig` (`OPTIONS /** permitAll`). `V1__identity_schema.sql` réécrite
+(5 tables) ; V2 (`rls`) / V3 (`app_role`) conservées. Domaine pur (enums + `Utilisateur` avec
+`activer/desactiver/suspendre/attribuerRole/...`, `Permission.correspondA`, `RolePermission.estExpiree`,
+`IdentityException`), ports in/out, `KeycloakIdentityProviderAdapter`, persistance (5
+entités/JPA/adapters), services `UtilisateurService`/`RoleService`, contrôleurs
+`UtilisateurController` (`/api/v1/utilisateurs`) et `IdentiteController` (`/api/v1/identites`),
+`GlobalExceptionHandler` (codes → 404/409/503 ; **pas de handler `Exception` générique**, sinon
+l'`AccessDeniedException` de Spring Security ressort en 500 au lieu de 403).
+
+**Tests : 16 verts** (domaine `Utilisateur`/`Permission`/`RolePermission` + `@WebMvcTest`
+`UtilisateurControllerSecurityTest`). `IdentityApplicationTests` taggé `@Tag("integration")` (exclu de
+Surefire sans Docker). `mvn test` racine : **BUILD SUCCESS, ~129 tests**. Prometheus : 7e cible
+`host.docker.internal:8102`.
+
+**Non fait** (bloqué par le poste) : boot réel 8102 + E2E passerelle — **Docker Desktop était arrêté**
+(pas de postgres 5433/redis/keycloak), donc non vérifié à chaud. Le piège Flyway 10 + Postgres décrit
+pour `tenant-service` s'appliquera probablement (3 migrations) : appliquer V1/V2/V3 manuellement puis
+`SPRING_FLYWAY_BASELINE_ON_MIGRATE=true SPRING_FLYWAY_BASELINE_VERSION=3` si le batch se bloque.
+
 ### Restant
 
 - **Commit `5158d45` (251 fichiers)** : docs + `.gitignore` + `backend/`. Phase 1 close.
 - **Phase 2 commitée le 2026-10-08** : `e25283e` (tenant-service + doc D7/D10 + E2E + colonne Front).
 - **Console socle commitée le 2026-10-08** : décrite au journal §11 (plomberie + pages socle + ADMIN,
   D13 appliqué).
-- Prochaine étape (§9) : **phase 3** (reste du socle `identity`, `auth`, `notification`, `audit`,
-  `reporting`) — back d'abord, front ensuite.
+- Prochaine étape (§9) : **phase 3** (reste du socle) — `identity-service` fait (lot 1, 2026-10-09) ;
+  reste `auth`, `notification`, `audit`, `reporting` — back d'abord, front ensuite.
 - `@Async` de `ReportService.generateAsync` inerte (self-invocation) : génération synchrone.
   À corriger si le rapport doit vraiment être émis hors du thread de requête.
 - `"kyc_level": ["0"]` dans `realm-nexusgesti.json` et `ReportType.KYC_SUMMARY` /
