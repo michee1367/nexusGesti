@@ -1,0 +1,538 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>NexusGesti — Guide Université</title>
+<style>
+  :root{
+    --ink:#0f172a; --muted:#475569; --line:#e2e8f0; --bg:#ffffff;
+    --brand:#0e7490; --brand-soft:#ecfeff; --accent:#0f766e; --accent-soft:#ecfdf5;
+    --warn:#b45309; --warn-soft:#fffbeb; --danger:#b91c1c; --danger-soft:#fef2f2;
+    --slate-100:#f1f5f9;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    font-family:"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    color:var(--ink); background:var(--bg); line-height:1.55; font-size:13.5px;
+    -webkit-print-color-adjust:exact; print-color-adjust:exact;
+  }
+  .page{max-width:900px;margin:0 auto;padding:32px 40px 56px}
+  .cover{border-bottom:4px solid var(--brand);margin-bottom:28px;padding-bottom:20px}
+  .cover .kicker{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--brand);font-weight:700}
+  .cover h1{font-size:30px;line-height:1.15;margin:8px 0 6px}
+  .cover .sub{color:var(--muted);font-size:15px}
+  .cover .meta{margin-top:14px;display:flex;flex-wrap:wrap;gap:8px}
+  .chip{display:inline-block;font-size:11.5px;border:1px solid var(--line);border-radius:999px;padding:3px 10px;color:var(--muted);background:var(--slate-100)}
+  .chip.brand{background:var(--brand-soft);border-color:#a5f3fc;color:var(--brand);font-weight:600}
+  h2{font-size:19px;margin:30px 0 8px;padding-top:6px}
+  h2 .n{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:7px;background:var(--brand);color:#fff;font-size:14px;margin-right:9px;vertical-align:2px}
+  h3{font-size:15px;margin:18px 0 6px;color:var(--brand)}
+  p{margin:7px 0}
+  ul,ol{margin:7px 0 7px 20px;padding:0}
+  li{margin:3px 0}
+  a{color:var(--brand);text-decoration:none}
+  .lead{font-size:14.5px;color:var(--muted)}
+  .toc{background:var(--slate-100);border:1px solid var(--line);border-radius:10px;padding:16px 20px;margin:22px 0 28px}
+  .toc h2{margin:0 0 8px;font-size:15px;padding:0}
+  .toc ol{columns:2;column-gap:34px;margin-left:18px}
+  .toc a{color:var(--ink)}
+  .where{font-size:12px;color:var(--muted);border-left:3px solid var(--accent);padding:2px 0 2px 10px;margin:4px 0 10px}
+  .where b{color:var(--accent)}
+  table{width:100%;border-collapse:collapse;margin:10px 0;font-size:12.5px}
+  th,td{border:1px solid var(--line);padding:7px 10px;text-align:left;vertical-align:top}
+  th{background:var(--slate-100);font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
+  td code, p code, li code{background:#f1f5f9;border:1px solid #e2e8f0;border-radius:4px;padding:0 5px;font-family:"Cascadia Code",Consolas,monospace;font-size:12px}
+  .note,.warn,.ok{border-radius:8px;padding:10px 14px;margin:10px 0;font-size:12.5px;border:1px solid}
+  .note{background:var(--brand-soft);border-color:#a5f3fc}
+  .ok{background:var(--accent-soft);border-color:#a7f3d0}
+  .warn{background:var(--warn-soft);border-color:#fde68a}
+  .note b,.ok b,.warn b{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px}
+  .note b{color:var(--brand)} .ok b{color:var(--accent)} .warn b{color:var(--warn)}
+  .step{border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin:12px 0;break-inside:avoid}
+  .step h3{margin-top:0}
+  .check{list-style:none;margin-left:0}
+  .check li{padding-left:24px;position:relative}
+  .check li:before{content:"";position:absolute;left:0;top:2px;width:14px;height:14px;border:1.5px solid var(--brand);border-radius:4px}
+  .foot{margin-top:34px;border-top:1px solid var(--line);padding-top:12px;color:var(--muted);font-size:11.5px}
+  @page{margin:18mm 15mm}
+  @media print{
+    .page{max-width:none;padding:0}
+    h2{break-after:avoid}
+    .toc{break-inside:avoid}
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header class="cover">
+    <div class="kicker">NexusGesti · Guide d'utilisation</div>
+    <h1>Université — de la création à l'inscription d'un étudiant</h1>
+    <p class="sub">Parcours complet, écran par écran, pour un établissement de profil <b>UNIVERSITAIRE</b>.</p>
+    <div class="meta">
+      <span class="chip brand">Profil : UNIVERSITAIRE</span>
+      <span class="chip">Console : http://localhost:3001</span>
+      <span class="chip">Passerelle API : http://localhost:8080</span>
+      <span class="chip">Version du document : 1.0</span>
+    </div>
+  </header>
+
+  <section class="toc">
+    <h2>Sommaire</h2>
+    <ol>
+      <li><a href="#s0">Avant de commencer</a></li>
+      <li><a href="#s1">Se connecter</a></li>
+      <li><a href="#s2">Créer l'établissement</a></li>
+      <li><a href="#s3">Créer filières, programmes et cycles</a></li>
+      <li><a href="#s4">Créer le site et l'année académique</a></li>
+      <li><a href="#s5">Créer les semestres</a></li>
+      <li><a href="#s6">Créer les services</a></li>
+      <li><a href="#s7">Créer les matières</a></li>
+      <li><a href="#s8">Créer les niveaux</a></li>
+      <li><a href="#s9">Créer les unités d'enseignement (UE)</a></li>
+      <li><a href="#s10">Créer salles, créneaux et régime horaire</a></li>
+      <li><a href="#s11">Créer les classes</a></li>
+      <li><a href="#s12">Créer les promotions</a></li>
+      <li><a href="#s13">Créer les enseignants</a></li>
+      <li><a href="#s14">Affecter les enseignants (sans titulaire)</a></li>
+      <li><a href="#s15">Créer les cours / ECUE</a></li>
+      <li><a href="#s16">Construire l'emploi du temps</a></li>
+      <li><a href="#s17">Créer le tuteur (parent)</a></li>
+      <li><a href="#s18">Inscrire un étudiant</a></li>
+      <li><a href="#s19">Vérifier et clôturer</a></li>
+      <li><a href="#a">Annexe — récapitulatif et erreurs fréquentes</a></li>
+    </ol>
+  </section>
+
+  <!-- 0 -->
+  <h2 id="s0"><span class="n">0</span>Avant de commencer</h2>
+  <p class="lead">Ce guide décrit un parcours d'exemple complet pour une université nommée fictivement <b>« Université Nouvelle Génération »</b>. Reprenez les valeurs telles quelles pour un premier essai, puis adaptez-les.</p>
+
+  <h3>Vocabulaire utile</h3>
+  <ul>
+    <li><b>Établissement (tenant)</b> : l'université elle-même. Chaque établissement est isolé.</li>
+    <li><b>Site</b> : un campus de l'université.</li>
+    <li><b>Cycle</b> : le grade visé (Licence, Master).</li>
+    <li><b>Filière</b> : un grand domaine (ex. Informatique).</li>
+    <li><b>Programme</b> : un parcours au sein d'une filière (ex. Génie logiciel).</li>
+    <li><b>Niveau</b> : une année d'études (L1, L2, L3, M1…).</li>
+    <li><b>Semestre</b> : une demi-année (S1, S2…).</li>
+    <li><b>UE (unité d'enseignement)</b> : un bloc de crédits, rattaché à un semestre.</li>
+    <li><b>Cours / ECUE</b> : le cours concret, rattaché à une UE, une matière et une classe.</li>
+    <li><b>Promotion</b> : la cohorte d'étudiants d'un programme pour un semestre et une année.</li>
+    <li><b>Classe</b> : le groupe de TD/cours d'un niveau.</li>
+    <li><b>Enseignant</b> : le personnel qui dispense les cours.</li>
+  </ul>
+
+  <div class="note">
+    <b>Comptes de démonstration</b>
+    Administrateur : <code>demo.admin@nexusgesti.com</code> / <code>Admin_pass123!</code><br>
+    Consultation (lecture seule) : <code>demo.customer@nexusgesti.com</code> / <code>demo_secret_customer</code>
+  </div>
+
+  <div class="warn">
+    <b>Règle d'or du profil universitaire</b>
+    À l'université, un enseignant n'est <b>jamais titulaire d'une classe</b> : la coordination est assurée au niveau de l'UE. Le système refuse toute affectation marquée « titulaire de classe ». Les types admis sont CO_TITULAIRE, ADJOINT, REMPLACANT, VISITEUR.
+  </div>
+
+  <!-- 1 -->
+  <h2 id="s1"><span class="n">1</span>Se connecter</h2>
+  <div class="where">Écran de connexion → <b>Connexion</b></div>
+  <ol>
+    <li>Ouvrez la console : <code>http://localhost:3001</code>.</li>
+    <li>Saisissez l'adresse et le mot de passe du compte administrateur, puis validez.</li>
+    <li>Choisissez l'établissement à administrer si un sélecteur apparaît.</li>
+  </ol>
+  <p class="ok"><b>Résultat attendu</b>Vous arrivez sur le tableau de bord, menu latéral à gauche.</p>
+  <div class="note"><b>Bonne pratique</b>Le jeton de connexion expire au bout de quelques minutes. En cas d'échec en fin de session, rechargez la page et reconnectez-vous.</div>
+
+  <!-- 2 -->
+  <h2 id="s2"><span class="n">2</span>Créer l'établissement</h2>
+  <div class="where">Menu <b>Plateforme → Établissements</b></div>
+  <table>
+    <thead><tr><th>Champ</th><th>Valeur de l'exemple</th><th>Remarque</th></tr></thead>
+    <tbody>
+      <tr><td>Code</td><td><code>UNIV-NG-01</code></td><td>Identifiant court, unique.</td></tr>
+      <tr><td>Dénomination</td><td>Université Nouvelle Génération</td><td>Nom officiel affiché.</td></tr>
+      <tr><td>Profil</td><td><b>UNIVERSITAIRE</b></td><td>Active UE, crédits, délibération par UE.</td></tr>
+      <tr><td>Statut</td><td>PREPARATION</td><td>Se change en ACTIF à la fin (§19).</td></tr>
+    </tbody>
+  </table>
+  <div class="note">
+    <b>Ce qui se passe automatiquement</b>
+    La création génère l'identifiant unique et <b>bascule la console sur ce nouvel établissement</b>. Les conteneurs de référentiels sont créés automatiquement.
+  </div>
+  <p class="ok"><b>Résultat attendu</b>L'établissement apparaît avec le statut « Préparation ».</p>
+
+  <!-- 3 -->
+  <h2 id="s3"><span class="n">3</span>Créer filières, programmes et cycles</h2>
+  <div class="where">Menu <b>Plateforme → Établissement</b></div>
+
+  <h3>3.1 Filière</h3>
+  <p>Onglet <b>Filières &amp; programmes</b> → ajoutez une filière :</p>
+  <table>
+    <thead><tr><th>Champ</th><th>Valeur de l'exemple</th></tr></thead>
+    <tbody>
+      <tr><td>Code</td><td><code>INFO</code></td></tr>
+      <tr><td>Libellé</td><td>Informatique</td></tr>
+      <tr><td>Département</td><td>Sciences et technologies</td></tr>
+    </tbody>
+  </table>
+
+  <h3>3.2 Programme</h3>
+  <p>Toujours dans l'onglet, ajoutez un programme à la filière :</p>
+  <table>
+    <thead><tr><th>Champ</th><th>Valeur de l'exemple</th></tr></thead>
+    <tbody>
+      <tr><td>Filière</td><td>Informatique</td></tr>
+      <tr><td>Code</td><td><code>GL</code></td></tr>
+      <tr><td>Libellé</td><td>Génie logiciel</td></tr>
+    </tbody>
+  </table>
+
+  <h3>3.3 Cycles</h3>
+  <p>Onglet <b>Cycles</b> : créez les grades visés.</p>
+  <table>
+    <thead><tr><th>Code</th><th>Libellé</th><th>Rang</th><th>Profil</th></tr></thead>
+    <tbody>
+      <tr><td><code>LIC</code></td><td>Licence</td><td>1</td><td>UNIVERSITAIRE</td></tr>
+      <tr><td><code>MAS</code></td><td>Master</td><td>2</td><td>UNIVERSITAIRE</td></tr>
+    </tbody>
+  </table>
+  <div class="note"><b>Rang</b>Le rang ordonne les cycles au sein de l'établissement (Licence avant Master).</div>
+
+  <!-- 4 -->
+  <h2 id="s4"><span class="n">4</span>Créer le site et l'année académique</h2>
+
+  <h3>4.1 Site</h3>
+  <div class="where">Menu <b>Plateforme → Établissement</b> (onglet <b>Sites</b>)</div>
+  <table>
+    <thead><tr><th>Champ</th><th>Valeur de l'exemple</th></tr></thead>
+    <tbody>
+      <tr><td>Code</td><td><code>CAMPUS</code></td></tr>
+      <tr><td>Libellé</td><td>Campus principal</td></tr>
+    </tbody>
+  </table>
+
+  <h3>4.2 Année académique</h3>
+  <div class="where">Menu <b>Plateforme → Années scolaires</b></div>
+  <table>
+    <thead><tr><th>Champ</th><th>Valeur de l'exemple</th></tr></thead>
+    <tbody>
+      <tr><td>Code</td><td><code>2025-2026</code></td></tr>
+      <tr><td>Libellé</td><td>Année académique 2025-2026</td></tr>
+      <tr><td>Date de début</td><td>15/09/2025</td></tr>
+      <tr><td>Date de fin</td><td>31/07/2026</td></tr>
+      <tr><td>Année de référence</td><td>2025</td></tr>
+      <tr><td>Statut</td><td>OUVERTE</td></tr>
+    </tbody>
+  </table>
+  <p>Ajoutez une <b>période</b> au besoin (code <code>S1</code>, type SEMESTRE, ordre 1).</p>
+
+  <!-- 5 -->
+  <h2 id="s5"><span class="n">5</span>Créer les semestres</h2>
+  <div class="where">Menu <b>Pédagogie · Structure → Semestres</b></div>
+  <ol><li>Cliquez sur <b>Nouveau</b> :</li></ol>
+  <table>
+    <thead><tr><th>Code</th><th>Libellé</th><th>Rang</th><th>Crédits attendus</th></tr></thead>
+    <tbody>
+      <tr><td><code>S1</code></td><td>Semestre 1</td><td>1</td><td>30</td></tr>
+      <tr><td><code>S2</code></td><td>Semestre 2</td><td>2</td><td>30</td></tr>
+    </tbody>
+  </table>
+  <div class="note"><b>Crédits attendus</b>Somme des crédits que l'étudiant doit valider sur le semestre (règle de délibération par UE).</div>
+
+  <!-- 6 -->
+  <h2 id="s6"><span class="n">6</span>Créer les services</h2>
+  <div class="where">Menu <b>Pédagogie · Personnes → Personnel</b> (onglet <b>Services</b>)</div>
+  <table>
+    <thead><tr><th>Code</th><th>Libellé</th><th>Type</th></tr></thead>
+    <tbody>
+      <tr><td><code>RECTORAT</code></td><td>Rectorat</td><td>DIRECTION</td></tr>
+      <tr><td><code>SCOLARITE</code></td><td>Service des inscriptions</td><td>SCOLARITE</td></tr>
+      <tr><td><code>DPT-INFO</code></td><td>Département informatique</td><td>PEDAGOGIE</td></tr>
+      <tr><td><code>LABO</code></td><td>Laboratoires</td><td>LABORATOIRE</td></tr>
+    </tbody>
+  </table>
+  <p>Enregistrez les agents (rectorat, scolarité) via l'onglet <b>Agents</b>.</p>
+
+  <!-- 7 -->
+  <h2 id="s7"><span class="n">7</span>Créer les matières</h2>
+  <div class="where">Menu <b>Pédagogie · Structure → Matières</b></div>
+  <table>
+    <thead><tr><th>Code</th><th>Libellé</th><th>Discipline</th><th>Type</th></tr></thead>
+    <tbody>
+      <tr><td><code>PROG</code></td><td>Programmation</td><td>Informatique</td><td>OBLIGATOIRE</td></tr>
+      <tr><td><code>ALGO</code></td><td>Algorithmique</td><td>Informatique</td><td>OBLIGATOIRE</td></tr>
+      <tr><td><code>MATH-D</code></td><td>Mathématiques discrètes</td><td>Mathématiques</td><td>OBLIGATOIRE</td></tr>
+      <tr><td><code>BD</code></td><td>Bases de données</td><td>Informatique</td><td>OBLIGATOIRE</td></tr>
+    </tbody>
+  </table>
+
+  <!-- 8 -->
+  <h2 id="s8"><span class="n">8</span>Créer les niveaux</h2>
+  <div class="where">Menu <b>Pédagogie · Structure → Niveaux</b></div>
+  <table>
+    <thead><tr><th>Code</th><th>Libellé</th><th>Cycle</th><th>Rang</th><th>Ordre</th></tr></thead>
+    <tbody>
+      <tr><td><code>L1</code></td><td>Licence 1</td><td>Licence</td><td>1</td><td>1</td></tr>
+      <tr><td><code>L2</code></td><td>Licence 2</td><td>Licence</td><td>2</td><td>2</td></tr>
+      <tr><td><code>L3</code></td><td>Licence 3</td><td>Licence</td><td>3</td><td>3</td></tr>
+    </tbody>
+  </table>
+
+  <!-- 9 -->
+  <h2 id="s9"><span class="n">9</span>Créer les unités d'enseignement (UE)</h2>
+  <div class="where">Menu <b>Pédagogie · Structure → UE</b></div>
+  <ol><li>Cliquez sur <b>Nouveau</b> et créez une UE par bloc de crédits :</li></ol>
+  <table>
+    <thead><tr><th>Code</th><th>Libellé</th><th>Semestre</th><th>Crédits</th><th>Coefficient</th><th>Volume horaire</th><th>Obligatoire</th></tr></thead>
+    <tbody>
+      <tr><td><code>UE-INF101</code></td><td>Programmation fondamentale</td><td>Semestre 1</td><td>6</td><td>3</td><td>60</td><td>oui</td></tr>
+      <tr><td><code>UE-INF102</code></td><td>Bases de données</td><td>Semestre 1</td><td>6</td><td>3</td><td>60</td><td>oui</td></tr>
+      <tr><td><code>UE-MAT101</code></td><td>Mathématiques pour l'informatique</td><td>Semestre 1</td><td>6</td><td>2</td><td>45</td><td>oui</td></tr>
+    </tbody>
+  </table>
+  <div class="note"><b>Champs de l'UE</b>Le niveau à calculer et le caractère obligatoire servent à la délibération par UE. Une UE est toujours rattachée à un semestre.</div>
+
+  <!-- 10 -->
+  <h2 id="s10"><span class="n">10</span>Créer salles, créneaux et régime horaire</h2>
+  <div class="where">Menu <b>Pédagogie · Structure → Salles</b>, <b>Créneaux</b>, <b>Régimes horaires</b></div>
+
+  <h3>10.1 Salles</h3>
+  <table>
+    <thead><tr><th>Code</th><th>Libellé</th><th>Type</th><th>Capacité</th></tr></thead>
+    <tbody>
+      <tr><td><code>AMPHI-A</code></td><td>Amphithéâtre A</td><td>AMPHI</td><td>200</td></tr>
+      <tr><td><code>TD-101</code></td><td>Salle de TD 101</td><td>COURS</td><td>40</td></tr>
+      <tr><td><code>INFO-LAB</code></td><td>Laboratoire informatique</td><td>INFORMATIQUE</td><td>30</td></tr>
+    </tbody>
+  </table>
+
+  <h3>10.2 Créneaux</h3>
+  <table>
+    <thead><tr><th>Jour</th><th>Heure de début</th><th>Heure de fin</th><th>Ordre</th></tr></thead>
+    <tbody>
+      <tr><td>LUNDI</td><td>08:00</td><td>10:00</td><td>1</td></tr>
+      <tr><td>LUNDI</td><td>10:00</td><td>12:00</td><td>2</td></tr>
+    </tbody>
+  </table>
+
+  <h3>10.3 Régime horaire</h3>
+  <table>
+    <thead><tr><th>Champ</th><th>Valeur de l'exemple</th></tr></thead>
+    <tbody>
+      <tr><td>Code</td><td><code>UNIV-STD</code></td></tr>
+      <tr><td>Libellé</td><td>Grille universitaire standard</td></tr>
+      <tr><td>Jours</td><td>LUNDI, MARDI, MERCREDI, JEUDI, VENDREDI</td></tr>
+      <tr><td>Créneaux par jour</td><td>4</td></tr>
+      <tr><td>Durée d'un créneau</td><td>120 (minutes)</td></tr>
+    </tbody>
+  </table>
+
+  <!-- 11 -->
+  <h2 id="s11"><span class="n">11</span>Créer les classes</h2>
+  <div class="where">Menu <b>Pédagogie · Structure → Classes</b></div>
+  <table>
+    <thead><tr><th>Champ</th><th>Valeur de l'exemple</th></tr></thead>
+    <tbody>
+      <tr><td>Code</td><td><code>L1-INFO-A</code></td></tr>
+      <tr><td>Libellé</td><td>L1 Informatique — Groupe A</td></tr>
+      <tr><td>Niveau</td><td>Licence 1</td></tr>
+      <tr><td>Année</td><td>2025-2026</td></tr>
+      <tr><td>Site</td><td>Campus principal</td></tr>
+      <tr><td>Régime horaire</td><td>UNIV-STD</td></tr>
+      <tr><td>Capacité</td><td>40</td></tr>
+      <tr><td>Statut</td><td>OUVERTE</td></tr>
+    </tbody>
+  </table>
+
+  <!-- 12 -->
+  <h2 id="s12"><span class="n">12</span>Créer les promotions</h2>
+  <div class="where">Menu <b>Pédagogie · Structure → Promotions</b></div>
+  <ol><li>Cliquez sur <b>Nouveau</b> :</li></ol>
+  <table>
+    <thead><tr><th>Champ</th><th>Valeur de l'exemple</th></tr></thead>
+    <tbody>
+      <tr><td>Code</td><td><code>PROM-L1-INFO-2025</code></td></tr>
+      <tr><td>Libellé</td><td>Licence 1 Informatique 2025-2026</td></tr>
+      <tr><td>Programme</td><td>Génie logiciel</td></tr>
+      <tr><td>Semestre</td><td>Semestre 1</td></tr>
+      <tr><td>Année</td><td>2025-2026</td></tr>
+      <tr><td>Capacité</td><td>40</td></tr>
+      <tr><td>Statut</td><td>OUVERTE</td></tr>
+    </tbody>
+  </table>
+  <div class="note"><b>Promotion</b>Elle matérialise la cohorte d'un programme sur un semestre et une année. Elle sert au suivi et à la délibération.</div>
+
+  <!-- 13 -->
+  <h2 id="s13"><span class="n">13</span>Créer les enseignants</h2>
+  <div class="where">Menu <b>Pédagogie · Personnes → Enseignants</b></div>
+  <table>
+    <thead><tr><th>Nom / Post-nom / Prénom</th><th>Diplôme</th><th>Spécialité</th><th>Service</th></tr></thead>
+    <tbody>
+      <tr><td>Mbala / Nkosi / Alain</td><td>Doctorat</td><td>Génie logiciel</td><td>Département informatique</td></tr>
+      <tr><td>Mukendi / Kanda / Sophie</td><td>Master</td><td>Bases de données</td><td>Département informatique</td></tr>
+      <tr><td>Lumbala / Tshisekedi / Éric</td><td>Doctorat</td><td>Mathématiques</td><td>Département informatique</td></tr>
+    </tbody>
+  </table>
+  <p>Matricule généré (préfixe ENS) si laissé vide, statut ACTIF.</p>
+
+  <!-- 14 -->
+  <h2 id="s14"><span class="n">14</span>Affecter les enseignants (sans titulaire)</h2>
+  <div class="where">Détail de l'enseignant → onglet <b>Affectations</b></div>
+  <div class="warn">
+    <b>Règle spécifique à l'universitaire</b>
+    Ne cochez <b>jamais</b> « titulaire de classe ». Une classe universitaire peut avoir plusieurs affectations, toutes non-titulaires. La coordination se fait au niveau de l'UE.
+  </div>
+  <table>
+    <thead><tr><th>Enseignant</th><th>Classe</th><th>Type d'affectation</th><th>Titulaire de classe</th></tr></thead>
+    <tbody>
+      <tr><td>Alain Mbala (Programmation)</td><td>L1-INFO-A</td><td>CO_TITULAIRE</td><td>non</td></tr>
+      <tr><td>Sophie Mukendi (Bases de données)</td><td>L1-INFO-A</td><td>ADJOINT</td><td>non</td></tr>
+      <tr><td>Éric Lumbala (Mathématiques)</td><td>L1-INFO-A</td><td>ADJOINT</td><td>non</td></tr>
+    </tbody>
+  </table>
+  <p class="ok"><b>Contrôle automatique</b>Le système valide la règle : profil universitaire = <b>zéro</b> titulaire de classe.</p>
+
+  <!-- 15 -->
+  <h2 id="s15"><span class="n">15</span>Créer les cours / ECUE</h2>
+  <div class="where">Menu <b>Pédagogie · Structure → Cours / ECUE</b></div>
+  <ol><li>Cliquez sur <b>Nouveau</b>. Un ECUE relie une UE, une matière et une classe :</li></ol>
+  <table>
+    <thead><tr><th>Code</th><th>Libellé</th><th>UE</th><th>Matière</th><th>Classe</th><th>Volume horaire</th><th>Crédits</th><th>Coefficient</th></tr></thead>
+    <tbody>
+      <tr><td><code>ECUE-PROG-A</code></td><td>Programmation — groupe A</td><td>UE-INF101</td><td>Programmation</td><td>L1-INFO-A</td><td>40</td><td>4</td><td>2</td></tr>
+      <tr><td><code>ECUE-BD-A</code></td><td>Bases de données — groupe A</td><td>UE-INF102</td><td>Bases de données</td><td>L1-INFO-A</td><td>40</td><td>4</td><td>2</td></tr>
+      <tr><td><code>ECUE-MATH-A</code></td><td>Mathématiques — groupe A</td><td>UE-MAT101</td><td>Mathématiques discrètes</td><td>L1-INFO-A</td><td>30</td><td>4</td><td>2</td></tr>
+    </tbody>
+  </table>
+  <div class="note"><b>Indicateur hebdomadaire</b>Le champ « hebdomadaire » indique si le volume horaire est exprimé par semaine. Le type de regroupement (cours magistral, TD, TP…) optionnel sert à distinguer les séances.</div>
+
+  <!-- 16 -->
+  <h2 id="s16"><span class="n">16</span>Construire l'emploi du temps</h2>
+  <div class="where">Menu <b>Pédagogie · Structure → Emplois du temps</b></div>
+  <ol>
+    <li>Cliquez sur <b>Nouvel emploi</b> : code <code>EDT-L1A</code>, libellé « L1 Informatique A », classe L1-INFO-A, année 2025-2026.</li>
+    <li>Ouvrez le détail et ajoutez les <b>plages</b> (créneau + matière + salle + enseignant).</li>
+    <li>Vérifiez les <b>conflits</b> :</li>
+  </ol>
+  <table>
+    <thead><tr><th>Code de conflit</th><th>Signification</th></tr></thead>
+    <tbody>
+      <tr><td><code>SALL_DOUBLEE</code></td><td>Même salle utilisée deux fois sur le même créneau.</td></tr>
+      <tr><td><code>ENSEIGNANT_DOUBLE</code></td><td>Même enseignant affecté à deux plages simultanées.</td></tr>
+      <tr><td><code>ELEVES_DOUBLE</code></td><td>Même classe avec deux cours en même temps.</td></tr>
+    </tbody>
+  </table>
+  <p class="ok"><b>Résultat attendu</b>Sans conflit bloquant, « Publier » fait passer l'emploi du temps en « publié ».</p>
+
+  <!-- 17 -->
+  <h2 id="s17"><span class="n">17</span>Créer le tuteur (parent)</h2>
+  <div class="where">Menu <b>Pédagogie · Personnes → Parents</b></div>
+  <table>
+    <thead><tr><th>Champ</th><th>Valeur de l'exemple</th></tr></thead>
+    <tbody>
+      <tr><td>Nom / Post-nom / Prénom</td><td>Kabwe / Mulumba / Paul</td></tr>
+      <tr><td>Sexe</td><td>M</td></tr>
+      <tr><td>Téléphone / secondaire</td><td>+243 815 000 000 / +243 825 000 000</td></tr>
+      <tr><td>Email</td><td>paul.kabwe@example.com</td></tr>
+      <tr><td>Profession</td><td>Médecin</td></tr>
+      <tr><td>Statut</td><td>ACTIF</td></tr>
+    </tbody>
+  </table>
+  <p>Pour un étudiant souvent majeur, le lien peut être TUTEUR_AFFECTATIF, TUTEUR_LEGAL ou AUTRE. Le rattachement se fait depuis la fiche de l'étudiant.</p>
+
+  <!-- 18 -->
+  <h2 id="s18"><span class="n">18</span>Inscrire un étudiant</h2>
+  <div class="where">Menu <b>Pédagogie · Personnes → Élèves</b> (l'étudiant est géré comme un élève)</div>
+
+  <h3>18.1 Créer la fiche</h3>
+  <table>
+    <thead><tr><th>Champ</th><th>Valeur de l'exemple</th></tr></thead>
+    <tbody>
+      <tr><td>Matricule</td><td>généré automatiquement si vide (préfixe ELV)</td></tr>
+      <tr><td>Nom / Post-nom / Prénom</td><td>Kabasele / Mwamba / Grâce</td></tr>
+      <tr><td>Sexe</td><td>F</td></tr>
+      <tr><td>Date de naissance</td><td>14/02/2007</td></tr>
+      <tr><td>Lieu de naissance</td><td>Lubumbashi</td></tr>
+      <tr><td>Nationalité</td><td>Congolaise (RDC)</td></tr>
+      <tr><td>Statut</td><td>PREINSCRIT (défaut)</td></tr>
+      <tr><td>Établissement d'origine</td><td>École secondaire La Grâce</td></tr>
+    </tbody>
+  </table>
+
+  <h3>18.2 Créer et valider l'inscription</h3>
+  <ol>
+    <li>Ouvrez la fiche, onglet <b>Inscriptions</b>.</li>
+    <li>Ajoutez : classe L1-INFO-A, année 2025-2026, date d'inscription 20/09/2025, statut EN_ATTENTE.</li>
+    <li><b>Validez</b> l'inscription.</li>
+  </ol>
+  <p class="ok"><b>Résultat attendu</b>Inscription <b>VALIDE</b> et étudiant au statut <b>INSCRIT</b>. Son dossier est créé.</p>
+
+  <h3>18.3 Compléter le dossier</h3>
+  <p>Pièces obligatoires : <b>PHOTO_IDENTITE</b> et <b>ACTE_NAISSANCE</b>. Facultatives : BULLETIN_ANTERIEUR, CERTIFICAT_SCOLARITE, SUPPLEMENTAIRE.</p>
+
+  <!-- 19 -->
+  <h2 id="s19"><span class="n">19</span>Vérifier et clôturer</h2>
+  <ol class="check">
+    <li>Établissement créé avec le profil UNIVERSITAIRE.</li>
+    <li>Filières, programmes et cycles (Licence, Master) créés.</li>
+    <li>Site et année académique créés.</li>
+    <li>Semestres, UE, matières, niveaux créés.</li>
+    <li>Salles, créneaux et régime horaire créés.</li>
+    <li>Classes et promotions créées.</li>
+    <li>Enseignants créés et <b>aucune</b> affectation titulaire.</li>
+    <li>Cours / ECUE créés (UE × matière × classe).</li>
+    <li>Emploi du temps publié sans conflit.</li>
+    <li>Tuteur relié à l'étudiant.</li>
+    <li>Étudiant INSCRIT avec une inscription VALIDE.</li>
+  </ol>
+  <p>Finalisez en passant l'établissement au statut <b>ACTIF</b> (Plateforme → Établissements).</p>
+
+  <!-- Annexe -->
+  <h2 id="a"><span class="n">A</span>Annexe — récapitulatif et erreurs fréquentes</h2>
+  <h3>Ordre recommandé</h3>
+  <ol>
+    <li>Établissement (UNIVERSITAIRE)</li>
+    <li>Filières + programmes + cycles</li>
+    <li>Site + année</li>
+    <li>Semestres</li>
+    <li>Services</li>
+    <li>Matières</li>
+    <li>Niveaux</li>
+    <li>UE</li>
+    <li>Salles, créneaux, régime horaire</li>
+    <li>Classes</li>
+    <li>Promotions</li>
+    <li>Enseignants</li>
+    <li>Affectations (aucun titulaire)</li>
+    <li>Cours / ECUE</li>
+    <li>Emploi du temps</li>
+    <li>Tuteur</li>
+    <li>Étudiant + inscription</li>
+  </ol>
+
+  <h3>Erreurs fréquentes</h3>
+  <table>
+    <thead><tr><th>Message / symptôme</th><th>Cause probable</th><th>Solution</th></tr></thead>
+    <tbody>
+      <tr><td>Refus d'affectation titulaire</td><td>Une affectation a été cochée « titulaire de classe ».</td><td>Décocher « titulaire » ; utiliser CO_TITULAIRE, ADJOINT, REMPLACANT ou VISITEUR.</td></tr>
+      <tr><td>UE refusée</td><td>UE sans semestre.</td><td>Renseigner le semestre de l'UE.</td></tr>
+      <tr><td>ECUE refusé</td><td>Cours sans UE.</td><td>Rattacher le cours à une UE.</td></tr>
+      <tr><td>Publication impossible (conflit)</td><td>Salle, classe ou enseignant en double sur un créneau.</td><td>Corriger les plages en double puis republier.</td></tr>
+      <tr><td>Inscription non comptée</td><td>Inscription restée EN_ATTENTE.</td><td>Valider l'inscription (statut VALIDE).</td></tr>
+      <tr><td>Erreur de connexion en fin de session</td><td>Jeton expiré.</td><td>Recharger la page et se reconnecter.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="foot">
+    NexusGesti — Guide Université (profil UNIVERSITAIRE). Document autonome, destiné à la distribution.
+    Les intitulés d'écrans et les règles correspondent à la console socle/pédagogie.
+  </div>
+
+</div>
+</body>
+</html>

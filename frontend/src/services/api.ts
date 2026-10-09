@@ -40,6 +40,37 @@ import {
   type TypeCompte,
   type Utilisateur,
 } from "@/types";
+import type {
+  Niveau,
+  Classe,
+  Promotion,
+  Semestre,
+  UE,
+  Matiere,
+  CoursECUE,
+  Salle,
+  Creneau,
+  RegimeHoraire,
+  EmploiDuTemps,
+  PlageEmploi,
+  ConflitEmploi,
+  Eleve,
+  DossierEleve,
+  FichierJoint,
+  Inscription,
+  CongeEtude,
+  SanctionDisciplinaire,
+  Parent,
+  LienParentalite,
+  Enseignant,
+  PieceIdentiteEnseignant,
+  AffectationEnseignant,
+  Titularite,
+  Agent,
+  ServiceEtablissement,
+  ResultatValidation,
+  StatutEnseignant,
+} from "@/types";
 
 export const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080/api/v1";
 export const TENANT_KEY = "x_tenant_id";
@@ -462,6 +493,156 @@ export const identiteApi = {
       rawFetch<{ autorise: boolean }>(
         `/socle/identites/permissions/verifier?role=${encodeURIComponent(role)}&verbe=${encodeURIComponent(verbe)}&ressource=${encodeURIComponent(ressource)}`,
       ),
+  },
+};
+
+export const structureApi = {
+  niveaux: {
+    list: () => rawFetch<Niveau[]>("/ped/niveaux"),
+    create: (body: Partial<Niveau>) => rawFetch<Niveau>("/ped/niveaux", jsonInit("POST", body)),
+    update: (id: string, body: Partial<Niveau>) => rawFetch<Niveau>(`/ped/niveaux/${id}`, jsonInit("PUT", body)),
+    remove: (id: string) => rawFetch<void>(`/ped/niveaux/${id}`, { method: "DELETE" }),
+  },
+  classes: {
+    list: () => rawFetch<Classe[]>("/ped/classes"),
+    create: (body: Partial<Classe>) => rawFetch<Classe>("/ped/classes", jsonInit("POST", body)),
+    update: (id: string, body: Partial<Classe>) => rawFetch<Classe>(`/ped/classes/${id}`, jsonInit("PUT", body)),
+    ouvrir: (id: string) => rawFetch<Classe>(`/ped/classes/${id}/ouvrir`, { method: "POST" }),
+    cloturer: (id: string) => rawFetch<Classe>(`/ped/classes/${id}/cloturer`, { method: "POST" }),
+  },
+  promotions: {
+    list: () => rawFetch<Promotion[]>("/ped/promotions"),
+    create: (body: Partial<Promotion>) => rawFetch<Promotion>("/ped/promotions", jsonInit("POST", body)),
+    update: (id: string, body: Partial<Promotion>) => rawFetch<Promotion>(`/ped/promotions/${id}`, jsonInit("PUT", body)),
+  },
+  semestres: {
+    list: () => rawFetch<Semestre[]>("/ped/semestres"),
+    create: (body: Partial<Semestre>) => rawFetch<Semestre>("/ped/semestres", jsonInit("POST", body)),
+    update: (id: string, body: Partial<Semestre>) => rawFetch<Semestre>(`/ped/semestres/${id}`, jsonInit("PUT", body)),
+  },
+  ues: {
+    list: () => rawFetch<UE[]>("/ped/ues"),
+    create: (body: Partial<UE>) => rawFetch<UE>("/ped/ues", jsonInit("POST", body)),
+    update: (id: string, body: Partial<UE>) => rawFetch<UE>(`/ped/ues/${id}`, jsonInit("PUT", body)),
+  },
+  matieres: {
+    list: () => rawFetch<Matiere[]>("/ped/matieres"),
+    create: (body: Partial<Matiere>) => rawFetch<Matiere>("/ped/matieres", jsonInit("POST", body)),
+    update: (id: string, body: Partial<Matiere>) => rawFetch<Matiere>(`/ped/matieres/${id}`, jsonInit("PUT", body)),
+    remove: (id: string) => rawFetch<void>(`/ped/matieres/${id}`, { method: "DELETE" }),
+  },
+  cours: {
+    list: () => rawFetch<CoursECUE[]>("/ped/cours"),
+    create: (body: Partial<CoursECUE>) => rawFetch<CoursECUE>("/ped/cours", jsonInit("POST", body)),
+    update: (id: string, body: Partial<CoursECUE>) => rawFetch<CoursECUE>(`/ped/cours/${id}`, jsonInit("PUT", body)),
+  },
+  salles: {
+    list: () => rawFetch<Salle[]>("/ped/salles"),
+    create: (body: Partial<Salle>) => rawFetch<Salle>("/ped/salles", jsonInit("POST", body)),
+    update: (id: string, body: Partial<Salle>) => rawFetch<Salle>(`/ped/salles/${id}`, jsonInit("PUT", body)),
+  },
+  creneaux: {
+    list: () => rawFetch<Creneau[]>("/ped/creneaux"),
+    create: (body: Partial<Creneau>) => rawFetch<Creneau>("/ped/creneaux", jsonInit("POST", body)),
+    update: (id: string, body: Partial<Creneau>) => rawFetch<Creneau>(`/ped/creneaux/${id}`, jsonInit("PUT", body)),
+  },
+  regimesHoraires: {
+    list: () => rawFetch<RegimeHoraire[]>("/ped/regimes-horaires"),
+    get: (code: string) => rawFetch<RegimeHoraire>(`/ped/regimes-horaires/${encodeURIComponent(code)}`),
+    create: (body: Partial<RegimeHoraire>) => rawFetch<RegimeHoraire>("/ped/regimes-horaires", jsonInit("POST", body)),
+    update: (code: string, body: Partial<RegimeHoraire>) =>
+      rawFetch<RegimeHoraire>(`/ped/regimes-horaires/${encodeURIComponent(code)}`, jsonInit("PUT", body)),
+  },
+  emploisDuTemps: {
+    list: () => rawFetch<EmploiDuTemps[]>("/ped/emplois-du-temps"),
+    get: (id: string) => rawFetch<EmploiDuTemps>(`/ped/emplois-du-temps/${id}`),
+    create: (body: Partial<EmploiDuTemps>) => rawFetch<EmploiDuTemps>("/ped/emplois-du-temps", jsonInit("POST", body)),
+    ajouterPlage: (id: string, body: Partial<PlageEmploi>) =>
+      rawFetch<EmploiDuTemps>(`/ped/emplois-du-temps/${id}/plages`, jsonInit("POST", body)),
+    publier: (id: string) => rawFetch<EmploiDuTemps>(`/ped/emplois-du-temps/${id}/publier`, { method: "POST" }),
+    conflits: (id: string) => rawFetch<ConflitEmploi[]>(`/ped/emplois-du-temps/${id}/conflits`),
+  },
+};
+
+export const peopleApi = {
+  eleves: {
+    list: () => rawFetch<Eleve[]>("/ped/eleves"),
+    get: (id: string) => rawFetch<Eleve>(`/ped/eleves/${id}`),
+    create: (body: Partial<Eleve>) => rawFetch<Eleve>("/ped/eleves", jsonInit("POST", body)),
+    update: (id: string, body: Partial<Eleve>) => rawFetch<Eleve>(`/ped/eleves/${id}`, jsonInit("PUT", body)),
+    transferer: (id: string, destination: string, motif?: string) =>
+      rawFetch<Eleve>(`/ped/eleves/${id}/transferer`, jsonInit("POST", { destination, motif })),
+    radier: (id: string, motif: string) => rawFetch<Eleve>(`/ped/eleves/${id}/radier`, jsonInit("POST", { motif })),
+    dossier: (id: string) => rawFetch<DossierEleve>(`/ped/eleves/${id}/dossier`),
+    ajouterPiece: (id: string, body: Partial<FichierJoint>) =>
+      rawFetch<DossierEleve>(`/ped/eleves/${id}/dossier/pieces`, jsonInit("POST", body)),
+    archiverDossier: (id: string) =>
+      rawFetch<DossierEleve>(`/ped/eleves/${id}/dossier/archiver`, { method: "POST" }),
+    inscriptions: (id: string) => rawFetch<Inscription[]>(`/ped/eleves/${id}/inscriptions`),
+    inscrire: (id: string, body: Partial<Inscription>) =>
+      rawFetch<Inscription>(`/ped/eleves/${id}/inscriptions`, jsonInit("POST", body)),
+    validerInscription: (id: string, inscriptionId: string) =>
+      rawFetch<Inscription>(`/ped/eleves/${id}/inscriptions/${inscriptionId}/valider`, { method: "POST" }),
+    annulerInscription: (id: string, inscriptionId: string, motif: string) =>
+      rawFetch<Inscription>(
+        `/ped/eleves/${id}/inscriptions/${inscriptionId}/annuler`,
+        jsonInit("POST", { motif }),
+      ),
+    conges: (id: string) => rawFetch<CongeEtude[]>(`/ped/eleves/${id}/conges`),
+    ouvrirConge: (id: string, body: Partial<CongeEtude>) =>
+      rawFetch<CongeEtude>(`/ped/eleves/${id}/conges`, jsonInit("POST", body)),
+    sanctions: (id: string) => rawFetch<SanctionDisciplinaire[]>(`/ped/eleves/${id}/sanctions`),
+    prononcerSanction: (id: string, body: Partial<SanctionDisciplinaire>) =>
+      rawFetch<SanctionDisciplinaire>(`/ped/eleves/${id}/sanctions`, jsonInit("POST", body)),
+    liens: (id: string) => rawFetch<LienParentalite[]>(`/ped/eleves/${id}/liens`),
+    lierParent: (id: string, body: Partial<LienParentalite>) =>
+      rawFetch<LienParentalite>(`/ped/eleves/${id}/liens`, jsonInit("POST", body)),
+  },
+  parents: {
+    list: () => rawFetch<Parent[]>("/ped/parents"),
+    get: (id: string) => rawFetch<Parent>(`/ped/parents/${id}`),
+    create: (body: Partial<Parent>) => rawFetch<Parent>("/ped/parents", jsonInit("POST", body)),
+    update: (id: string, body: Partial<Parent>) => rawFetch<Parent>(`/ped/parents/${id}`, jsonInit("PUT", body)),
+  },
+  enseignants: {
+    list: () => rawFetch<Enseignant[]>("/ped/enseignants"),
+    get: (id: string) => rawFetch<Enseignant>(`/ped/enseignants/${id}`),
+    create: (body: Partial<Enseignant>) => rawFetch<Enseignant>("/ped/enseignants", jsonInit("POST", body)),
+    update: (id: string, body: Partial<Enseignant>) => rawFetch<Enseignant>(`/ped/enseignants/${id}`, jsonInit("PUT", body)),
+    changerStatut: (id: string, statut: StatutEnseignant) =>
+      rawFetch<Enseignant>(`/ped/enseignants/${id}/statut`, jsonInit("POST", { statut })),
+    ajouterPiece: (id: string, body: Partial<PieceIdentiteEnseignant>) =>
+      rawFetch<PieceIdentiteEnseignant>(`/ped/enseignants/${id}/pieces`, jsonInit("POST", body)),
+    affectations: (id: string) => rawFetch<AffectationEnseignant[]>(`/ped/enseignants/${id}/affectations`),
+    affecter: (id: string, body: Partial<AffectationEnseignant>) =>
+      rawFetch<AffectationEnseignant>(`/ped/enseignants/${id}/affectations`, jsonInit("POST", body)),
+  },
+  personnel: {
+    services: {
+      list: () => rawFetch<ServiceEtablissement[]>("/ped/personnel/services"),
+      create: (body: Partial<ServiceEtablissement>) =>
+        rawFetch<ServiceEtablissement>("/ped/personnel/services", jsonInit("POST", body)),
+      update: (id: string, body: Partial<ServiceEtablissement>) =>
+        rawFetch<ServiceEtablissement>(`/ped/personnel/services/${id}`, jsonInit("PUT", body)),
+    },
+    agents: {
+      list: () => rawFetch<Agent[]>("/ped/personnel/agents"),
+      create: (body: Partial<Agent>) => rawFetch<Agent>("/ped/personnel/agents", jsonInit("POST", body)),
+      update: (id: string, body: Partial<Agent>) => rawFetch<Agent>(`/ped/personnel/agents/${id}`, jsonInit("PUT", body)),
+    },
+    rendreTitulaire: (affectationId: string) =>
+      rawFetch<AffectationEnseignant>(`/ped/personnel/affectations/${affectationId}/titulaire`, { method: "POST" }),
+    cederTitularite: (affectationId: string) =>
+      rawFetch<AffectationEnseignant>(`/ped/personnel/affectations/${affectationId}/ceder`, { method: "POST" }),
+    affectationsClasse: (classeId: string) =>
+      rawFetch<AffectationEnseignant[]>(`/ped/personnel/affectations/classe/${classeId}`),
+    validerAffectation: (profil: string, classeId: string) =>
+      rawFetch<ResultatValidation>(
+        `/ped/personnel/affectations/valider?profil=${encodeURIComponent(profil)}&classeId=${encodeURIComponent(classeId)}`,
+      ),
+    titularites: (classeId: string) => rawFetch<Titularite[]>(`/ped/personnel/titularites/classe/${classeId}`),
+    designerTitulaire: (body: Partial<Titularite>) =>
+      rawFetch<Titularite>("/ped/personnel/titularites", jsonInit("POST", body)),
   },
 };
 

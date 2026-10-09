@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Guide utilisateur — NexusGesti</title>
+<style>
+  :root{
+    --ink:#0f172a; --muted:#475569; --line:#e2e8f0; --soft:#f8fafc;
+    --brand:#1d4ed8; --brand-ink:#1e3a8a; --accent:#0ea5e9;
+    --ok:#047857; --warn:#b45309; --danger:#b91c1c;
+  }
+  *{box-sizing:border-box;}
+  html{-webkit-print-color-adjust:exact; print-color-adjust:exact;}
+  body{
+    margin:0; color:var(--ink); background:#fff;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    font-size:11.5pt; line-height:1.55;
+  }
+  .page{max-width:820px; margin:0 auto; padding:28px 34px;}
+
+  /* Cover */
+  .cover{
+    background:linear-gradient(135deg,#1e3a8a 0%,#1d4ed8 55%,#0ea5e9 100%);
+    color:#fff; border-radius:16px; padding:56px 44px; margin-bottom:34px;
+  }
+  .cover .kicker{font-size:11pt; letter-spacing:.18em; text-transform:uppercase; opacity:.85; margin:0 0 10px;}
+  .cover h1{font-size:34pt; line-height:1.1; margin:0 0 12px; font-weight:800;}
+  .cover p{margin:0; font-size:13pt; opacity:.95; max-width:520px;}
+  .cover .meta{margin-top:26px; font-size:10pt; opacity:.9;}
+
+  h1{font-size:20pt; margin:34px 0 8px; color:var(--brand-ink); border-bottom:2px solid var(--line); padding-bottom:6px;}
+  h2{font-size:14.5pt; margin:26px 0 6px; color:var(--brand-ink);}
+  h3{font-size:12.5pt; margin:18px 0 4px; color:var(--ink);}
+  p{margin:8px 0;}
+  ul,ol{margin:8px 0 8px 22px; padding:0;}
+  li{margin:4px 0;}
+  a{color:var(--brand); text-decoration:none;}
+  code{background:#eef2ff; color:#3730a3; padding:1px 5px; border-radius:4px; font-size:.92em; font-family:"SFMono-Regular",Consolas,"Liberation Mono",monospace;}
+
+  table{width:100%; border-collapse:collapse; margin:12px 0; font-size:10.5pt;}
+  th,td{border:1px solid var(--line); padding:7px 9px; text-align:left; vertical-align:top;}
+  th{background:var(--soft); color:var(--brand-ink); font-weight:700;}
+  tbody tr:nth-child(even){background:#fcfdff;}
+
+  .callout{border-left:4px solid var(--accent); background:#f0f9ff; padding:10px 14px; border-radius:0 8px 8px 0; margin:12px 0;}
+  .callout.warn{border-color:var(--warn); background:#fffbeb;}
+  .callout.danger{border-color:var(--danger); background:#fef2f2;}
+  .callout strong{color:var(--brand-ink);}
+
+  .badge{display:inline-block; padding:1px 8px; border-radius:999px; font-size:9pt; font-weight:700; vertical-align:middle;}
+  .badge.admin{background:#dbeafe; color:#1e40af;}
+  .badge.customer{background:#dcfce7; color:#166534;}
+
+  .grid2{display:grid; grid-template-columns:1fr 1fr; gap:14px;}
+  .card{border:1px solid var(--line); border-radius:10px; padding:12px 14px; background:#fff;}
+  .card h3{margin-top:0;}
+  .lead{font-size:12pt; color:var(--muted);}
+
+  .toc{background:var(--soft); border:1px solid var(--line); border-radius:12px; padding:16px 20px 16px 34px;}
+  .toc h2{margin-top:0;}
+  .toc ol{margin:0; column-count:2; column-gap:30px;}
+  .toc li{margin:3px 0; break-inside:avoid;}
+
+  .step{counter-reset:none;}
+  .step li{margin:6px 0;}
+
+  .kv{font-size:10.5pt;}
+  footer{margin-top:40px; padding-top:12px; border-top:1px solid var(--line); color:var(--muted); font-size:9.5pt; text-align:center;}
+
+  /* Print */
+  @page{size:A4; margin:14mm 12mm;}
+  @media print{
+    body{font-size:10.5pt;}
+    .page{max-width:none; padding:0 4mm;}
+    h1{break-after:avoid;}
+    h2,h3{break-after:avoid;}
+    table,.callout,.card,.toc{break-inside:avoid;}
+    .cover{break-after:page; border-radius:0; margin:0 0 10mm; -webkit-print-color-adjust:exact;}
+    a{color:var(--ink);}
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- ================= COUVERTURE ================= -->
+  <section class="cover">
+    <p class="kicker">Documentation utilisateur</p>
+    <h1>Guide d'utilisation<br>NexusGesti</h1>
+    <p>De l'ouverture de session aux écrans de gestion scolaire — un mode d'emploi pas-à-pas, avec toutes les définitions.</p>
+    <div class="meta">
+      Domaine couvert : Socle + Pédagogie (Structure &amp; Personnes)<br>
+      Console : <strong>http://localhost:3001</strong> &nbsp;·&nbsp; Version du guide : 1.0
+    </div>
+  </section>
+
+  <!-- ================= SOMMAIRE ================= -->
+  <nav class="toc">
+    <h2>Sommaire</h2>
+    <ol>
+      <li><a href="#s1">Qu'est-ce que NexusGesti ?</a></li>
+      <li><a href="#s2">Démarrage</a></li>
+      <li><a href="#s3">Accès et identifiants</a></li>
+      <li><a href="#s4">Glossaire</a></li>
+      <li><a href="#s5">Se connecter</a></li>
+      <li><a href="#s6">Le multi-établissement</a></li>
+      <li><a href="#s7">Les écrans, pas-à-pas</a></li>
+      <li><a href="#s8">Ce que fait chaque profil</a></li>
+      <li><a href="#s9">Messages d'erreur fréquents</a></li>
+      <li><a href="#s10">Dépannage express</a></li>
+      <li><a href="#s11">Parcours de découverte conseillé</a></li>
+    </ol>
+  </nav>
+
+  <!-- ================= 1 ================= -->
+  <h1 id="s1">1. Qu'est-ce que NexusGesti ?</h1>
+  <p class="lead">NexusGesti est une plateforme de gestion d'établissements scolaires, <strong>multi-établissements</strong> (« multi-tenant »). Une seule installation héberge plusieurs établissements dont les données sont totalement isolées les unes des autres.</p>
+  <p>Elle est organisée en domaines :</p>
+  <table>
+    <thead><tr><th>Domaine</th><th>Contenu</th><th>État</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Socle</strong></td><td>Réglages de l'établissement, années scolaires, grilles, référentiels, utilisateurs, audit, rapports</td><td>Disponible</td></tr>
+      <tr><td><strong>Pédagogie</strong></td><td>Structure (classes, salles, emplois du temps…) et Personnes (élèves, parents, enseignants, personnel)</td><td>Disponible</td></tr>
+      <tr><td><strong>Hôpital</strong></td><td>Patients, rendez-vous, consultations, pharmacie</td><td>À venir</td></tr>
+      <tr><td><strong>Finance</strong></td><td>Comptabilité OHADA / SYSCOHADA (RDC)</td><td>À venir</td></tr>
+    </tbody>
+  </table>
+  <p>Il existe <strong>deux profils d'utilisateur</strong> :</p>
+  <ul>
+    <li><span class="badge admin">ADMIN</span> &nbsp; peut tout voir <strong>et</strong> tout modifier.</li>
+    <li><span class="badge customer">CUSTOMER</span> &nbsp; peut <strong>consulter</strong> les données (lecture seule).</li>
+  </ul>
+
+  <!-- ================= 2 ================= -->
+  <h1 id="s2">2. Démarrage</h1>
+  <p>Depuis la racine du projet, deux scripts démarrent tout (opération à faire une seule fois, par la personne qui installe).</p>
+  <ol class="step">
+    <li><strong>Backend</strong> (base de données, cache, messagerie, services) — à laisser tourner :<br>
+      <code>./scripts/backend-up.sh</code> &nbsp;(git-bash / Linux / macOS) &nbsp;ou&nbsp; <code>./scripts/backend-up.ps1</code> (PowerShell)</li>
+    <li><strong>Console web</strong> — dans un second terminal :<br>
+      <code>./scripts/front-up.sh</code> &nbsp;ou&nbsp; <code>./scripts/front-up.ps1</code></li>
+  </ol>
+  <div class="callout">
+    Au premier lancement, le backend compile puis démarre <strong>9 services</strong> et l'infrastructure
+    (base PostgreSQL, Redis, Kafka, Keycloak, Prometheus, Grafana, Vault). Comptez quelques minutes.
+    Quand les scripts affichent « UP », ouvrez le navigateur.
+  </div>
+
+  <!-- ================= 3 ================= -->
+  <h1 id="s3">3. Accès et identifiants <span style="font-size:11pt;color:var(--muted)">(credentials)</span></h1>
+  <table>
+    <thead><tr><th>Quoi</th><th>Adresse</th><th>Identifiant</th><th>Mot de passe</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Console NexusGesti</strong></td><td>http://localhost:3001</td><td><code>demo.admin@nexusgesti.com</code></td><td><code>Admin_pass123!</code></td></tr>
+      <tr><td>Console — lecture seule</td><td>http://localhost:3001</td><td><code>demo.customer@nexusgesti.com</code></td><td><code>demo_secret_customer</code></td></tr>
+      <tr><td>Keycloak (gestion des comptes)</td><td>http://localhost:8180</td><td><code>admin</code></td><td><code>admin_secret</code></td></tr>
+      <tr><td>Grafana (métriques)</td><td>http://localhost:3000</td><td><code>admin</code></td><td><code>admin</code></td></tr>
+      <tr><td>PostgreSQL (base de données)</td><td><code>localhost:5433</code> — base <code>nexusgesti</code></td><td><code>nexusgesti</code></td><td><code>nexusgesti_secret</code></td></tr>
+      <tr><td>Redis (cache)</td><td><code>localhost:6379</code></td><td>—</td><td><code>redis_secret</code></td></tr>
+      <tr><td>Vault (secrets)</td><td>http://localhost:8200</td><td>jeton <code>dev-root-token</code></td><td>—</td></tr>
+    </tbody>
+  </table>
+  <div class="callout">
+    <strong>À retenir :</strong> pour utiliser la console au quotidien, retenez uniquement les deux premières lignes.
+    Le port <strong>3001</strong> est celui de la console ; le port <strong>3000</strong> est occupé par Grafana.
+  </div>
+  <div class="callout warn">
+    <strong>Identifiants de démonstration.</strong> Réservés au développement local. En production, ils sont
+    remplacés par des comptes réels gérés dans Keycloak.
+  </div>
+
+  <!-- ================= 4 ================= -->
+  <h1 id="s4">4. Glossaire — définitions des termes</h1>
+  <table class="kv">
+    <thead><tr><th style="width:26%">Terme</th><th>Définition</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Établissement (tenant)</strong></td><td>L'école ou l'université. Chaque établissement est un « locataire » isolé. On change d'établissement via le sélecteur de tenant en haut de l'écran.</td></tr>
+      <tr><td><strong>Profil d'établissement</strong></td><td>Type d'école : <code>PRIMAIRE</code>, <code>SECONDAIRE</code> ou <code>UNIVERSITAIRE</code>. Il active ou non certains modules (ECTS, délibération par UE…).</td></tr>
+      <tr><td><strong>Année scolaire</strong></td><td>Période de référence (ex. 2025-2026). Contient des <em>périodes</em> (trimestres, semestres). Peut être <em>prévue</em>, <em>ouverte</em> puis <em>clôturée</em>.</td></tr>
+      <tr><td><strong>Grille</strong></td><td>Jeu de règles versionnées (notes, stock, conformité). S'<em>active</em>, se <em>fige</em> (figement = modification interdite) et se <em>duplique</em>.</td></tr>
+      <tr><td><strong>Référentiel</strong></td><td>Liste de valeurs de référence (types de frais, motifs d'absence, mentions…). Un établissement possède 17 référentiels créés automatiquement à sa création.</td></tr>
+      <tr><td><strong>Niveau</strong></td><td>Étape du parcours (1re, 2e, 6e, L1, M1…). Chaque niveau appartient à un <em>cycle</em>.</td></tr>
+      <tr><td><strong>Classe</strong></td><td>Groupe d'élèves suivant un enseignement, rattaché à un niveau et une année. États : <em>ouverte</em>, <em>en cours</em>, <em>clôturée</em>.</td></tr>
+      <tr><td><strong>Salle</strong></td><td>Espace physique (salle de cours, laboratoire, amphithéâtre…).</td></tr>
+      <tr><td><strong>Créneau</strong></td><td>Tranche horaire élémentaire (jour + heure de début + heure de fin).</td></tr>
+      <tr><td><strong>Régime horaire</strong></td><td>Organisation hebdomadaire des créneaux (nombre de créneaux par jour, pauses…).</td></tr>
+      <tr><td><strong>Emploi du temps</strong></td><td>Planning hebdomadaire d'une classe, composé de <em>plages</em>. Le système détecte les <em>conflits</em> avant de <em>publier</em>.</td></tr>
+      <tr><td><strong>Matière</strong></td><td>Discipline enseignée (mathématiques, histoire…).</td></tr>
+      <tr><td><strong>Cours / ECUE</strong></td><td>Unité concrète de cours : une matière pour une classe donnée.</td></tr>
+      <tr><td><strong>UE (Unité d'Enseignement)</strong></td><td>Regroupement de cours du cursus universitaire, avec crédits et coefficients.</td></tr>
+      <tr><td><strong>Promotion</strong></td><td>Cohorte d'étudiants rattachée à un programme et un semestre.</td></tr>
+      <tr><td><strong>Élève</strong></td><td>L'élève inscrit, identifié par son <em>matricule</em>. Possède un dossier, des inscriptions, des congés, des sanctions et des liens de parenté.</td></tr>
+      <tr><td><strong>Dossier</strong></td><td>Ensemble des pièces justificatives d'un élève (photo, acte de naissance…).</td></tr>
+      <tr><td><strong>Inscription</strong></td><td>Rattachement d'un élève à une classe pour une année donnée.</td></tr>
+      <tr><td><strong>Congé</strong></td><td>Autorisation d'absence d'un élève.</td></tr>
+      <tr><td><strong>Sanction disciplinaire</strong></td><td>Mesure disciplinaire visant un élève.</td></tr>
+      <tr><td><strong>Enseignant</strong></td><td>Membre du corps enseignant. Possède des pièces d'identité et des <em>affectations</em> (classe + matière) ; une affectation peut être <em>titulaire</em>.</td></tr>
+      <tr><td><strong>Personnel</strong></td><td>Regroupe les <em>services</em> de l'établissement (direction, scolarité…) et les <em>agents</em> administratifs.</td></tr>
+      <tr><td><strong>Rôle / Permission</strong></td><td>Un rôle est un ensemble de permissions (ADMIN, CUSTOMER…). Une permission est un droit élémentaire (verbe + ressource).</td></tr>
+      <tr><td><strong>Audit</strong></td><td>Journal horodaté des actions importantes (création d'élève, envoi de notification…).</td></tr>
+      <tr><td><strong>Rapport</strong></td><td>Document généré (PDF, CSV, JSON) à partir des données.</td></tr>
+    </tbody>
+  </table>
+
+  <!-- ================= 5 ================= -->
+  <h1 id="s5">5. Se connecter</h1>
+  <ol class="step">
+    <li>Ouvrez <strong>http://localhost:3001</strong>.</li>
+    <li>Saisissez l'adresse e-mail et le mot de passe (voir §3).</li>
+    <li>Cliquez sur <strong>Se connecter</strong>.</li>
+    <li>Vous arrivez sur le <strong>Tableau de bord</strong>.</li>
+  </ol>
+  <p>En haut à droite, l'en-tête affiche votre nom, votre établissement courant et un bouton de déconnexion. Le menu de gauche (barre latérale) donne accès à toutes les sections.</p>
+
+  <!-- ================= 6 ================= -->
+  <h1 id="s6">6. Le multi-établissement</h1>
+  <p>Toutes les données appartiennent à <strong>un</strong> établissement. La plateforme sait toujours « qui regarde » grâce à un jeton transmis à chaque requête (<code>X-Tenant-Id</code>).</p>
+  <ul>
+    <li>Un <strong>sélecteur de tenant</strong> (dans l'en-tête) permet de basculer d'un établissement à l'autre.</li>
+    <li><strong>Règle de sécurité fondamentale :</strong> les données de l'établissement A ne sont <strong>jamais</strong> visibles depuis l'établissement B. C'est garanti par la base de données elle-même (« Row Level Security »), pas seulement par l'interface.</li>
+  </ul>
+  <div class="callout warn">Si vous ne voyez pas les données attendues, vérifiez d'abord <strong>quel établissement est sélectionné</strong> en haut de l'écran.</div>
+
+  <!-- ================= 7 ================= -->
+  <h1 id="s7">7. Les écrans, pas-à-pas</h1>
+
+  <h2>7.1 Tableau de bord</h2>
+  <p>Vue synthétique de l'établissement. Point de départ de l'application.</p>
+
+  <h2>7.2 Établissement</h2>
+  <p>Réglages de l'identité de l'école et de son organisation :</p>
+  <ul>
+    <li><strong>Identité</strong> : nom, sigle, profil, coordonnées.</li>
+    <li><strong>Sites</strong> : implantations géographiques (campus, annexes).</li>
+    <li><strong>Filières / Programmes / Cycles</strong> : offre de formation.</li>
+    <li><strong>Paramètres</strong> : réglages divers.</li>
+    <li><strong>Presets de grilles</strong> : modèles de grilles réutilisables.</li>
+  </ul>
+
+  <h2>7.3 Années scolaires</h2>
+  <ol class="step">
+    <li>Créez une <strong>année</strong> (code, libellé, dates, type).</li>
+    <li>Ajoutez des <strong>périodes</strong> (trimestres / semestres).</li>
+    <li><strong>Ouvrez</strong> l'année pour la rendre courante.</li>
+    <li><strong>Clôturez</strong> une période ou l'année en fin de cycle.</li>
+  </ol>
+
+  <h2>7.4 Grilles</h2>
+  <p>Trois familles : <strong>notation</strong>, <strong>stock</strong>, <strong>conformité</strong>. Sur chaque grille : <strong>Activer</strong>, <strong>Figer</strong> (définitif), <strong>Dupliquer</strong>. La page de détail <em>Grille &gt; [type]</em> permet de saisir barèmes, seuils de décision, mentions, règles d'assiduité…</p>
+
+  <h2>7.5 Référentiels</h2>
+  <p>17 conteneurs de valeurs. Dépliez un conteneur, ajoutez des <strong>éléments</strong> (code, libellé, valeur) ou <strong>désactivez</strong> un élément.</p>
+
+  <h2>7.6 Écrans réservés ADMIN</h2>
+  <p>Visibles uniquement avec le profil ADMIN :</p>
+  <ul>
+    <li><strong>Tenants</strong> : créer / gérer un établissement. À la création, les 17 référentiels sont générés automatiquement.</li>
+    <li><strong>Utilisateurs</strong> : comptes, rôles, cycle de vie (activer / désactiver / suspendre), réinitialisation du mot de passe.</li>
+    <li><strong>Rôles &amp; permissions</strong> : définir des rôles et leurs permissions.</li>
+    <li><strong>Notifications</strong> : consulter / envoyer des notifications.</li>
+    <li><strong>Audit</strong> : rechercher dans le journal des actions.</li>
+    <li><strong>Rapports</strong> : demander un rapport (PDF / CSV / JSON) et le télécharger.</li>
+  </ul>
+
+  <h2>7.7 Pédagogie · Structure</h2>
+  <p>Menu de gauche, groupe <strong>« Pédagogie · Structure »</strong> :</p>
+  <ul>
+    <li><strong>Niveaux, Matières, Salles, Créneaux, Régimes horaires</strong> : listes simples avec <em>Nouveau / Modifier / Supprimer</em>.</li>
+    <li><strong>Classes</strong> : création + boutons <em>Ouvrir</em> et <em>Clôturer</em>.</li>
+    <li><strong>Promotions, Semestres, UE, Cours / ECUE</strong> : rattachements (le formulaire propose des listes déroulantes vers les entités liées).</li>
+    <li><strong>Emplois du temps</strong> : créez un emploi du temps, ouvrez-le, ajoutez des <em>plages</em> (cours + créneau + salle + enseignant), consultez les <em>conflits</em>, puis <em>Publier</em>.</li>
+  </ul>
+
+  <h2>7.8 Pédagogie · Personnes</h2>
+  <ul>
+    <li><strong>Élèves</strong> : liste + bouton « œil » pour ouvrir la fiche. La fiche comporte 6 onglets : <em>Identité, Dossier, Inscriptions, Congés, Sanctions, Parents</em>. Actions <em>Transférer</em> et <em>Radier</em> en haut.</li>
+    <li><strong>Parents</strong> : parents et tuteurs.</li>
+    <li><strong>Enseignants</strong> : liste + fiche (onglets <em>Identité, Pièces, Affectations</em>, changement de statut).</li>
+    <li><strong>Personnel</strong> : deux onglets — <em>Agents</em> et <em>Services</em>.</li>
+  </ul>
+  <div class="callout"><strong>Astuce :</strong> les listes disposent d'une <strong>barre de recherche</strong> (matricule, nom, code…). Le nombre d'éléments est affiché sous le tableau.</div>
+
+  <!-- ================= 8 ================= -->
+  <h1 id="s8">8. Ce que peut faire chaque profil</h1>
+  <table>
+    <thead><tr><th>Action</th><th><span class="badge admin">ADMIN</span></th><th><span class="badge customer">CUSTOMER</span></th></tr></thead>
+    <tbody>
+      <tr><td>Consulter le socle et la pédagogie</td><td>Oui</td><td>Oui</td></tr>
+      <tr><td>Créer / modifier / supprimer</td><td>Oui</td><td>Non</td></tr>
+      <tr><td>Créer un établissement, gérer les utilisateurs</td><td>Oui</td><td>Non</td></tr>
+      <tr><td>Envoyer une notification, lancer un rapport</td><td>Oui</td><td>Non</td></tr>
+    </tbody>
+  </table>
+  <p>En tant que CUSTOMER, les boutons de création / modification n'apparaissent pas : c'est normal.</p>
+
+  <!-- ================= 9 ================= -->
+  <h1 id="s9">9. Messages d'erreur fréquents</h1>
+  <table>
+    <thead><tr><th style="width:30%">Message / code</th><th>Signification</th><th>Que faire</th></tr></thead>
+    <tbody>
+      <tr><td><code>TENANT_ALREADY_EXISTS</code> (409)</td><td>L'établissement existe déjà</td><td>Choisir un autre code / identifiant</td></tr>
+      <tr><td><code>GRILLE_FIGEE</code> (409)</td><td>La grille est figée, donc non modifiable</td><td>La dupliquer puis modifier la copie</td></tr>
+      <tr><td><code>TRANSITION_INVALIDE</code> (409)</td><td>Changement d'état non autorisé</td><td>Vérifier l'état courant (ex. clôturer une classe déjà clôturée)</td></tr>
+      <tr><td><code>ITEM_EXISTANT</code> / <code>MATRICULE_EXISTANT</code> (409)</td><td>Doublon de code ou de matricule</td><td>Utiliser une valeur unique</td></tr>
+      <tr><td><code>AUTH_INVALID_CREDENTIALS</code> (401)</td><td>E-mail ou mot de passe incorrect</td><td>Vérifier les identifiants (§3)</td></tr>
+      <tr><td><code>Invalid X-Tenant-Id header</code> (400)</td><td>Établissement non sélectionné ou invalide</td><td>Choisir un établissement dans le sélecteur</td></tr>
+      <tr><td><code>KEYCLOAK_INDISPONIBLE</code> (503)</td><td>Le service d'authentification est arrêté</td><td>Relancer le backend</td></tr>
+    </tbody>
+  </table>
+
+  <!-- ================= 10 ================= -->
+  <h1 id="s10">10. Dépannage express</h1>
+  <ul>
+    <li><strong>La page ne charge rien / erreur réseau</strong> : vérifiez que le backend et la console tournent (§2), et que la console est bien sur <strong>http://localhost:3001</strong>.</li>
+    <li><strong>Je ne vois pas un menu</strong> : certaines entrées (surtout « Plateforme ») sont réservées à ADMIN.</li>
+    <li><strong>Mes données ont disparu</strong> : avez-vous changé d'établissement sans vous en rendre compte ? Regardez le sélecteur de tenant.</li>
+    <li><strong>Session expirée</strong> : le jeton d'accès expire rapidement en démonstration ; rechargez la page et reconnectez-vous.</li>
+  </ul>
+
+  <!-- ================= 11 ================= -->
+  <h1 id="s11">11. Parcours de découverte conseillé</h1>
+  <ol class="step">
+    <li>Se connecter en <span class="badge admin">ADMIN</span>.</li>
+    <li><strong>Établissement</strong> : vérifier l'identité et créer un <strong>site</strong>.</li>
+    <li><strong>Années scolaires</strong> : créer une année et l'ouvrir.</li>
+    <li><strong>Référentiels</strong> : parcourir quelques conteneurs.</li>
+    <li><strong>Pédagogie · Structure</strong> : créer un <strong>niveau</strong>, une <strong>salle</strong>, une <strong>matière</strong>.</li>
+    <li>Créer une <strong>classe</strong> (rattachée au niveau et à l'année), puis l'<strong>ouvrir</strong>.</li>
+    <li>Créer un <strong>emploi du temps</strong>, ajouter des <strong>plages</strong>, observer les <strong>conflits</strong>, <strong>publier</strong>.</li>
+    <li><strong>Pédagogie · Personnes</strong> : créer un <strong>élève</strong>, ouvrir sa fiche, ajouter une <strong>inscription</strong>.</li>
+    <li>Créer un <strong>enseignant</strong> et une <strong>affectation</strong>.</li>
+    <li>Se reconnecter en <span class="badge customer">CUSTOMER</span> et constater que tout est en lecture seule.</li>
+  </ol>
+
+  <footer>
+    NexusGesti — Guide utilisateur v1.0 · Socle + Pédagogie (Structure &amp; Personnes) ·
+    Console locale : http://localhost:3001
+  </footer>
+</div>
+</body>
+</html>

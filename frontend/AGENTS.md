@@ -7,9 +7,11 @@ Mémoire de contexte pour les agents IA. Se référer ici avant toute modificati
 Frontend de la **Console socle** de NexusGesti (SaaS multi-tenant : socle, pédagogie, hôpital, finance).
 Base : copie adaptée de `C:\Users\PC\Documents\ged_ministere\front`, **tout contenu GED supprimé**.
 Backend : passerelle Spring Cloud Gateway sur `http://localhost:8080/api/v1` (voir `.env`, non versionné).
-Le périmètre actuel ne couvre que le **socle** (tenants, établissements, grilles, référentiels, années,
-utilisateurs, rôles/permissions).
-Les domaines pédagogie / hôpital / finance n'ont pas encore de pages dans cette console.
+Le périmètre couvre le **socle** (tenants, établissements, grilles, référentiels, années,
+utilisateurs, rôles/permissions) et la **pédagogie — lots 4a (structure) et 4b (people)**
+(`academic-structure-service` 8111 + `academic-people-service` 8112).
+Hôpital / finance n'ont pas encore de pages. Les lots pédagogie 4c-4g (enrollment, attendance,
+assessment, exam, fees) n'ont ni backend ni front.
 
 ## Stack
 
@@ -56,6 +58,16 @@ Le port de dev par défaut (3000) est **occupé par Grafana** → lancer la cons
     `/dashboard`, `/tenant`, `/grilles`, `/grilles/[type]?id=…`, `/referentiels`,
     `/annees` ; réservées `ADMIN` : `/tenants`, `/utilisateurs`, `/roles`, `/notifications`,
     `/audit`, `/rapports`.
+  - **Pédagogie** (liste ouverte `ADMIN`|`CUSTOMER`, mutations `ADMIN`) :
+    - Structure (4a) : `/pedagogie/niveaux`, `/pedagogie/classes`, `/pedagogie/promotions`,
+      `/pedagogie/semestres`, `/pedagogie/ues`, `/pedagogie/matieres`, `/pedagogie/cours`,
+      `/pedagogie/salles`, `/pedagogie/creneaux`, `/pedagogie/regimes-horaires`,
+      `/pedagogie/emplois-du-temps` (+ `/pedagogie/emplois-du-temps/[id]` : plages, conflits,
+      publier).
+    - Personnes (4b) : `/pedagogie/eleves` (+ `/pedagogie/eleves/[id]` : identité, dossier,
+      inscriptions, congés, sanctions, parents), `/pedagogie/parents`, `/pedagogie/enseignants`
+      (+ `/pedagogie/enseignants/[id]` : pièces, affectations, statut), `/pedagogie/personnel`
+      (onglets Agents / Services).
 - `ProtectedLayout` engage la session (`ANONYME` → `/login`) mais ne coupe pas par rôle :
   les pages ADMIN utilisent `useAuth().user?.isAdmin` pour afficher / bloquer.
 
@@ -74,10 +86,19 @@ Le port de dev par défaut (3000) est **occupé par Grafana** → lancer la cons
   clients `utilisateurApi` / `identiteApi` dans `api.ts` : création/invitation, cycle de vie
   (activer/désactiver/suspendre), reset mot de passe, attribution de rôles, permissions par rôle.
   Les GET sont ouverts à `CUSTOMER`, les mutations réservées `ADMIN` (garde `isAdmin` en page).
+- **Pages Pédagogie** : DTO 4a/4b dans `src/types/index.ts` (`Niveau`, `Classe`, `Salle`,
+  `Creneau`, `RegimeHoraire`, `EmploiDuTemps`, `Eleve`, `Enseignant`, `Parent`, `Agent`,
+  `ServiceEtablissement`… + enums), clients `structureApi` / `peopleApi` dans `api.ts`
+  (préfixe passerelle `/ped/**`). Les pages CRUD simples s'appuient sur le composant générique
+  `src/components/pedagogie/resource-crud.tsx` (`ResourceCrud<T>`, prop `embedded` pour les
+  onglets) ; helpers `constants.ts` (options d'enums) et `format.ts` (dates/lieux sérialisés en
+  tableaux `[y,m,d]` / `[h,m]`). Les écrans détail (`[id]`) utilisent `Tabs` + `useApi`.
+  Les clés d'id diffèrent selon l'entité (`idNiveau`, `idClasse`, `idAnnee`, `idSite`,
+  `idProgramme`…) — vérifier le DTO avant de les utiliser pour les listes déroulantes.
 - Champs obligatoires `POST /socle/tenants` : `code` (≤30), `denomination` (≤150), `profil`
   (`PRIMAIRE | SECONDAIRE | UNIVERSITAIRE`), `statut`.
 - Ports : console **3001** (Grafana occupe 3000), passerelle 8080 (API), Keycloak 8180 (tokens),
-  tenant-service 8101, identity-service 8102.
+  tenant-service 8101, identity-service 8102, academic-structure-service 8111, academic-people-service 8112.
   Utilisateurs de test (runtime, provisionnés par `backend/infrastructure/keycloak/provision.sh`) :
   `demo.admin@nexusgesti.com` / `Admin_pass123!` (ADMIN), `demo.customer@nexusgesti.com` /
   `demo_secret_customer` (CUSTOMER).

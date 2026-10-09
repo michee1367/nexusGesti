@@ -16,6 +16,21 @@ import {
   BarChart3,
   X,
   GraduationCap,
+  Layers,
+  School,
+  CalendarRange,
+  BookOpen,
+  BookMarked,
+  DoorOpen,
+  Clock,
+  CalendarClock,
+  Award,
+  Boxes,
+  UsersRound,
+  HeartHandshake,
+  Presentation,
+  Briefcase,
+  type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/components/providers/auth-provider";
@@ -25,7 +40,18 @@ interface SidebarProps {
   onClose?: () => void;
 }
 
-const navItems = [
+interface NavItem {
+  href: string;
+  label: string;
+  icon: LucideIcon;
+}
+
+interface NavGroup {
+  title?: string;
+  items: NavItem[];
+}
+
+const navItems: NavItem[] = [
   { href: "/dashboard", label: "Tableau de bord", icon: LayoutDashboard },
   { href: "/tenant", label: "Établissement", icon: Building2 },
   { href: "/annees", label: "Années scolaires", icon: CalendarDays },
@@ -33,7 +59,28 @@ const navItems = [
   { href: "/referentiels", label: "Référentiels", icon: FolderOpen },
 ];
 
-const adminItems = [
+const structureItems: NavItem[] = [
+  { href: "/pedagogie/niveaux", label: "Niveaux", icon: Layers },
+  { href: "/pedagogie/classes", label: "Classes", icon: School },
+  { href: "/pedagogie/promotions", label: "Promotions", icon: Award },
+  { href: "/pedagogie/semestres", label: "Semestres", icon: CalendarRange },
+  { href: "/pedagogie/ues", label: "Unités d'enseignement", icon: Boxes },
+  { href: "/pedagogie/matieres", label: "Matières", icon: BookOpen },
+  { href: "/pedagogie/cours", label: "Cours / ECUE", icon: BookMarked },
+  { href: "/pedagogie/salles", label: "Salles", icon: DoorOpen },
+  { href: "/pedagogie/creneaux", label: "Créneaux", icon: Clock },
+  { href: "/pedagogie/regimes-horaires", label: "Régimes horaires", icon: CalendarClock },
+  { href: "/pedagogie/emplois-du-temps", label: "Emplois du temps", icon: CalendarDays },
+];
+
+const peopleItems: NavItem[] = [
+  { href: "/pedagogie/eleves", label: "Élèves", icon: UsersRound },
+  { href: "/pedagogie/parents", label: "Parents", icon: HeartHandshake },
+  { href: "/pedagogie/enseignants", label: "Enseignants", icon: Presentation },
+  { href: "/pedagogie/personnel", label: "Personnel", icon: Briefcase },
+];
+
+const adminItems: NavItem[] = [
   { href: "/tenants", label: "Tenants", icon: Users },
   { href: "/utilisateurs", label: "Utilisateurs", icon: UserCog },
   { href: "/roles", label: "Rôles & permissions", icon: KeyRound },
@@ -46,11 +93,36 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
   const pathname = usePathname();
   const { user } = useAuth();
 
+  const groups: NavGroup[] = [
+    { items: navItems },
+    { title: "Pédagogie · Structure", items: structureItems },
+    { title: "Pédagogie · Personnes", items: peopleItems },
+  ];
+
+  const renderItem = ({ href, label, icon: Icon }: NavItem) => {
+    const active = pathname === href || pathname.startsWith(href + "/");
+    return (
+      <li key={href}>
+        <Link
+          href={href}
+          onClick={onClose}
+          className={cn(
+            "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+            active
+              ? "bg-blue-50 font-semibold text-blue-600"
+              : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+          )}
+        >
+          <Icon className={cn("h-4 w-4 shrink-0", active ? "text-blue-600" : "text-slate-400")} />
+          {label}
+        </Link>
+      </li>
+    );
+  };
+
   return (
     <>
-      {isOpen && (
-        <div className="fixed inset-0 z-40 bg-black/40 lg:hidden" onClick={onClose} />
-      )}
+      {isOpen && <div className="fixed inset-0 z-40 bg-black/40 lg:hidden" onClick={onClose} />}
 
       <aside
         className={cn(
@@ -76,62 +148,24 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
 
         <nav className="flex-1 overflow-y-auto p-4">
           <ul className="space-y-1">
-            {navItems.map(({ href, label, icon: Icon }) => {
-              const active = pathname === href || pathname.startsWith(href + "/");
-              return (
-                <li key={href}>
-                  <Link
-                    href={href}
-                    onClick={onClose}
-                    className={cn(
-                      "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
-                      active
-                        ? "bg-blue-50 font-semibold text-blue-600"
-                        : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
-                    )}
-                  >
-                    <Icon
-                      className={cn("h-4 w-4 shrink-0", active ? "text-blue-600" : "text-slate-400")}
-                    />
-                    {label}
-                  </Link>
-                </li>
-              );
-            })}
+            {groups.map((group, groupIndex) => (
+              <li key={group.title ?? `group-${groupIndex}`}>
+                {group.title && (
+                  <p className="px-3 pb-1 pt-5 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+                    {group.title}
+                  </p>
+                )}
+                <ul className="space-y-1">{group.items.map(renderItem)}</ul>
+              </li>
+            ))}
 
             {user?.isAdmin && (
-              <>
-                <li className="px-3 pb-1 pt-5">
-                  <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
-                    Plateforme
-                  </p>
-                </li>
-                {adminItems.map(({ href, label, icon: Icon }) => {
-                  const active = pathname === href || pathname.startsWith(href + "/");
-                  return (
-                    <li key={href}>
-                      <Link
-                        href={href}
-                        onClick={onClose}
-                        className={cn(
-                          "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
-                          active
-                            ? "bg-blue-50 font-semibold text-blue-600"
-                            : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
-                        )}
-                      >
-                        <Icon
-                          className={cn(
-                            "h-4 w-4 shrink-0",
-                            active ? "text-blue-600" : "text-slate-400"
-                          )}
-                        />
-                        {label}
-                      </Link>
-                    </li>
-                  );
-                })}
-              </>
+              <li>
+                <p className="px-3 pb-1 pt-5 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+                  Plateforme
+                </p>
+                <ul className="space-y-1">{adminItems.map(renderItem)}</ul>
+              </li>
             )}
           </ul>
         </nav>

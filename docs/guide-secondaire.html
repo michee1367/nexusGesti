@@ -1,0 +1,476 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>NexusGesti — Guide École Secondaire</title>
+<style>
+  :root{
+    --ink:#0f172a; --muted:#475569; --line:#e2e8f0; --bg:#ffffff;
+    --brand:#4338ca; --brand-soft:#eef2ff; --accent:#0f766e; --accent-soft:#ecfdf5;
+    --warn:#b45309; --warn-soft:#fffbeb; --danger:#b91c1c; --danger-soft:#fef2f2;
+    --slate-100:#f1f5f9;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    font-family:"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    color:var(--ink); background:var(--bg); line-height:1.55; font-size:13.5px;
+    -webkit-print-color-adjust:exact; print-color-adjust:exact;
+  }
+  .page{max-width:900px;margin:0 auto;padding:32px 40px 56px}
+  .cover{border-bottom:4px solid var(--brand);margin-bottom:28px;padding-bottom:20px}
+  .cover .kicker{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--brand);font-weight:700}
+  .cover h1{font-size:30px;line-height:1.15;margin:8px 0 6px}
+  .cover .sub{color:var(--muted);font-size:15px}
+  .cover .meta{margin-top:14px;display:flex;flex-wrap:wrap;gap:8px}
+  .chip{display:inline-block;font-size:11.5px;border:1px solid var(--line);border-radius:999px;padding:3px 10px;color:var(--muted);background:var(--slate-100)}
+  .chip.brand{background:var(--brand-soft);border-color:#c7d2fe;color:var(--brand);font-weight:600}
+  h2{font-size:19px;margin:30px 0 8px;padding-top:6px}
+  h2 .n{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:7px;background:var(--brand);color:#fff;font-size:14px;margin-right:9px;vertical-align:2px}
+  h3{font-size:15px;margin:18px 0 6px;color:var(--brand)}
+  p{margin:7px 0}
+  ul,ol{margin:7px 0 7px 20px;padding:0}
+  li{margin:3px 0}
+  a{color:var(--brand);text-decoration:none}
+  .lead{font-size:14.5px;color:var(--muted)}
+  .toc{background:var(--slate-100);border:1px solid var(--line);border-radius:10px;padding:16px 20px;margin:22px 0 28px}
+  .toc h2{margin:0 0 8px;font-size:15px;padding:0}
+  .toc ol{columns:2;column-gap:34px;margin-left:18px}
+  .toc a{color:var(--ink)}
+  .card{border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin:12px 0;background:#fff}
+  .where{font-size:12px;color:var(--muted);border-left:3px solid var(--accent);padding:2px 0 2px 10px;margin:4px 0 10px}
+  .where b{color:var(--accent)}
+  table{width:100%;border-collapse:collapse;margin:10px 0;font-size:12.5px}
+  th,td{border:1px solid var(--line);padding:7px 10px;text-align:left;vertical-align:top}
+  th{background:var(--slate-100);font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
+  td code, p code, li code{background:#f1f5f9;border:1px solid #e2e8f0;border-radius:4px;padding:0 5px;font-family:"Cascadia Code",Consolas,monospace;font-size:12px}
+  .note,.warn,.ok{border-radius:8px;padding:10px 14px;margin:10px 0;font-size:12.5px;border:1px solid}
+  .note{background:var(--brand-soft);border-color:#c7d2fe}
+  .ok{background:var(--accent-soft);border-color:#a7f3d0}
+  .warn{background:var(--warn-soft);border-color:#fde68a}
+  .note b,.ok b,.warn b{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px}
+  .note b{color:var(--brand)} .ok b{color:var(--accent)} .warn b{color:var(--warn)}
+  .step{border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin:12px 0;break-inside:avoid}
+  .step h3{margin-top:0}
+  .check{list-style:none;margin-left:0}
+  .check li{padding-left:24px;position:relative}
+  .check li:before{content:"";position:absolute;left:0;top:2px;width:14px;height:14px;border:1.5px solid var(--brand);border-radius:4px}
+  .foot{margin-top:34px;border-top:1px solid var(--line);padding-top:12px;color:var(--muted);font-size:11.5px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  @page{margin:18mm 15mm}
+  @media print{
+    .page{max-width:none;padding:0}
+    h2{break-after:avoid}
+    .toc{break-inside:avoid}
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header class="cover">
+    <div class="kicker">NexusGesti · Guide d'utilisation</div>
+    <h1>École secondaire — de la création à l'inscription d'un élève</h1>
+    <p class="sub">Parcours complet, écran par écran, pour un établissement de profil <b>SECONDAIRE</b>.</p>
+    <div class="meta">
+      <span class="chip brand">Profil : SECONDAIRE</span>
+      <span class="chip">Console : http://localhost:3001</span>
+      <span class="chip">Passerelle API : http://localhost:8080</span>
+      <span class="chip">Version du document : 1.0</span>
+    </div>
+  </header>
+
+  <section class="toc">
+    <h2>Sommaire</h2>
+    <ol>
+      <li><a href="#s0">Avant de commencer</a></li>
+      <li><a href="#s1">Se connecter</a></li>
+      <li><a href="#s2">Créer l'établissement</a></li>
+      <li><a href="#s3">Compléter l'identité (site, cycle)</a></li>
+      <li><a href="#s4">Créer l'année scolaire et une période</a></li>
+      <li><a href="#s5">Créer les services</a></li>
+      <li><a href="#s6">Créer les matières</a></li>
+      <li><a href="#s7">Créer les niveaux</a></li>
+      <li><a href="#s8">Créer salles, créneaux et régime horaire</a></li>
+      <li><a href="#s9">Créer les classes</a></li>
+      <li><a href="#s10">Créer les enseignants</a></li>
+      <li><a href="#s11">Affecter les enseignants</a></li>
+      <li><a href="#s12">Créer les cours (matière × classe)</a></li>
+      <li><a href="#s13">Construire l'emploi du temps</a></li>
+      <li><a href="#s14">Créer le tuteur (parent)</a></li>
+      <li><a href="#s15">Inscrire un élève</a></li>
+      <li><a href="#s16">Vérifier et clôturer</a></li>
+      <li><a href="#a">Annexe — récapitulatif et erreurs fréquentes</a></li>
+    </ol>
+  </section>
+
+  <!-- 0 -->
+  <h2 id="s0"><span class="n">0</span>Avant de commencer</h2>
+  <p class="lead">Ce guide décrit un parcours d'exemple complet pour une école secondaire nommée fictivement <b>« École Secondaire La Grâce »</b>. Reprenez les valeurs telles quelles pour un premier essai, puis adaptez-les.</p>
+
+  <h3>Vocabulaire utile</h3>
+  <ul>
+    <li><b>Établissement (tenant)</b> : l'école elle-même. Chaque établissement est isolé.</li>
+    <li><b>Site</b> : une implantation physique de l'établissement.</li>
+    <li><b>Cycle</b> : pour ce guide, un cycle « Secondaire ».</li>
+    <li><b>Niveau</b> : une année d'études (6<sup>e</sup>, 5<sup>e</sup>…).</li>
+    <li><b>Classe</b> : le groupe concret d'élèves (ex. « 6<sup>e</sup> A »).</li>
+    <li><b>Matière</b> : une discipline (Français, Mathématiques…).</li>
+    <li><b>Cours (ECUE)</b> : la combinaison <i>matière + classe</i> effectivement enseignée.</li>
+    <li><b>Enseignant</b> : le personnel qui dispense les cours.</li>
+    <li><b>Tuteur / parent</b> : la personne responsable de l'élève.</li>
+  </ul>
+
+  <div class="note">
+    <b>Comptes de démonstration</b>
+    Administrateur : <code>demo.admin@nexusgesti.com</code> / <code>Admin_pass123!</code><br>
+    Consultation (lecture seule) : <code>demo.customer@nexusgesti.com</code> / <code>demo_secret_customer</code>
+  </div>
+
+  <div class="warn">
+    <b>Règle d'or du profil secondaire</b>
+    Plusieurs enseignants peuvent intervenir dans une classe (un par matière), mais <b>une seule et unique affectation doit être marquée « titulaire »</b>. Les autres sont enregistrées en co-titulaire, adjoint, remplaçant ou visiteur. Le système refuse deux titulaires de classe.
+  </div>
+
+  <!-- 1 -->
+  <h2 id="s1"><span class="n">1</span>Se connecter</h2>
+  <div class="where">Écran de connexion → <b>Connexion</b></div>
+  <ol>
+    <li>Ouvrez la console : <code>http://localhost:3001</code>.</li>
+    <li>Saisissez l'adresse et le mot de passe du compte administrateur, puis validez.</li>
+    <li>Choisissez l'établissement à administrer si un sélecteur apparaît.</li>
+  </ol>
+  <p class="ok"><b>Résultat attendu</b>Vous arrivez sur le tableau de bord, menu latéral à gauche.</p>
+  <div class="note"><b>Bonne pratique</b>Le jeton de connexion expire au bout de quelques minutes. En cas d'échec en fin de session, rechargez la page et reconnectez-vous.</div>
+
+  <!-- 2 -->
+  <h2 id="s2"><span class="n">2</span>Créer l'établissement</h2>
+  <div class="where">Menu <b>Plateforme → Établissements</b></div>
+  <ol>
+    <li>Cliquez sur <b>Nouvel établissement</b>.</li>
+    <li>Renseignez les champs suivants :</li>
+  </ol>
+  <table>
+    <thead><tr><th>Champ</th><th>Valeur de l'exemple</th><th>Remarque</th></tr></thead>
+    <tbody>
+      <tr><td>Code</td><td><code>ECOLE-SEC-01</code></td><td>Identifiant court, unique.</td></tr>
+      <tr><td>Dénomination</td><td>École Secondaire La Grâce</td><td>Nom officiel affiché.</td></tr>
+      <tr><td>Profil</td><td><b>SECONDAIRE</b></td><td>Détermine les règles pédagogiques appliquées.</td></tr>
+      <tr><td>Statut</td><td>PREPARATION</td><td>Se change en ACTIF à la fin (§16).</td></tr>
+    </tbody>
+  </table>
+  <div class="note">
+    <b>Ce qui se passe automatiquement</b>
+    La création génère l'identifiant unique de l'établissement et <b>bascule la console sur ce nouvel établissement</b>. Le système crée aussi les conteneurs de référentiels.
+  </div>
+  <p class="ok"><b>Résultat attendu</b>L'établissement apparaît avec le statut « Préparation ».</p>
+
+  <!-- 3 -->
+  <h2 id="s3"><span class="n">3</span>Compléter l'identité : site et cycle</h2>
+  <div class="where">Menu <b>Plateforme → Établissement</b></div>
+
+  <h3>3.1 Créer le site principal</h3>
+  <p>Onglet <b>Sites</b> :</p>
+  <table>
+    <thead><tr><th>Champ</th><th>Valeur de l'exemple</th></tr></thead>
+    <tbody>
+      <tr><td>Code</td><td><code>PRINCIPAL</code></td></tr>
+      <tr><td>Libellé</td><td>Site principal</td></tr>
+    </tbody>
+  </table>
+
+  <h3>3.2 Créer le cycle secondaire</h3>
+  <p>Onglet <b>Cycles</b> :</p>
+  <table>
+    <thead><tr><th>Champ</th><th>Valeur de l'exemple</th></tr></thead>
+    <tbody>
+      <tr><td>Code</td><td><code>SEC</code></td></tr>
+      <tr><td>Libellé</td><td>Secondaire</td></tr>
+      <tr><td>Rang</td><td>1</td></tr>
+      <tr><td>Profil</td><td>SECONDAIRE (prérempli)</td></tr>
+    </tbody>
+  </table>
+
+  <!-- 4 -->
+  <h2 id="s4"><span class="n">4</span>Créer l'année scolaire et une période</h2>
+  <div class="where">Menu <b>Plateforme → Années scolaires</b></div>
+  <ol><li>Cliquez sur <b>Nouvelle</b> et renseignez l'année :</li></ol>
+  <table>
+    <thead><tr><th>Champ</th><th>Valeur de l'exemple</th></tr></thead>
+    <tbody>
+      <tr><td>Code</td><td><code>2025-2026</code></td></tr>
+      <tr><td>Libellé</td><td>Année scolaire 2025-2026</td></tr>
+      <tr><td>Date de début</td><td>01/09/2025</td></tr>
+      <tr><td>Date de fin</td><td>15/07/2026</td></tr>
+      <tr><td>Année de référence</td><td>2025</td></tr>
+      <tr><td>Statut</td><td>OUVERTE</td></tr>
+    </tbody>
+  </table>
+  <p>Ouvrez le détail de l'année et ajoutez une <b>période</b> (trimestre) : code <code>T1</code>, libellé « 1<sup>er</sup> trimestre », type TRIMESTRE, ordre 1.</p>
+  <div class="note"><b>Année courante</b>Une seule année peut être « courante ». C'est la référence des inscriptions et emplois du temps.</div>
+
+  <!-- 5 -->
+  <h2 id="s5"><span class="n">5</span>Créer les services</h2>
+  <div class="where">Menu <b>Pédagogie · Personnes → Personnel</b> (onglet <b>Services</b>)</div>
+  <ol><li>Ouvrez l'onglet <b>Services</b> puis <b>Nouveau</b>. Créez au minimum :</li></ol>
+  <table>
+    <thead><tr><th>Code</th><th>Libellé</th><th>Type</th></tr></thead>
+    <tbody>
+      <tr><td><code>DIR</code></td><td>Direction</td><td>DIRECTION</td></tr>
+      <tr><td><code>SCOL</code></td><td>Secrétariat</td><td>SCOLARITE</td></tr>
+      <tr><td><code>PEDA</code></td><td>Préfecture / surveillance</td><td>PEDAGOGIE</td></tr>
+      <tr><td><code>LABO</code></td><td>Laboratoire</td><td>LABORATOIRE</td></tr>
+    </tbody>
+  </table>
+  <div class="note"><b>Agents</b>L'onglet <b>Agents</b> du même écran permet d'enregistrer le personnel administratif (matricule généré en AGT si vide, fonction officielle, service de rattachement, statut ACTIF).</div>
+
+  <!-- 6 -->
+  <h2 id="s6"><span class="n">6</span>Créer les matières</h2>
+  <div class="where">Menu <b>Pédagogie · Structure → Matières</b></div>
+  <ol><li>Cliquez sur <b>Nouveau</b> et créez une matière par discipline :</li></ol>
+  <table>
+    <thead><tr><th>Code</th><th>Libellé</th><th>Discipline</th><th>Type</th></tr></thead>
+    <tbody>
+      <tr><td><code>FR</code></td><td>Français</td><td>Langues</td><td>OBLIGATOIRE</td></tr>
+      <tr><td><code>MATH</code></td><td>Mathématiques</td><td>Mathématiques</td><td>OBLIGATOIRE</td></tr>
+      <tr><td><code>PHY</code></td><td>Physique</td><td>Sciences</td><td>OBLIGATOIRE</td></tr>
+      <tr><td><code>CHIM</code></td><td>Chimie</td><td>Sciences</td><td>OBLIGATOIRE</td></tr>
+      <tr><td><code>BIO</code></td><td>Biologie</td><td>Sciences</td><td>OBLIGATOIRE</td></tr>
+      <tr><td><code>HIST</code></td><td>Histoire</td><td>Sciences sociales</td><td>OBLIGATOIRE</td></tr>
+      <tr><td><code>GEO</code></td><td>Géographie</td><td>Sciences sociales</td><td>OBLIGATOIRE</td></tr>
+      <tr><td><code>ANG</code></td><td>Anglais</td><td>Langues</td><td>OBLIGATOIRE</td></tr>
+      <tr><td><code>EPS</code></td><td>Éducation physique</td><td>Sport</td><td>OBLIGATOIRE</td></tr>
+    </tbody>
+  </table>
+
+  <!-- 7 -->
+  <h2 id="s7"><span class="n">7</span>Créer les niveaux</h2>
+  <div class="where">Menu <b>Pédagogie · Structure → Niveaux</b></div>
+  <table>
+    <thead><tr><th>Code</th><th>Libellé</th><th>Cycle</th><th>Rang</th><th>Ordre</th></tr></thead>
+    <tbody>
+      <tr><td><code>6E</code></td><td>6<sup>e</sup> année</td><td>Secondaire</td><td>1</td><td>1</td></tr>
+      <tr><td><code>5E</code></td><td>5<sup>e</sup> année</td><td>Secondaire</td><td>2</td><td>2</td></tr>
+    </tbody>
+  </table>
+
+  <!-- 8 -->
+  <h2 id="s8"><span class="n">8</span>Créer salles, créneaux et régime horaire</h2>
+  <div class="where">Menu <b>Pédagogie · Structure → Salles</b>, <b>Créneaux</b>, <b>Régimes horaires</b></div>
+
+  <h3>8.1 Salles</h3>
+  <table>
+    <thead><tr><th>Champ</th><th>Valeur de l'exemple</th></tr></thead>
+    <tbody>
+      <tr><td>Code</td><td><code>6A-1</code></td></tr>
+      <tr><td>Libellé</td><td>Salle 6A-1</td></tr>
+      <tr><td>Type</td><td>COURS</td></tr>
+      <tr><td>Capacité</td><td>45</td></tr>
+      <tr><td>Accessible / Disponible</td><td>oui / oui</td></tr>
+    </tbody>
+  </table>
+  <p>Créez aussi les salles spécialisées : <code>LABO1</code> (type LABORATOIRE), <code>INFO1</code> (type INFORMATIQUE).</p>
+
+  <h3>8.2 Créneaux</h3>
+  <table>
+    <thead><tr><th>Jour</th><th>Heure de début</th><th>Heure de fin</th><th>Ordre</th></tr></thead>
+    <tbody>
+      <tr><td>LUNDI</td><td>08:00</td><td>09:00</td><td>1</td></tr>
+      <tr><td>LUNDI</td><td>09:00</td><td>10:00</td><td>2</td></tr>
+      <tr><td>MARDI</td><td>08:00</td><td>09:00</td><td>1</td></tr>
+    </tbody>
+  </table>
+
+  <h3>8.3 Régime horaire</h3>
+  <table>
+    <thead><tr><th>Champ</th><th>Valeur de l'exemple</th></tr></thead>
+    <tbody>
+      <tr><td>Code</td><td><code>SEC-STD</code></td></tr>
+      <tr><td>Libellé</td><td>Semaine standard secondaire</td></tr>
+      <tr><td>Jours</td><td>LUNDI, MARDI, MERCREDI, JEUDI, VENDREDI</td></tr>
+      <tr><td>Créneaux par jour</td><td>7</td></tr>
+      <tr><td>Durée d'un créneau</td><td>50 (minutes)</td></tr>
+    </tbody>
+  </table>
+
+  <!-- 9 -->
+  <h2 id="s9"><span class="n">9</span>Créer les classes</h2>
+  <div class="where">Menu <b>Pédagogie · Structure → Classes</b></div>
+  <table>
+    <thead><tr><th>Champ</th><th>Valeur de l'exemple</th></tr></thead>
+    <tbody>
+      <tr><td>Code</td><td><code>6E-A</code></td></tr>
+      <tr><td>Libellé</td><td>6<sup>e</sup> A</td></tr>
+      <tr><td>Niveau</td><td>6<sup>e</sup> année</td></tr>
+      <tr><td>Année</td><td>2025-2026</td></tr>
+      <tr><td>Site</td><td>Site principal</td></tr>
+      <tr><td>Régime horaire</td><td>SEC-STD</td></tr>
+      <tr><td>Capacité</td><td>45</td></tr>
+      <tr><td>Statut</td><td>OUVERTE</td></tr>
+    </tbody>
+  </table>
+
+  <!-- 10 -->
+  <h2 id="s10"><span class="n">10</span>Créer les enseignants</h2>
+  <div class="where">Menu <b>Pédagogie · Personnes → Enseignants</b></div>
+  <p>Créez un enseignant par matière. Exemples :</p>
+  <table>
+    <thead><tr><th>Nom / Post-nom / Prénom</th><th>Spécialité</th><th>Service</th></tr></thead>
+    <tbody>
+      <tr><td>Kalala / Mbombo / Marie</td><td>Français</td><td>Préfecture / surveillance</td></tr>
+      <tr><td>Tshibangu / Mwamba / Jean</td><td>Mathématiques</td><td>Préfecture / surveillance</td></tr>
+      <tr><td>Ilunga / Kazadi / Pierre</td><td>Sciences</td><td>Laboratoire</td></tr>
+    </tbody>
+  </table>
+  <p>Chaque fiche reprend : matricule (généré en ENS si vide), sexe, date de naissance, téléphone, diplôme, spécialité, service, statut ACTIF.</p>
+
+  <!-- 11 -->
+  <h2 id="s11"><span class="n">11</span>Affecter les enseignants</h2>
+  <div class="where">Détail de l'enseignant → onglet <b>Affectations</b></div>
+  <div class="warn">
+    <b>Règle spécifique au secondaire</b>
+    Une classe peut recevoir <b>plusieurs</b> affectations, mais <b>une seule</b> doit être marquée <b>titulaire</b> (l'enseignant responsable de classe). Toutes les autres portent un type non-titulaire.
+  </div>
+  <table>
+    <thead><tr><th>Enseignant</th><th>Classe</th><th>Type d'affectation</th><th>Titulaire de classe</th></tr></thead>
+    <tbody>
+      <tr><td>Marie Kalala (Français)</td><td>6<sup>e</sup> A</td><td>TITULAIRE</td><td><b>coché</b></td></tr>
+      <tr><td>Jean Tshibangu (Maths)</td><td>6<sup>e</sup> A</td><td>CO_TITULAIRE</td><td>non</td></tr>
+      <tr><td>Pierre Ilunga (Sciences)</td><td>6<sup>e</sup> A</td><td>ADJOINT</td><td>non</td></tr>
+    </tbody>
+  </table>
+  <div class="note"><b>Types d'affectation</b>TITULAIRE, CO_TITULAIRE, ADJOINT, REMPLACANT, VISITEUR.</div>
+
+  <!-- 12 -->
+  <h2 id="s12"><span class="n">12</span>Créer les cours (matière × classe)</h2>
+  <div class="where">Menu <b>Pédagogie · Structure → Cours / ECUE</b></div>
+  <p>Un cours relie une matière à une classe donnée. Créez un cours pour chaque couple matière/classe.</p>
+  <table>
+    <thead><tr><th>Code</th><th>Libellé</th><th>Matière</th><th>Classe</th><th>Volume horaire</th><th>Coefficient</th></tr></thead>
+    <tbody>
+      <tr><td><code>6A-FR</code></td><td>Français 6<sup>e</sup> A</td><td>Français</td><td>6<sup>e</sup> A</td><td>5</td><td>4</td></tr>
+      <tr><td><code>6A-MATH</code></td><td>Mathématiques 6<sup>e</sup> A</td><td>Mathématiques</td><td>6<sup>e</sup> A</td><td>5</td><td>4</td></tr>
+      <tr><td><code>6A-PHY</code></td><td>Physique 6<sup>e</sup> A</td><td>Physique</td><td>6<sup>e</sup> A</td><td>3</td><td>2</td></tr>
+    </tbody>
+  </table>
+  <div class="note"><b>UE et Semestres</b>Ces deux écrans ne concernent pas l'enseignement secondaire : ignorez-les (ils sont utilisés par le profil universitaire). Pour le secondaire, utilisez le rattachement direct à une matière.</div>
+
+  <!-- 13 -->
+  <h2 id="s13"><span class="n">13</span>Construire l'emploi du temps</h2>
+  <div class="where">Menu <b>Pédagogie · Structure → Emplois du temps</b></div>
+  <ol>
+    <li>Cliquez sur <b>Nouvel emploi</b> : code <code>EDT-6EA</code>, libellé « 6<sup>e</sup> A », classe 6<sup>e</sup> A, année 2025-2026.</li>
+    <li>Ouvrez le détail et ajoutez les <b>plages</b> (créneau + matière + salle + enseignant).</li>
+    <li>Vérifiez les <b>conflits</b> :</li>
+  </ol>
+  <table>
+    <thead><tr><th>Code de conflit</th><th>Signification</th></tr></thead>
+    <tbody>
+      <tr><td><code>SALL_DOUBLEE</code></td><td>Même salle utilisée deux fois sur le même créneau.</td></tr>
+      <tr><td><code>ENSEIGNANT_DOUBLE</code></td><td>Même enseignant affecté à deux plages simultanées.</td></tr>
+      <tr><td><code>ELEVES_DOUBLE</code></td><td>Même classe avec deux cours en même temps.</td></tr>
+    </tbody>
+  </table>
+  <p class="ok"><b>Résultat attendu</b>Sans conflit bloquant, « Publier » fait passer l'emploi du temps en « publié ».</p>
+
+  <!-- 14 -->
+  <h2 id="s14"><span class="n">14</span>Créer le tuteur (parent)</h2>
+  <div class="where">Menu <b>Pédagogie · Personnes → Parents</b></div>
+  <table>
+    <thead><tr><th>Champ</th><th>Valeur de l'exemple</th></tr></thead>
+    <tbody>
+      <tr><td>Nom / Post-nom / Prénom</td><td>Ilunga / Kasongo / Joseph</td></tr>
+      <tr><td>Sexe</td><td>M</td></tr>
+      <tr><td>Téléphone / secondaire</td><td>+243 810 000 000 / +243 820 000 000</td></tr>
+      <tr><td>Email</td><td>joseph.ilunga@example.com</td></tr>
+      <tr><td>Profession</td><td>Commerçant</td></tr>
+      <tr><td>Statut</td><td>ACTIF</td></tr>
+    </tbody>
+  </table>
+  <p>Le lien de parenté (PERE, MERE, TUTEUR, TUTEUR_LEGAL, TUTEUR_AFFECTATIF, GRAND_PARENT, FRERE, SOEUR, AUTRE) sera posé depuis la fiche de l'élève (§15).</p>
+
+  <!-- 15 -->
+  <h2 id="s15"><span class="n">15</span>Inscrire un élève</h2>
+  <div class="where">Menu <b>Pédagogie · Personnes → Élèves</b></div>
+
+  <h3>15.1 Créer la fiche élève</h3>
+  <table>
+    <thead><tr><th>Champ</th><th>Valeur de l'exemple</th></tr></thead>
+    <tbody>
+      <tr><td>Matricule</td><td>généré automatiquement si vide (préfixe ELV)</td></tr>
+      <tr><td>Nom / Post-nom / Prénom</td><td>Ilunga / Kasongo / David</td></tr>
+      <tr><td>Sexe</td><td>M</td></tr>
+      <tr><td>Date de naissance</td><td>05/06/2012</td></tr>
+      <tr><td>Lieu de naissance</td><td>Kinshasa</td></tr>
+      <tr><td>Nationalité</td><td>Congolaise (RDC)</td></tr>
+      <tr><td>Statut</td><td>PREINSCRIT (défaut)</td></tr>
+    </tbody>
+  </table>
+
+  <h3>15.2 Créer et valider l'inscription</h3>
+  <ol>
+    <li>Ouvrez la fiche de l'élève, onglet <b>Inscriptions</b>.</li>
+    <li>Ajoutez l'inscription : classe 6<sup>e</sup> A, année 2025-2026, date 02/09/2025, statut EN_ATTENTE.</li>
+    <li><b>Validez</b> l'inscription.</li>
+  </ol>
+  <p class="ok"><b>Résultat attendu</b>Statut d'inscription <b>VALIDE</b> et élève au statut <b>INSCRIT</b>.</p>
+
+  <h3>15.3 Compléter le dossier</h3>
+  <p>Pièces obligatoires : <b>PHOTO_IDENTITE</b> et <b>ACTE_NAISSANCE</b>. Facultatives : BULLETIN_ANTERIEUR, CERTIFICAT_SCOLARITE, SUPPLEMENTAIRE.</p>
+
+  <!-- 16 -->
+  <h2 id="s16"><span class="n">16</span>Vérifier et clôturer</h2>
+  <ol class="check">
+    <li>Établissement créé avec le profil SECONDAIRE.</li>
+    <li>Site, cycle, année (avec période) créés.</li>
+    <li>Services, matières, niveaux, salles, créneaux et régime horaire créés.</li>
+    <li>Classes et enseignants créés.</li>
+    <li>Une seule affectation titulaire par classe, les autres non titulaires.</li>
+    <li>Cours (matière × classe) créés.</li>
+    <li>Emploi du temps publié sans conflit.</li>
+    <li>Tuteur relié à l'élève.</li>
+    <li>Élève INSCRIT avec une inscription VALIDE.</li>
+  </ol>
+  <p>Finalisez en passant l'établissement au statut <b>ACTIF</b> (Plateforme → Établissements).</p>
+
+  <!-- Annexe -->
+  <h2 id="a"><span class="n">A</span>Annexe — récapitulatif et erreurs fréquentes</h2>
+  <h3>Ordre recommandé</h3>
+  <ol>
+    <li>Établissement (SECONDAIRE)</li>
+    <li>Site et cycle</li>
+    <li>Année + période</li>
+    <li>Services</li>
+    <li>Matières</li>
+    <li>Niveaux</li>
+    <li>Salles, créneaux, régime horaire</li>
+    <li>Classes</li>
+    <li>Enseignants</li>
+    <li>Affectations (1 seul titulaire)</li>
+    <li>Cours (matière × classe)</li>
+    <li>Emploi du temps</li>
+    <li>Tuteur</li>
+    <li>Élève + inscription</li>
+  </ol>
+
+  <h3>Erreurs fréquentes</h3>
+  <table>
+    <thead><tr><th>Message / symptôme</th><th>Cause probable</th><th>Solution</th></tr></thead>
+    <tbody>
+      <tr><td>« Un seul titulaire autorisé »</td><td>Deux affectations cochées titulaire pour la même classe.</td><td>Ne garder qu'une affectation titulaire ; basculer les autres en CO_TITULAIRE ou ADJOINT.</td></tr>
+      <tr><td>« Aucune affectation »</td><td>La classe n'a aucun enseignant.</td><td>Créer au moins une affectation, dont une titulaire.</td></tr>
+      <tr><td>Publication impossible (conflit)</td><td>Salle, classe ou enseignant en double sur un créneau.</td><td>Corriger les plages en double puis republier.</td></tr>
+      <tr><td>Inscription non comptée</td><td>Inscription restée EN_ATTENTE.</td><td>Valider l'inscription (statut VALIDE).</td></tr>
+      <tr><td>Erreur de connexion en fin de session</td><td>Jeton expiré.</td><td>Recharger la page et se reconnecter.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="foot">
+    NexusGesti — Guide École Secondaire (profil SECONDAIRE). Document autonome, destiné à la distribution.
+    Les intitulés d'écrans et les règles correspondent à la console socle/pédagogie.
+  </div>
+
+</div>
+</body>
+</html>
