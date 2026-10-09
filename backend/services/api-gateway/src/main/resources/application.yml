@@ -57,7 +57,7 @@ spring:
         - id: academic-structure-service
           uri: http://${ACADEMIC_STRUCTURE_SERVICE_HOST:localhost}:8111
           predicates:
-            - Path=/api/v1/ped/structures/**,/api/v1/ped/cycles/**,/api/v1/ped/ues/**,/api/v1/ped/classes/**
+            - Path=/api/v1/ped/structures/**,/api/v1/ped/cycles/**,/api/v1/ped/niveaux/**,/api/v1/ped/classes/**,/api/v1/ped/promotions/**,/api/v1/ped/semestres/**,/api/v1/ped/ues/**,/api/v1/ped/matieres/**,/api/v1/ped/cours/**,/api/v1/ped/salles/**,/api/v1/ped/creneaux/**,/api/v1/ped/regimes-horaires/**,/api/v1/ped/emplois-du-temps/**
         - id: academic-people-service
           uri: http://${ACADEMIC_PEOPLE_SERVICE_HOST:localhost}:8112
           predicates:

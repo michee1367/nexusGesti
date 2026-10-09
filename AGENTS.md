@@ -37,7 +37,7 @@ docs/diagrammes/
   finance/     6 modèles + 6 cas d'utilisation
   sequences/   6 séquences (paiement, délibération, rappel lot, clôture, séjour, acte → facture)
   rendu/       56 SVG à générer — ACTUELLEMENT VIDE
-backend/       Maven parent + 9 modules construits (voir §9)
+backend/       Maven parent + 10 modules construits (voir §9)
 frontend/      console socle Next.js 16 (phases 1-2) — mémo dédié dans frontend/AGENTS.md
 scripts/       démarrage local : backend-up.{sh,ps1} + front-up.{sh,ps1} (voir §11)
 ```
@@ -190,11 +190,11 @@ qu'une fois sa brique backend validée (build + `mvn test` + E2E passerelle + co
 | 1 | Socle technique (`shared/*` + passerelle + infra) | **VALIDÉE** — 5 services bootent, `/actuator/health` → 200, Prometheus 5 cibles `up`, **RLS prouvé de bout en bout** (§11, 2026-10-07), D3 et D4 appliqués, `mvn test` vert (59), **commit `5158d45`** | Console socle (base) : layout, auth direct-grant, tenancy — **livrée avec la console (phases 1-2)** |
 | 2 | `tenant-service` (agégat `Etablissement`, `ProfilEtablissement`, grilles) | **VALIDÉE** — plan §12 exécuté le 2026-10-08 : 8+e module, 24 tables + RLS, 54 tests, grille activer/figer → 409 `GRILLE_FIGEE`, E2E passerelle complet (§11 2026-10-08), **commit `e25283e`** | pages socle : dashboard, tenant, grilles + `[type]`, annees, referentiels — **livrée avec la console (phases 1-2)** |
 | 3 | reste du socle (`identity`, `auth`, `notification`, `audit`, `reporting`) | **en cours** — `identity-service` construit le 2026-10-09 (lot 1 : utilisateurs + rôles/permissions, miroir Keycloak) ; `auth` reste à faire | Console identité : pages `/utilisateurs` + `/roles` (2026-10-09, `tsc`+lint+build verts) |
-| 4 | pédagogie (7 services `academic-*`) | à faire | à faire (après validation back) |
+| 4 | pédagogie (7 services `academic-*`) | **en cours** — lot 4a `academic-structure-service` construit le 2026-10-09 (niveaux, classes, promotions, semestres, UE, matières, cours ECUE, salles, créneaux, régimes horaires, emplois du temps) ; lots 4b-4g à faire | à faire (après validation back) |
 | 5 | hôpital (6 services) | à faire | à faire (après validation back) |
 | 6 | finance (6 services, OHADA) | à faire | à faire (après validation back) |
 
-### Modules réellement construits (9)
+### Modules réellement construits (10)
 
 ```
 shared/common-domain     noyau pur, aucune dépendance Spring
@@ -206,9 +206,10 @@ services/audit-service
 services/reporting-service
 services/tenant-service   socle métier : etablissement, grilles, referentiels (8101)
 services/identity-service socle identité : utilisateurs + rôles/permissions, miroir Keycloak (8102)
+services/academic-structure-service pedagogie : arbre, salles, creneaux, emplois du temps (8111)
 ```
 
-`mvn test` au niveau racine : **BUILD SUCCESS**, ~129 tests verts (59 socle + 54 tenant-service + 16 identity-service).
+`mvn test` au niveau racine : **BUILD SUCCESS**, ~153 tests verts (59 socle + 54 tenant-service + 16 identity-service + 24 academic-structure).
 
 ### Les 25 routes de la passerelle ≠ les modules construits
 
@@ -255,6 +256,10 @@ Pas de `fin-tresorerie` : la trésorerie est un préfixe de `fin-compta-core` (`
 | D11 | Tests phase 2 | Unitaires du domaine + 1 `@WebMvcTest` de sécurité. Pas de Testcontainers. |
 | D12 | `GrilleStock.choisirLot` | **Non codée côté socle** : le socle expose la stratégie et les seuils ; `Lot` reste `<<fin-stock>>`, le choix du lot sera codé chez le propriétaire du stock (phase 5/6). |
 | D13 | Règle de livraison | **Back d'abord, front ensuite.** Chaque phase est d'abord validée côté backend (build + `mvn test` + E2E passerelle + commit = une brique), puis sa console frontend est développée et vérifiée (`tsc` + lint + build + smoke). Le front monolithique (ex-ligne 7) est remplacé par une console livrée **par phase** (suivi dans la colonne Front du tableau §9). |
+| D14 | Découpage phase 4 | **Lot par service** (`academic-*`), dans l'ordre structure→people→enrollment→attendance→assessment→exam→fees. Un lot = une brique back validée (commit) → son front. |
+| D15 | Communication inter-services pédagogie | **Hybride** : REST interne (`InternalServiceAuthFilter`) pour les contrôles bloquants avant écriture ; Kafka `ped.events` pour notifications/audit + projections. Émissions vers `fin.events` différées (hôpital/finance). |
+| D16 | Périmètre phase 4 | **MVP d'abord** : `fees` sans recouvrement/bourses/social, `exam` sans plan-salle/surveillance/incidents. |
+| D17 | Routes passerelle | La passerelle élargit ses `Path=` au fur et à mesure des contrôleurs réels (les prédicats cibles ne sont pas tous implémentés). |
 
 ### Points de vigilance payés
 
@@ -297,6 +302,11 @@ Pas de `fin-tresorerie` : la trésorerie est un préfixe de `fin-compta-core` (`
   sur le bean `CorsWebFilter` + `OPTIONS / **` permitAll dans `SecurityConfig`, et origines listées dans
   `nexusgesti.cors.allowed-origins` (surcharge `NEXUSGESTI_CORS_ALLOWED_ORIGINS`, défaut
   `http://localhost:3000`→`3004`). Vérifié : préflight 200 + ACAO pour une origine listée, 403 sinon.
+- **Listes immutables `Stream.toList()` dans un agrégat** (2026-10-09, `academic-structure`) : un adapter
+  qui pose `setX(stream.toList())` sur un agrégat expose une liste **immutable** ; tout `getX().add(...)`
+  ultérieur lève `UnsupportedOperationException` (500). Les setters du domaine doivent **copier** en
+  `new ArrayList<>(...)`. Vu sur `EmploiDuTemps.setPlages/setConflits`, `Salle.setEquipements`,
+  `RegimeHoraire.setJours`.
 - **Pas de commentaires superflus dans le code.**
 
 ---
@@ -655,15 +665,70 @@ Quatre scripts dans `./scripts` (git-bash + PowerShell, backend + front) :
 - `backend/logs/` ajouté au `.gitignore` ; `frontend/.env` (`FRONT_HOST`) passé à `:3001` (champ
   inutilisé dans le code, simple cohérence). Aucune var `SPRING_FLYWAY_BASELINE_*` (correctif RLS appliqué).
 
+### academic-structure-service — lot 4a construit (2026-10-09)
+
+Phase 4 ouverte (D14-D17). **Backend 4a `academic-structure-service`** (port **8111**, schéma
+`academic_structure`, table Flyway `flyway_structure_history`, package `com.nexusgesti.structure`) :
+
+- **Périmètre** : niveaux, classes, promotions, semestres, UE, matières, cours ECUE, salles, créneaux,
+  régimes horaires, emplois du temps (+ plages, conflits). Références externes seulement :
+  `Enseignant` (`<<academic-people>>`) ; `Filiere`/`Programme`/`Cycle`/`AnneeScolaire`/`Periode`/
+  `GrilleNotation`/`Bareme`/`NiveauAcalcul`/`ProfilEtablissement`/`Site` (`<<tenant-service>>`).
+- **Squelette** : `<module>services/academic-structure-service</module>` (bloc PEDAGOGIE du pom racine),
+  pom miroir `tenant-service` (**sans `spring-kafka`** → le lot 4a n'émet aucun événement, D15 différé),
+  `StructureApplication`, `JpaConfig`, `SecurityConfig` (`@EnableMethodSecurity`, `oauth2ResourceServer`
+  avec `KeycloakJwtConfig.jwtAuthenticationConverter`), `application.yml` (`default_schema`,
+  `spring.flyway.url`, `flyway_structure_history`, `nexusgesti.security.oauth2.enabled: false`).
+- **Migrations** : `V1__structure_schema.sql` (13 tables), `V2__rls.sql` (boucle `DO` excluant
+  `flyway_structure_history` + index unique `ux_regime_horaire_tenant_code(tenant_id, code)`),
+  `V3__app_role.sql`.
+- **Domaine pur** (aucun seuil/coefficient en dur ; pas de commentaires superflus) : `Classe.ouvrir()`
+  OUVERTE→EN_COURS / `cloturer()` EN_COURS|OUVERTE→CLOTUREE, `getTauxRemplissage()` (scale 4 HALF_UP),
+  `estPlein()`, `Salle.estCompatible()`, `Creneau.getDureeMinutes()`,
+  `RegimeHoraire.getVolumeHebdomadaire()`, `CoursECUE.estECUE()/estMatiere()`,
+  `EmploiDuTemps.publier()/deplacer()/detecterConflits()` (`SALL_DOUBLEE`/`ENSEIGNANT_DOUBLE`/
+  `ELEVES_DOUBLE`), `ConflitEmploi.estBloquant()` (tout sauf `HORS_CYCLE`). Exception à codes
+  (`NOT_FOUND` 404, `TRANSITION_INVALIDE`/`CONFLIT_EMPLOI` 409).
+- **Persistance** : 13 entités + repositories + `StructurePersistenceAdapter` (mapping domaine↔entité,
+  JSONB `salle.equipements`/`regime_horaire.jours` via `String` + `@JdbcTypeCode(SqlTypes.JSON)` +
+  `ObjectMapper`, `tenant_id` posé par `TenantContext.require().asUuid()`). `regime_horaire` porte un
+  **id surrogate** + `findByCode` (PK `code` seul aurait créé un conflit inter-tenant).
+- **Applicatif / web** : `StructureService` (`@Service @Transactional`, UUID à la création, `notFound`),
+  `StructureController` (`@RequestMapping("/api/v1")`, chemins par ressource, lecture
+  `ADMIN|CUSTOMER` / écriture `ADMIN`), `StructureExceptionHandler` (mêmes codes que
+  `TenantExceptionHandler`). Routes visées : `/niveaux`, `/classes`, `/promotions`, `/semestres`,
+  `/ues`, `/matieres`, `/cours`, `/salles`, `/creneaux`, `/regimes-horaires`, `/emplois-du-temps`.
+- **Tests : 24 verts** (domaine `Classe`/`Salle`/`EmploiDuTemps`/`RegimeHoraire` + `@WebMvcTest`
+  `StructureControllerSecurityTest`). Pas de Testcontainers. `mvn test` racine : **BUILD SUCCESS,
+  ~153 tests**.
+- **Câblage** : route passerelle `academic-structure-service` élargie (niveaux, promotions, semestres,
+  matieres, cours, salles, creneaux, regimes-horaires, emplois-du-temps — D17) ; 8e cible Prometheus
+  `host.docker.internal:8111` ; `scripts/backend-up.{sh,ps1}` incluent le service.
+- **Boot + E2E passerelle (2026-10-09)** : 8111 boot (Flyway V1/V2/V3 `success`, RLS `t/t` sur les 13
+  tables, `f/f` sur `flyway_structure_history`) ; `POST /ped/niveaux` ADMIN **201**, `GET` **200**,
+  isolation A/B **OK**, sans `X-Tenant-Id` **400**, CUSTOMER écriture **403** / lecture **200** ;
+  régimes horaires **201/200** (`volumeHebdomadaire` 1800) ; emploi du temps à **2 plages (même
+  créneau+salle)** → `GET /conflits` **200 `SALL_DOUBLEE`**, `POST /publier` **409 `CONFLIT_EMPLOI`** ;
+  emploi propre → `publier` **200** (`publie=true`). Prometheus : **8/8 cibles `up`**.
+- **Piège payé (2026-10-09)** : `POST .../plages` → 500 `UnsupportedOperationException`.
+  `Stream.toList()` renvoie une liste **immutable** ; `EmploiDuTemps.setPlages`/`setConflits`,
+  `Salle.setEquipements`, `RegimeHoraire.setJours` stockaient la liste telle quelle, donc le
+  `getPlages().add(...)` de `StructureService.ajouterPlage` plantait. Correctif : les setters du
+  domaine **copient en `new ArrayList<>(...)`**. Règle : ne jamais exposer une liste de collection
+  mutable d'un agrégat sans copie défensive.
+- Date `Instant` sérialisée en **epoch** (`write-dates-as-timestamps`) : comportement **plateforme**
+  (aucune config Jackson nulle part, `ApiError.timestamp` idem) — hors périmètre lot 4a.
+- **Reste 4a** : commit. Lots 4b-4g ensuite (D14).
+
 ### Restant
 
 - **Commit `5158d45` (251 fichiers)** : docs + `.gitignore` + `backend/`. Phase 1 close.
 - **Phase 2 commitée le 2026-10-08** : `e25283e` (tenant-service + doc D7/D10 + E2E + colonne Front).
 - **Console socle commitée le 2026-10-08** : décrite au journal §11 (plomberie + pages socle + ADMIN,
   D13 appliqué).
-- Prochaine étape (§9) : **phase 3** (reste du socle) — `identity-service` fait (lot 1, 2026-10-09)
-  et ses pages console (`/utilisateurs`, `/roles`) livrées ; reste `auth` (durcissement + tests),
-  `notification`, `audit`, `reporting` — back d'abord, front ensuite.
+- Prochaine étape (§9) : **phase 4** — lot 4a `academic-structure-service` construit le 2026-10-09
+  (reste boot 8111 + E2E + commit) ; lots 4b-4g ensuite (D14). Phase 3 (reste du socle) : reste `auth`
+  (durcissement + tests), `notification`, `audit`, `reporting` — back d'abord, front ensuite.
 - `@Async` de `ReportService.generateAsync` inerte (self-invocation) : génération synchrone.
   À corriger si le rapport doit vraiment être émis hors du thread de requête.
 - `"kyc_level": ["0"]` dans `realm-nexusgesti.json` et `ReportType.KYC_SUMMARY` /
@@ -679,7 +744,6 @@ Quatre scripts dans `./scripts` (git-bash + PowerShell, backend + front) :
   `provision.sh`. Les rôles `realm-management` du service account `nexusgesti-service` sont accordés au
   runtime (non importables via KC25) ; la route `register` répond **403** tant que la faille du realm
   (rôles `realm-management` non importés) n'est pas corrigée — à faire avant la phase 3.
-- Prochaine étape §9 : phase 3 (reste du socle) — back d'abord, front ensuite.
 
 ---
 

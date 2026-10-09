@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# NexusGesti - demarre l'infra Docker puis les 7 services du socle (8101-8106 + 8080).
+# NexusGesti - demarre l'infra Docker puis les services construits (socle + pedagogie).
 # Usage : scripts/backend-up.sh [--no-build]
 set -uo pipefail
 
@@ -8,7 +8,7 @@ BACKEND="$ROOT/backend"
 LOGDIR="$BACKEND/logs"
 MVN="${MVN:-mvn}"
 
-SERVICES=(tenant-service identity-service auth-service notification-service audit-service reporting-service api-gateway)
+SERVICES=(tenant-service identity-service auth-service notification-service audit-service reporting-service academic-structure-service api-gateway)
 declare -A PORTS=(
   [tenant-service]=8101
   [identity-service]=8102
@@ -16,6 +16,7 @@ declare -A PORTS=(
   [notification-service]=8104
   [audit-service]=8105
   [reporting-service]=8106
+  [academic-structure-service]=8111
   [api-gateway]=8080
 )
 

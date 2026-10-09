@@ -33,6 +33,9 @@
         <module>services/notification-service</module>
         <module>services/audit-service</module>
         <module>services/reporting-service</module>
+
+        <!-- PEDAGOGIE -->
+        <module>services/academic-structure-service</module>
     </modules>
 
     <properties>

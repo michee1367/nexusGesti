@@ -1,4 +1,4 @@
-# NexusGesti - demarre l'infra Docker puis les 7 services du socle (8101-8106 + 8080).
+# NexusGesti - demarre l'infra Docker puis les services construits (socle + pedagogie).
 # Usage : scripts/backend-up.ps1 [-NoBuild]
 [CmdletBinding()]
 param(
@@ -19,6 +19,7 @@ $Services = [ordered]@{
     'notification-service' = 8104
     'audit-service'        = 8105
     'reporting-service'    = 8106
+    'academic-structure-service' = 8111
     'api-gateway'          = 8080
 }
 
