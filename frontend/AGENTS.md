@@ -7,7 +7,8 @@ Mémoire de contexte pour les agents IA. Se référer ici avant toute modificati
 Frontend de la **Console socle** de NexusGesti (SaaS multi-tenant : socle, pédagogie, hôpital, finance).
 Base : copie adaptée de `C:\Users\PC\Documents\ged_ministere\front`, **tout contenu GED supprimé**.
 Backend : passerelle Spring Cloud Gateway sur `http://localhost:8080/api/v1` (voir `.env`, non versionné).
-Le périmètre actuel ne couvre que le **socle** (tenants, établissements, grilles, référentiels, années).
+Le périmètre actuel ne couvre que le **socle** (tenants, établissements, grilles, référentiels, années,
+utilisateurs, rôles/permissions).
 Les domaines pédagogie / hôpital / finance n'ont pas encore de pages dans cette console.
 
 ## Stack
@@ -26,6 +27,10 @@ npm run lint      # eslint
 npx tsc --noEmit  # typecheck
 ```
 
+Le port de dev par défaut (3000) est **occupé par Grafana** → lancer la console sur **3001** :
+`PORT=3001 npm run dev` (git-bash) / `$env:PORT=3001; npm run dev` (PowerShell), ou via
+`scripts/front-up.{sh,ps1}` (à la racine du dépôt). Le CORS passerelle autorise 3000→3004.
+
 ## Architecture
 
 - `src/app/layout.tsx` : `AuthProvider` → `TenantProvider` → `Toaster` (sonner, `top-right` richColors).
@@ -42,13 +47,15 @@ npx tsc --noEmit  # typecheck
 - **API** (`src/services/api.ts`) : wrapper `rawFetch` — en-têtes `Authorization` (si token)
   et `X-Tenant-Id` (si tenant), erreurs normalisées en `ApiError {status, code, message}`.
   Codes métier utiles : `TENANT_ALREADY_EXISTS` 409, `GRILLE_FIGEE` 409, `TRANSITION_INVALIDE` 409,
-  `AUTH_INVALID_CREDENTIALS` 401.
+  `UTILISATEUR_EXISTANT` 409, `ROLE_EXISTANT` 409, `PERMISSION_EXISTANTE` 409,
+  `KEYCLOAK_INDISPONIBLE` 503, `AUTH_INVALID_CREDENTIALS` 401.
 - **Routes** :
   - Publiques : `/` → redirection `/dashboard`, `/login`.
   - Authentifiées (groupe `(app)` avec `AppShell` = Sidebar + Header ; le groupe `(app)`
     est aplati dans l'URL) :
     `/dashboard`, `/tenant`, `/grilles`, `/grilles/[type]?id=…`, `/referentiels`,
-    `/annees` ; réservées `ADMIN` : `/tenants`, `/notifications`, `/audit`, `/rapports`.
+    `/annees` ; réservées `ADMIN` : `/tenants`, `/utilisateurs`, `/roles`, `/notifications`,
+    `/audit`, `/rapports`.
 - `ProtectedLayout` engage la session (`ANONYME` → `/login`) mais ne coupe pas par rôle :
   les pages ADMIN utilisent `useAuth().user?.isAdmin` pour afficher / bloquer.
 
@@ -61,9 +68,16 @@ npx tsc --noEmit  # typecheck
   *pas* dans `services/api.ts`.
 - Toute nouvelle route API doit d'abord être vérifiée dans
   `backend/services/tenant-service/.../adapter/in/web/*Controller.java` puis ajoutée à `api.ts`.
+- **Pages identité** (`/utilisateurs`, `/roles`, ADMIN) : consomment `identity-service` via la
+  passerelle (`/socle/utilisateurs/**`, `/socle/identites/**`). DTO dans `src/types/index.ts`
+  (`Utilisateur`, `Role`, `Permission` + enums `StatutUtilisateur`, `TypeCompte`, `CategorieRole`),
+  clients `utilisateurApi` / `identiteApi` dans `api.ts` : création/invitation, cycle de vie
+  (activer/désactiver/suspendre), reset mot de passe, attribution de rôles, permissions par rôle.
+  Les GET sont ouverts à `CUSTOMER`, les mutations réservées `ADMIN` (garde `isAdmin` en page).
 - Champs obligatoires `POST /socle/tenants` : `code` (≤30), `denomination` (≤150), `profil`
   (`PRIMAIRE | SECONDAIRE | UNIVERSITAIRE`), `statut`.
-- Ports : passerelle 8080 (API), Keycloak 8180 (tokens), tenant-service 8101.
+- Ports : console **3001** (Grafana occupe 3000), passerelle 8080 (API), Keycloak 8180 (tokens),
+  tenant-service 8101, identity-service 8102.
   Utilisateurs de test (runtime, provisionnés par `backend/infrastructure/keycloak/provision.sh`) :
   `demo.admin@nexusgesti.com` / `Admin_pass123!` (ADMIN), `demo.customer@nexusgesti.com` /
   `demo_secret_customer` (CUSTOMER).

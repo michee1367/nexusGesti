@@ -39,6 +39,7 @@ docs/diagrammes/
   rendu/       56 SVG à générer — ACTUELLEMENT VIDE
 backend/       Maven parent + 9 modules construits (voir §9)
 frontend/      console socle Next.js 16 (phases 1-2) — mémo dédié dans frontend/AGENTS.md
+scripts/       démarrage local : backend-up.{sh,ps1} + front-up.{sh,ps1} (voir §11)
 ```
 
 **56 fichiers `.puml`.** Ne pas casser le compte.
@@ -188,7 +189,7 @@ qu'une fois sa brique backend validée (build + `mvn test` + E2E passerelle + co
 | 0 | Rendu SVG des 56 diagrammes | **écartée par l'utilisateur** | — |
 | 1 | Socle technique (`shared/*` + passerelle + infra) | **VALIDÉE** — 5 services bootent, `/actuator/health` → 200, Prometheus 5 cibles `up`, **RLS prouvé de bout en bout** (§11, 2026-10-07), D3 et D4 appliqués, `mvn test` vert (59), **commit `5158d45`** | Console socle (base) : layout, auth direct-grant, tenancy — **livrée avec la console (phases 1-2)** |
 | 2 | `tenant-service` (agégat `Etablissement`, `ProfilEtablissement`, grilles) | **VALIDÉE** — plan §12 exécuté le 2026-10-08 : 8+e module, 24 tables + RLS, 54 tests, grille activer/figer → 409 `GRILLE_FIGEE`, E2E passerelle complet (§11 2026-10-08), **commit `e25283e`** | pages socle : dashboard, tenant, grilles + `[type]`, annees, referentiels — **livrée avec la console (phases 1-2)** |
-| 3 | reste du socle (`identity`, `auth`, `notification`, `audit`, `reporting`) | **en cours** — `identity-service` construit le 2026-10-09 (lot 1 : utilisateurs + rôles/permissions, miroir Keycloak) ; `auth` reste à faire | à faire (après validation back) |
+| 3 | reste du socle (`identity`, `auth`, `notification`, `audit`, `reporting`) | **en cours** — `identity-service` construit le 2026-10-09 (lot 1 : utilisateurs + rôles/permissions, miroir Keycloak) ; `auth` reste à faire | Console identité : pages `/utilisateurs` + `/roles` (2026-10-09, `tsc`+lint+build verts) |
 | 4 | pédagogie (7 services `academic-*`) | à faire | à faire (après validation back) |
 | 5 | hôpital (6 services) | à faire | à faire (après validation back) |
 | 6 | finance (6 services, OHADA) | à faire | à faire (après validation back) |
@@ -273,15 +274,22 @@ Pas de `fin-tresorerie` : la trésorerie est un préfixe de `fin-compta-core` (`
   ce qui masque la vraie cause.
 - **`TenantFilter` exige un UUID** dans `X-Tenant-Id` : `demo` produit 400
   (`Invalid X-Tenant-Id header: expected a UUID`). Ne pas interpréter ce 401/400 comme un défaut de routage.
-- **Piège tenant-service 2026-10-08 — Flyway 10 + Postgres : le batch de 3 migrations se bloque.**
-  Au boot de `tenant-service`, une connexion Flyway reste `idle in transaction` après le check
-  `SELECT COUNT(*) FROM pg_namespace` (advisory lock + ACCESS SHARE sur `flyway_tenant_history`)
-  et bloque la migration suivante (`Lock/relation`), attente infinie. Les types de migration
-  (V1→V3, dont le `DO` de V2) ne sont pas en cause : reproduit 3 boots de suite. **Contournement
-  validé** : appliquer V1/V2/V3 manuellement (psql `docker exec -i nexusgesti-postgres-1 psql -U
-  nexusgesti -d nexusgesti -v ON_ERROR_STOP=1 < Vx.sql`) puis booter avec
-  `SPRING_FLYWAY_BASELINE_ON_MIGRATE=true SPRING_FLYWAY_BASELINE_VERSION=3`. **Un `DROP SCHEMA
-  tenant CASCADE` puis login boot normal retombe dans le deadlock** — garder les var env de baseline.
+- **Piège Flyway + RLS — cause racine trouvée le 2026-10-09 : la boucle RLS attrapait la table
+  d'historique Flyway.** Les `V2__rls.sql` de `tenant-service` et `identity-service` bouclaient sur
+  `SELECT tablename FROM pg_tables WHERE schemaname = '<schéma>'` **sans exclure `flyway_*_history`**.
+  Flyway crée sa table d'historique **avant** de jouer V1/V2 : la boucle V2 faisait donc de la DDL
+  (`ADD COLUMN`, `ENABLE`/`FORCE RLS`, `DROP`/`CREATE POLICY`, `GRANT`) **sur la table que Flyway
+  utilisait** → blocage **sans erreur** (log arrêté sur `Migrating schema ... to version "2 - rls"`,
+  RLS resté `f/f`, 0 policy). L'hypothèse « advisory lock / ACCESS SHARE » du 2026-10-08 était un
+  symptôme, pas la cause. `tenant` n'y avait échappé qu'**par chance** : V1/V2/V3 y furent appliquées à
+  la main via psql, donc la table d'historique n'existait pas encore au moment de la boucle (historique
+  = simple ligne `<< Flyway Baseline >>` v3). **Correctif appliqué (2026-10-09)** : exclure la table
+  d'historique de la boucle — `AND tablename <> 'flyway_<service>_history'` (fait pour `tenant` et
+  `identity`) ; `identity` aligne aussi la policy sur `current_setting('app.tenant_id', true)` +
+  `NULLIF(COALESCE(...))` (fail-closed, plus d'`unrecognized configuration parameter`). Le contournement
+  « psql manuel + `SPRING_FLYWAY_BASELINE_ON_MIGRATE=true SPRING_FLYWAY_BASELINE_VERSION=3` » est
+  **obsolète**. **Règle phases 4-6** : toute boucle RLS doit exclure `flyway_*_history` ; les RLS
+  explicites (auth/notification/audit/reporting) n'étaient pas touchées.
 - **CORS passerelle 2026-10-08 — les préflights OPTIONS des routes protégées partaient en 401
   sans `Access-Control-Allow-Origin`** (`/socle/annees` bloqué depuis le navigateur). Cause : le
   `CorsWebFilter` tournait **après** Spring Security — la chaîne exigeait le token et rejetait le
@@ -592,10 +600,60 @@ l'`AccessDeniedException` de Spring Security ressort en 500 au lieu de 403).
 Surefire sans Docker). `mvn test` racine : **BUILD SUCCESS, ~129 tests**. Prometheus : 7e cible
 `host.docker.internal:8102`.
 
-**Non fait** (bloqué par le poste) : boot réel 8102 + E2E passerelle — **Docker Desktop était arrêté**
-(pas de postgres 5433/redis/keycloak), donc non vérifié à chaud. Le piège Flyway 10 + Postgres décrit
-pour `tenant-service` s'appliquera probablement (3 migrations) : appliquer V1/V2/V3 manuellement puis
-`SPRING_FLYWAY_BASELINE_ON_MIGRATE=true SPRING_FLYWAY_BASELINE_VERSION=3` si le batch se bloque.
+**Boot 8102** : le blocage au boot (log arrêté sur `Migrating schema "identity" to version "2 - rls"`)
+avait la même cause racine que `tenant-service` — la boucle RLS attrapait `flyway_identity_history`
+(voir §9 « Piège Flyway + RLS »). **Corrigé dans `identity/V2__rls.sql`** (exclusion de la table
+d'historique + policy fail-closed) : plus besoin de baseline manuelle. Reste à vérifier à chaud
+(boot réel 8102 + E2E passerelle) — l'utilisateur s'en charge.
+
+### Console socle — pages identité livrées (2026-10-09)
+
+D13 respecté (back committé `eace162` avant le front). Console `./frontend` :
+- **`src/types/index.ts`** : `Utilisateur`, `Role`, `Permission` + enums `StatutUtilisateur`
+  (`INVITE|ACTIF|DESACTIF|SUSPENDU|SUPPRIME`), `TypeCompte` (`LOCAL|KEYCLOAK|ANONYME`),
+  `CategorieRole` (8 valeurs) ; `Adresse` existant réutilisé.
+- **`src/services/api.ts`** : `utilisateurApi` (list/search, get, create, inviter, modifier,
+  activer/desactiver/suspendre, reinitialiserMotDePasse, attribuer/retirerRole, definirPreferences) et
+  `identiteApi` (annuaire, roles list/create/definirPermissions, permissions list/create/verifier).
+- **Pages** (ADMIN, groupe `(app)` aplati) : `/utilisateurs` (recherche + table + détail : édition,
+  cycle de vie, reset mot de passe, rôles ; carte création/invitation à onglets) et `/roles`
+  (création de rôle — realm Keycloak — et de permission, table des rôles, matrice de permissions par
+  rôle). GET ouverts à `CUSTOMER`, mutations gardées par `isAdmin`.
+- **Sidebar** : entrées « Utilisateurs » (`UserCog`) et « Rôles & permissions » (`KeyRound`) sous
+  « Plateforme » (ADMIN).
+- **Vérifs** : `npx tsc --noEmit` 0 erreur ; `npm run lint` 0 erreur (2 warnings préexistants
+  `avatar.tsx`) ; `npm run build` OK (routes `/utilisateurs` et `/roles` générées).
+- **Non fait** : smoke passerelle réel (infra relancée le 2026-10-09, voir « Flyway + RLS » ci-dessous).
+
+### Flyway + RLS — cause racine corrigée (2026-10-09)
+
+Session de test : infra Docker relancée (postgres/redis/kafka healthy, keycloak 8180 → 200), les 7
+services bootent **sauf `identity-service` (8102)**, dont le boot s'arrête sur
+`Migrating schema "identity" to version "2 - rls"` (sans erreur, process tué). Diagnostic : la boucle
+`pg_tables` de `V2__rls.sql` incluait `flyway_identity_history` (créée par Flyway juste avant V1/V2)
+→ DDL sur la table que Flyway utilise → blocage muet (RLS resté `f/f`, 0 policy, historique figé à V1).
+`tenant` y avait échappé grâce au démarrage manuel/baseline (table d'historique inexistante pendant
+la boucle). **Correctif** : exclure `flyway_*_history` de la boucle (`tenant/V2` + `identity/V2`) ;
+`identity/V2` passe en policy fail-closed (`current_setting(..., true)` + `NULLIF(COALESCE(...))`).
+**Vérifié à chaud** : boot 8102 + health 200, Flyway V1/V2/V3 `success`, RLS `t/t` sur les 5 tables
+applicatives et `f/f` sur `flyway_identity_history`. NB : le port 3000 est occupé par **Grafana**, ce
+n'est pas la console (le front n'était pas lancé) — d'où le port **3001** retenu pour la console.
+
+### Scripts de démarrage local (2026-10-09)
+
+Quatre scripts dans `./scripts` (git-bash + PowerShell, backend + front) :
+- `scripts/backend-up.sh` / `backend-up.ps1` : `docker compose up -d`, attente `postgres`/`redis`/`kafka`
+  healthy + Keycloak 8180, **arrêt des services existants** (port ou `java -jar *SNAPSHOT.jar` → évite
+  verrou `.jar`), `mvn -q -DskipTests package` (drapeau `--no-build`/`-NoBuild` pour l'ignorer), puis
+  démarrage des **7 jars** en arrière-plan (logs `backend/logs/<svc>.log`, PID `<svc>.pid`) et attente
+  de `/actuator/health` (8080 + 8101-8106). Ordre : tenant, identity, auth, notification, audit,
+  reporting, api-gateway.
+- `scripts/front-up.sh` / `front-up.ps1` : warn si la passerelle 8080 est absente, `npm install` si
+  `node_modules` manquant, puis `npm run dev` **sur le port 3001** (Grafana occupe 3000 ; CORS
+  passerelle autorise déjà 3000→3004).
+- Testés : `backend-up.sh` → **7/7 UP** ; `front-up.sh` → `localhost:3001` → 307 `/login`.
+- `backend/logs/` ajouté au `.gitignore` ; `frontend/.env` (`FRONT_HOST`) passé à `:3001` (champ
+  inutilisé dans le code, simple cohérence). Aucune var `SPRING_FLYWAY_BASELINE_*` (correctif RLS appliqué).
 
 ### Restant
 
@@ -603,16 +661,19 @@ pour `tenant-service` s'appliquera probablement (3 migrations) : appliquer V1/V2
 - **Phase 2 commitée le 2026-10-08** : `e25283e` (tenant-service + doc D7/D10 + E2E + colonne Front).
 - **Console socle commitée le 2026-10-08** : décrite au journal §11 (plomberie + pages socle + ADMIN,
   D13 appliqué).
-- Prochaine étape (§9) : **phase 3** (reste du socle) — `identity-service` fait (lot 1, 2026-10-09) ;
-  reste `auth`, `notification`, `audit`, `reporting` — back d'abord, front ensuite.
+- Prochaine étape (§9) : **phase 3** (reste du socle) — `identity-service` fait (lot 1, 2026-10-09)
+  et ses pages console (`/utilisateurs`, `/roles`) livrées ; reste `auth` (durcissement + tests),
+  `notification`, `audit`, `reporting` — back d'abord, front ensuite.
 - `@Async` de `ReportService.generateAsync` inerte (self-invocation) : génération synchrone.
   À corriger si le rapport doit vraiment être émis hors du thread de requête.
 - `"kyc_level": ["0"]` dans `realm-nexusgesti.json` et `ReportType.KYC_SUMMARY` /
   templates `kyc.*` : restes villagesat signalés hors périmètre par l'utilisateur.
-- **Démarrage `tenant-service` en dev : batch Flyway bloqué** (voir §9 « Piège tenant-service 2026-10-08 ») —
-  contournement : migrations appliquées manuellement (psql) puis boot avec
-  `SPRING_FLYWAY_BASELINE_ON_MIGRATE=true SPRING_FLYWAY_BASELINE_VERSION=3`. À recodifier quand le
-  problème Flyway 10 + Postgres sera compris, ou à documenter comme procédure d'installation.
+- **Flyway + RLS : cause racine corrigée le 2026-10-09** (voir §9 « Piège Flyway + RLS ») — les
+  `V2__rls.sql` de `tenant` et `identity` bouclaient sur `pg_tables` sans écarter la table
+  d'historique Flyway. Correctif in-code appliqué ; le contournement « psql manuel + baseline » est
+  obsolète. NB : `tenant.V2` est déjà baseliné en dev (aucun checksum enregistré), donc l'éditer est
+  sans risque ici ; sur une base où il aurait été appliqué par Flyway, passer par `flyway repair` ou
+  une nouvelle version.
 - **Utilisateurs Keycloak de test (runtime, rien au dépôt)** : `demo.admin@nexusgesti.com`/`Admin_pass123!`
   (ADMIN) et `demo.customer@nexusgesti.com`/`demo_secret_customer` (CUSTOMER) provisionnés par
   `provision.sh`. Les rôles `realm-management` du service account `nexusgesti-service` sont accordés au

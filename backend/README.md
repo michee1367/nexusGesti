@@ -58,10 +58,12 @@ Crees par `infrastructure/kafka/topics.sh` au demarrage de Kafka.
 ## Demarrage local
 
 ```bash
-docker compose up -d
+# Infra + les 7 services du socle + attente /actuator/health (git-bash)
+scripts/backend-up.sh          # ou scripts/backend-up.ps1 (PowerShell)
+scripts/front-up.sh            # console socle sur http://localhost:3001
 
-mvn test
-mvn -pl services/api-gateway spring-boot:run
+docker compose up -d           # infra seule
+mvn test                       # tests unitaires
 ```
 
 ## Regle transverse

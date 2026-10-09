@@ -22,6 +22,7 @@ import {
   type NotificationPriority,
   type Parametre,
   type Periode,
+  type Permission,
   type ProfilEtablissement,
   type Programme,
   type Referentiel,
@@ -32,9 +33,12 @@ import {
   type ReportFormat,
   type ReportRequest,
   type ReportType,
+  type Role,
   type SeuilDecision,
   type Site,
   type StatutEtablissement,
+  type TypeCompte,
+  type Utilisateur,
 } from "@/types";
 
 export const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080/api/v1";
@@ -387,6 +391,78 @@ export const reportApi = {
     rawFetch<ReportRequest>("/socle/reports/request", jsonInit("POST", body)),
   list: () => rawFetch<ReportRequest[]>("/socle/reports"),
   download: (id: string) => rawFetch<{ downloadUrl: string }>(`/socle/reports/${id}/download`),
+};
+
+export interface CreerUtilisateurBody {
+  email: string;
+  telephone?: string;
+  nom?: string;
+  postNom?: string;
+  prenom?: string;
+  sexe?: string;
+  dateNaissance?: string;
+  nationalite?: string;
+  motDePasse?: string;
+  roles?: string[];
+  typeCompte?: TypeCompte;
+}
+
+export interface ModifierUtilisateurBody {
+  telephone?: string;
+  nom?: string;
+  postNom?: string;
+  prenom?: string;
+  sexe?: string;
+  dateNaissance?: string;
+  nationalite?: string;
+  photoUrl?: string;
+  languePreferee?: string;
+}
+
+const queryString = (q?: string): string =>
+  q && q.trim() ? `?q=${encodeURIComponent(q.trim())}` : "";
+
+export const utilisateurApi = {
+  list: (q?: string) => rawFetch<Utilisateur[]>(`/socle/utilisateurs${queryString(q)}`),
+  get: (id: string) => rawFetch<Utilisateur>(`/socle/utilisateurs/${id}`),
+  create: (body: CreerUtilisateurBody) => rawFetch<Utilisateur>("/socle/utilisateurs", jsonInit("POST", body)),
+  inviter: (body: { email: string; nom?: string; prenom?: string; roles?: string[] }) =>
+    rawFetch<Utilisateur>("/socle/utilisateurs/invitations", jsonInit("POST", body)),
+  modifier: (id: string, body: ModifierUtilisateurBody) =>
+    rawFetch<Utilisateur>(`/socle/utilisateurs/${id}`, jsonInit("PATCH", body)),
+  activer: (id: string) => rawFetch<Utilisateur>(`/socle/utilisateurs/${id}/activer`, { method: "POST" }),
+  desactiver: (id: string, motif: string) =>
+    rawFetch<Utilisateur>(`/socle/utilisateurs/${id}/desactiver`, jsonInit("POST", { motif })),
+  suspendre: (id: string, jusquau?: string) =>
+    rawFetch<Utilisateur>(`/socle/utilisateurs/${id}/suspendre`, jsonInit("POST", { jusquau })),
+  reinitialiserMotDePasse: (id: string, motDePasse: string) =>
+    rawFetch<void>(`/socle/utilisateurs/${id}/reinitialiser-mot-de-passe`, jsonInit("POST", { motDePasse })),
+  attribuerRole: (id: string, roleCode: string) =>
+    rawFetch<Utilisateur>(`/socle/utilisateurs/${id}/roles`, jsonInit("POST", { roleCode })),
+  retirerRole: (id: string, code: string) =>
+    rawFetch<Utilisateur>(`/socle/utilisateurs/${id}/roles/${encodeURIComponent(code)}`, { method: "DELETE" }),
+  definirPreferences: (id: string, preferences: Record<string, string>) =>
+    rawFetch<Utilisateur>(`/socle/utilisateurs/${id}/preferences`, jsonInit("PUT", preferences)),
+};
+
+export const identiteApi = {
+  annuaire: (q?: string) => rawFetch<Utilisateur[]>(`/socle/identites/annuaire${queryString(q)}`),
+  roles: {
+    list: () => rawFetch<Role[]>("/socle/identites/roles"),
+    create: (body: { code: string; libelle?: string; categorie?: string; systeme?: boolean; hierarchique?: number }) =>
+      rawFetch<Role>("/socle/identites/roles", jsonInit("POST", body)),
+    definirPermissions: (code: string, permissionIds: string[]) =>
+      rawFetch<Role>(`/socle/identites/roles/${encodeURIComponent(code)}/permissions`, jsonInit("PUT", { permissionIds })),
+  },
+  permissions: {
+    list: () => rawFetch<Permission[]>("/socle/identites/permissions"),
+    create: (body: { code: string; libelle?: string; service?: string; ressource?: string; action?: string }) =>
+      rawFetch<Permission>("/socle/identites/permissions", jsonInit("POST", body)),
+    verifier: (role: string, verbe: string, ressource: string) =>
+      rawFetch<{ autorise: boolean }>(
+        `/socle/identites/permissions/verifier?role=${encodeURIComponent(role)}&verbe=${encodeURIComponent(verbe)}&ressource=${encodeURIComponent(ressource)}`,
+      ),
+  },
 };
 
 export { rawFetch as apiFetch };

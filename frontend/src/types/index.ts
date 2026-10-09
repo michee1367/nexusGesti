@@ -481,3 +481,58 @@ export interface ReportRequest {
   failedReason?: string | null;
   version?: number | null;
 }
+
+export type StatutUtilisateur = "INVITE" | "ACTIF" | "DESACTIF" | "SUSPENDU" | "SUPPRIME";
+export type TypeCompte = "LOCAL" | "KEYCLOAK" | "ANONYME";
+export type CategorieRole =
+  | "ADMINISTRATION"
+  | "PEDAGOGIQUE"
+  | "SCOLARITE"
+  | "SANTE"
+  | "FINANCE"
+  | "SECURITE"
+  | "SYSTEME"
+  | "CONSULTATION";
+
+export interface Permission {
+  idPermission: string;
+  code: string;
+  libelle?: string | null;
+  service?: string | null;
+  ressource?: string | null;
+  action?: string | null;
+}
+
+export interface Role {
+  idRole?: string | null;
+  code: string;
+  libelle?: string | null;
+  categorie?: CategorieRole | null;
+  systeme?: boolean;
+  hierarchique?: number | null;
+  permissions?: Permission[];
+}
+
+export interface Utilisateur {
+  idUtilisateur: string;
+  identifiant?: string | null;
+  email: string;
+  telephone?: string | null;
+  nom?: string | null;
+  postNom?: string | null;
+  prenom?: string | null;
+  sexe?: string | null;
+  dateNaissance?: string | null;
+  nationalite?: string | null;
+  photoUrl?: string | null;
+  statut: StatutUtilisateur;
+  typeCompte?: TypeCompte | null;
+  doitChangerMotDePasse?: boolean;
+  derniereConnexion?: string | null;
+  delombok?: boolean;
+  languePreferee?: string | null;
+  keycloakUserId?: string | null;
+  adresse?: Adresse | null;
+  roles?: Role[];
+  suspenduJusquau?: string | null;
+}

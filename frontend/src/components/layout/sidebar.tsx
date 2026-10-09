@@ -9,6 +9,8 @@ import {
   FileText,
   FolderOpen,
   Users,
+  UserCog,
+  KeyRound,
   Bell,
   ShieldCheck,
   BarChart3,
@@ -33,6 +35,8 @@ const navItems = [
 
 const adminItems = [
   { href: "/tenants", label: "Tenants", icon: Users },
+  { href: "/utilisateurs", label: "Utilisateurs", icon: UserCog },
+  { href: "/roles", label: "Rôles & permissions", icon: KeyRound },
   { href: "/notifications", label: "Notifications", icon: Bell },
   { href: "/audit", label: "Audit", icon: ShieldCheck },
   { href: "/rapports", label: "Rapports", icon: BarChart3 },

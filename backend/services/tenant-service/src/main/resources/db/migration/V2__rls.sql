@@ -5,7 +5,9 @@
 DO $$
 DECLARE t text;
 BEGIN
-    FOR t IN SELECT tablename FROM pg_tables WHERE schemaname = 'tenant'
+    FOR t IN SELECT tablename FROM pg_tables
+             WHERE schemaname = 'tenant'
+               AND tablename <> 'flyway_tenant_history'
     LOOP
         EXECUTE format(
             'ALTER TABLE tenant.%I ADD COLUMN IF NOT EXISTS tenant_id UUID '
