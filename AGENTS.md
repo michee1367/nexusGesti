@@ -20,7 +20,7 @@ Plateforme SaaS multi-tenant pour trois domaines :
 La console couvre phases 1-2 (auth direct-grant, tenancy, grilles, années, référentiels, pages ADMIN).
 Toute phase suit la règle **back d'abord, front ensuite** (D13 + colonne Front en §9) :
 le travail front d'une phase ne s'ouvre qu'une fois la brique backend validée.
-Les 25 services sont déclarés en routes sur la passerelle, mais **seuls 9 modules Maven sont construits** (voir §9).
+Les 25 services sont déclarés en routes sur la passerelle, mais **seuls 11 modules Maven sont construits** (voir §9).
 Ne pas supposer qu'un service existe sous prétexte que sa route existe.
 
 ---
@@ -37,7 +37,7 @@ docs/diagrammes/
   finance/     6 modèles + 6 cas d'utilisation
   sequences/   6 séquences (paiement, délibération, rappel lot, clôture, séjour, acte → facture)
   rendu/       56 SVG à générer — ACTUELLEMENT VIDE
-backend/       Maven parent + 10 modules construits (voir §9)
+backend/       Maven parent + 11 modules construits (voir §9)
 frontend/      console socle Next.js 16 (phases 1-2) — mémo dédié dans frontend/AGENTS.md
 scripts/       démarrage local : backend-up.{sh,ps1} + front-up.{sh,ps1} (voir §11)
 ```
@@ -190,11 +190,11 @@ qu'une fois sa brique backend validée (build + `mvn test` + E2E passerelle + co
 | 1 | Socle technique (`shared/*` + passerelle + infra) | **VALIDÉE** — 5 services bootent, `/actuator/health` → 200, Prometheus 5 cibles `up`, **RLS prouvé de bout en bout** (§11, 2026-10-07), D3 et D4 appliqués, `mvn test` vert (59), **commit `5158d45`** | Console socle (base) : layout, auth direct-grant, tenancy — **livrée avec la console (phases 1-2)** |
 | 2 | `tenant-service` (agégat `Etablissement`, `ProfilEtablissement`, grilles) | **VALIDÉE** — plan §12 exécuté le 2026-10-08 : 8+e module, 24 tables + RLS, 54 tests, grille activer/figer → 409 `GRILLE_FIGEE`, E2E passerelle complet (§11 2026-10-08), **commit `e25283e`** | pages socle : dashboard, tenant, grilles + `[type]`, annees, referentiels — **livrée avec la console (phases 1-2)** |
 | 3 | reste du socle (`identity`, `auth`, `notification`, `audit`, `reporting`) | **en cours** — `identity-service` construit le 2026-10-09 (lot 1 : utilisateurs + rôles/permissions, miroir Keycloak) ; `auth` reste à faire | Console identité : pages `/utilisateurs` + `/roles` (2026-10-09, `tsc`+lint+build verts) |
-| 4 | pédagogie (7 services `academic-*`) | **en cours** — lot 4a `academic-structure-service` construit le 2026-10-09 (niveaux, classes, promotions, semestres, UE, matières, cours ECUE, salles, créneaux, régimes horaires, emplois du temps) ; lots 4b-4g à faire | à faire (après validation back) |
+| 4 | pédagogie (7 services `academic-*`) | **en cours** — lot 4a `academic-structure-service` **commité `3125320`** (niveaux, classes, promotions, semestres, UE, matières, cours ECUE, salles, créneaux, régimes horaires, emplois du temps) ; lot 4b `academic-people-service` construit le 2026-10-09 (élèves, dossiers, inscriptions, congés, sanctions, parents/liens, enseignants/affectations, agents, services) ; lots 4c-4g à faire | à faire (après validation back) |
 | 5 | hôpital (6 services) | à faire | à faire (après validation back) |
 | 6 | finance (6 services, OHADA) | à faire | à faire (après validation back) |
 
-### Modules réellement construits (10)
+### Modules réellement construits (11)
 
 ```
 shared/common-domain     noyau pur, aucune dépendance Spring
@@ -207,9 +207,10 @@ services/reporting-service
 services/tenant-service   socle métier : etablissement, grilles, referentiels (8101)
 services/identity-service socle identité : utilisateurs + rôles/permissions, miroir Keycloak (8102)
 services/academic-structure-service pedagogie : arbre, salles, creneaux, emplois du temps (8111)
+services/academic-people-service pedagogie : eleves, dossiers, inscriptions, personnel, affectations (8112)
 ```
 
-`mvn test` au niveau racine : **BUILD SUCCESS**, ~153 tests verts (59 socle + 54 tenant-service + 16 identity-service + 24 academic-structure).
+`mvn test` au niveau racine : **BUILD SUCCESS**, ~182 tests verts (59 socle + 54 tenant-service + 16 identity-service + 2 audit + 24 academic-structure + 25 academic-people + 2 common).
 
 ### Les 25 routes de la passerelle ≠ les modules construits
 
@@ -718,7 +719,75 @@ Phase 4 ouverte (D14-D17). **Backend 4a `academic-structure-service`** (port **8
   mutable d'un agrégat sans copie défensive.
 - Date `Instant` sérialisée en **epoch** (`write-dates-as-timestamps`) : comportement **plateforme**
   (aucune config Jackson nulle part, `ApiError.timestamp` idem) — hors périmètre lot 4a.
-- **Reste 4a** : commit. Lots 4b-4g ensuite (D14).
+- **Commit 4a le 2026-10-09 : `3125320`** (66 fichiers). Lots 4b-4g ensuite (D14).
+
+### academic-people-service — lot 4b construit (2026-10-09)
+
+**Backend 4b `academic-people-service`** (port **8112**, schéma `academic_people`, table Flyway
+`flyway_people_history`, package `com.nexusgesti.people`) :
+
+- **Périmètre** : élèves (`Eleve`), dossiers (`DossierEleve`, `FichierJoint`), inscriptions
+  (`Inscription`), congés (`CongeEtude`), sanctions (`SanctionDisciplinaire`), parents (`Parent`,
+  `LienParentalite`), personnel (`Agent`, `ServiceEtablissement`), enseignants (`Enseignant`,
+  `PieceIdentiteEnseignant`) et affectations (`AffectationEnseignant`, `Titularite`). 14 tables.
+- **Squelette** : bloc PEDAGOGIE du pom racine, pom miroir `tenant-service` **avec `spring-kafka`**
+  (4b **émet** `eleve.inscrit` sur `ped.events`, D15), `PeopleApplication`, `config/{JpaConfig,
+  SecurityConfig,KafkaConfig}`, `application.yml` (`default_schema`, `spring.flyway.url`,
+  `flyway_people_history`, `nexusgesti.security.oauth2.enabled: false`).
+- **Migrations** : `V1__people_schema.sql` (14 tables, adresse aplatie), `V2__rls.sql` (boucle `DO`
+  excluant `flyway_people_history` + index uniques `ux_eleve_tenant_matricule`,
+  `ux_agent_tenant_matricule`, `ux_enseignant_tenant_matricule`,
+  `ux_service_etablissement_tenant_code`), `V3__app_role.sql`.
+- **Domaine pur** : `Eleve.estInscrit(date)/getAge()/transferer()/radier()/obtenirDossier()`
+  (`getClasseCourante` = dernière inscription VALIDE), `DossierEleve` (pièces obligatoires
+  `PHOTO_IDENTITE`+`ACTE_NAISSANCE`, `estComplet`/`getPiecesManquantes`/`archiver`),
+  `Inscription.valider/annuler`, `RegleAffectation.valider(profil, classe, affectations)` — PRIMAIRE
+  (1 affectation, 1 titulaire), SECONDAIRE (≥1, 1 titulaire), UNIVERSITAIRE (0 titulaire, sinon
+  `UNIVERSITAIRE_SANS_TITULAIRE_DE_CLASSE`), `Enseignant.getChargeHoraire(date)`, `Agent`. Exception
+  `PeopleException` (`NOT_FOUND` 404 ; `TRANSITION_INVALIDE`/`REGLE_AFFECTATION`/`ITEM_EXISTANT`/
+  `MATRICULE_EXISTANT` 409).
+- **Persistance / applicatif / web** : 14 entités + repos + `PeoplePersistenceAdapter` (sauvegarde
+  d'agrégat, JSONB `enseignant.specialite`, `tenant_id` via `TenantContext.require().asUuid()`),
+  `PeopleService` (`@Service @Transactional`, matricules par défaut `ELV/PAR/AGT/ENS-xxxxxxxx`,
+  publie `eleve.inscrit` à l'inscription), `PeopleController` (`/api/v1`, `/eleves/{id}/inscriptions`
+  en sous-ressource, `/parents`, `/enseignants`, `/personnel`), `PeopleExceptionHandler`
+  (`DataIntegrityViolationException` → **409 `ITEM_EXISTANT`**). Routes passerelle préexistantes :
+  aucune modif (`/api/v1/ped/{eleves,enseignants,parents,personnel}/**`).
+- **Tests : 25 verts** (domaine `Eleve`/`DossierEleve`/`Inscription`/`RegleAffectation` + `@WebMvcTest`
+  `PeopleControllerSecurityTest`). `mvn test` racine : **BUILD SUCCESS, ~182 tests**.
+- **Câblage** : 9e cible Prometheus `host.docker.internal:8112` ; `scripts/backend-up.{sh,ps1}`
+  incluent le service.
+- **Boot + E2E passerelle (2026-10-09)** : 9/9 services UP ; Flyway V1/V2/V3 `success`, RLS `t/t` ;
+  `POST /ped/eleves` ADMIN **201** (`statut` PREINSCRIT, `matricule` `ELV-…`), `GET` **200**,
+  isolation A/B **OK**, sans `X-Tenant-Id` **400**, CUSTOMER écriture **403** / lecture **200** ;
+  inscription **201** → `valider` **200** (élève INSCRIT) ; dossier **200**, pièce **200** ;
+  enseignant **201**, affectation **201**, `rendreTitulaire` **200**,
+  `valider?profil=SECONDAIRE` → `{"violations":[]}`, `profil=UNIVERSITAIRE` →
+  `["UNIVERSITAIRE_SANS_TITULAIRE_DE_CLASSE"]` ; service **201**, doublon de `code` **409
+  `ITEM_EXISTANT``** ; événement `eleve.inscrit` produit sur `ped.events` et **persisté par
+  `audit-service`** (`GET /socle/audit/search?eventType=eleve.inscrit` → **1**).
+- **Pièges payés (2026-10-09)** :
+  - l'adapter ne doit **pas** `deleteByEleveId` le dossier (upsert par id de domaine stable) ;
+    seuls les enfants (`fichiers`, `inscriptions`, …) sont supprimés/réinsérés.
+  - `@WebMvcTest` ne compile pas un manque de méthode de repo, seul le vrai boot le voit.
+  - **`mvn -pl services/audit-service package` échoue « Unable to rename .jar »** si un
+    `java -jar` tourne encore ; tuer les PID `java.exe` dont la `CommandLine` matche le service
+    (le `.pid` de `nohup` n'est **pas** le PID du JVM enfant sous git-bash).
+
+### audit-service — deux correctifs révélés par `eleve.inscrit` (2026-10-09)
+
+Le producteur 4b a révélé que `AuditKafkaConsumer` ne savait **pas persister** un événement réel
+(le défaut était latent, aucun producteur n'émettait jusqu'ici) :
+
+1. **`metadata` jsonb vs varchar** : `AuditEntryEntity.oldValue/newValue/metadata` sont `jsonb` mais
+   mappés `String` sans `@JdbcTypeCode` → `column "metadata" is of type jsonb but expression is of
+   type character varying`. Correctif : `@JdbcTypeCode(SqlTypes.JSON)` (même fix que `reporting`).
+2. **`action` NOT NULL** : le contrat `{eventType, payload}` des producteurs ne porte pas d'`action`
+   racine → `null value in column "action"`. Correctif dans le **consommateur** : lecture
+   `racine → payload` en repli (helpers `firstText/firstUuid/firstJson`) + **défaut `action` =
+   `eventType`** (puis `UNKNOWN`). Corrige aussi le futur flux `user.created` de `auth`.
+3. Test `AuditKafkaConsumerTest` (2) ajouté : `payloadSansActionDefautSurEventTypeEtPersiste`,
+   `actionExpliciteRacineEstPrioritaire`.
 
 ### Restant
 
@@ -726,9 +795,11 @@ Phase 4 ouverte (D14-D17). **Backend 4a `academic-structure-service`** (port **8
 - **Phase 2 commitée le 2026-10-08** : `e25283e` (tenant-service + doc D7/D10 + E2E + colonne Front).
 - **Console socle commitée le 2026-10-08** : décrite au journal §11 (plomberie + pages socle + ADMIN,
   D13 appliqué).
-- Prochaine étape (§9) : **phase 4** — lot 4a `academic-structure-service` construit le 2026-10-09
-  (reste boot 8111 + E2E + commit) ; lots 4b-4g ensuite (D14). Phase 3 (reste du socle) : reste `auth`
-  (durcissement + tests), `notification`, `audit`, `reporting` — back d'abord, front ensuite.
+- **Commit 4b le 2026-10-09 : à faire** (academic-people-service + correctifs audit + doc).
+- Prochaine étape (§9) : **lot 4c `academic-enrollment-service` (8113)** — `academic-people-service`
+  (4b) construit, testé (25), boot + E2E passerelle validés. Lots 4d-4g ensuite (D14). Phase 3
+  (reste du socle) : reste `auth` (durcissement + tests), `notification`, `audit`, `reporting` —
+  back d'abord, front ensuite.
 - `@Async` de `ReportService.generateAsync` inerte (self-invocation) : génération synchrone.
   À corriger si le rapport doit vraiment être émis hors du thread de requête.
 - `"kyc_level": ["0"]` dans `realm-nexusgesti.json` et `ReportType.KYC_SUMMARY` /

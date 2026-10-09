@@ -38,24 +38,31 @@ public class AuditKafkaConsumer {
         try {
             JsonNode node = objectMapper.readTree(message);
             applyTenant(node);
+            JsonNode payload = node.has("payload") && node.get("payload").isObject()
+                    ? node.get("payload") : node;
 
             AuditEntry entry = new AuditEntry();
             entry.setId(UUID.randomUUID());
             entry.setServiceName(extractServiceName(topic));
-            entry.setEventType(getTextOrNull(node, "eventType"));
-            entry.setUserId(getUuidOrNull(node, "userId"));
-            entry.setEntityType(getTextOrNull(node, "entityType"));
-            entry.setEntityId(getTextOrNull(node, "entityId"));
-            entry.setAction(getTextOrNull(node, "action"));
-            entry.setOldValue(getJsonOrNull(node, "oldValue"));
-            entry.setNewValue(getJsonOrNull(node, "newValue"));
-            entry.setIpAddress(getTextOrNull(node, "ipAddress"));
+            String eventType = firstText(node, payload, "eventType");
+            entry.setEventType(eventType);
+            entry.setUserId(firstUuid(node, payload, "userId"));
+            entry.setEntityType(firstText(node, payload, "entityType"));
+            entry.setEntityId(firstText(node, payload, "entityId"));
+            String action = firstText(node, payload, "action");
+            entry.setAction(action != null ? action : (eventType != null ? eventType : "UNKNOWN"));
+            entry.setOldValue(firstJson(node, payload, "oldValue"));
+            entry.setNewValue(firstJson(node, payload, "newValue"));
+            entry.setIpAddress(firstText(node, payload, "ipAddress"));
             entry.setTimestamp(Instant.now());
 
             Map<String, String> metadata = new HashMap<>();
             metadata.put("topic", topic);
-            if (node.has("metadata") && node.get("metadata").isObject()) {
-                node.get("metadata").fields().forEachRemaining(
+            JsonNode metaNode = node.has("metadata") && node.get("metadata").isObject()
+                    ? node.get("metadata")
+                    : (payload.has("metadata") && payload.get("metadata").isObject() ? payload.get("metadata") : null);
+            if (metaNode != null) {
+                metaNode.fields().forEachRemaining(
                         field -> metadata.put(field.getKey(), field.getValue().asText()));
             }
             entry.setMetadata(metadata);
@@ -87,8 +94,13 @@ public class AuditKafkaConsumer {
         return node.has(field) && !node.get(field).isNull() ? node.get(field).asText() : null;
     }
 
-    private UUID getUuidOrNull(JsonNode node, String field) {
-        String text = getTextOrNull(node, field);
+    private String firstText(JsonNode root, JsonNode payload, String field) {
+        String value = getTextOrNull(root, field);
+        return value != null ? value : getTextOrNull(payload, field);
+    }
+
+    private UUID firstUuid(JsonNode root, JsonNode payload, String field) {
+        String text = firstText(root, payload, field);
         if (text == null) return null;
         try {
             return UUID.fromString(text);
@@ -97,8 +109,9 @@ public class AuditKafkaConsumer {
         }
     }
 
-    private String getJsonOrNull(JsonNode node, String field) {
-        if (!node.has(field) || node.get(field).isNull()) return null;
-        return node.get(field).toString();
+    private String firstJson(JsonNode root, JsonNode payload, String field) {
+        if (root.has(field) && !root.get(field).isNull()) return root.get(field).toString();
+        if (payload.has(field) && !payload.get(field).isNull()) return payload.get(field).toString();
+        return null;
     }
 }

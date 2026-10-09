@@ -1,6 +1,8 @@
 package com.nexusgesti.audit.adapter.out.persistence.entity;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -29,15 +31,18 @@ public class AuditEntryEntity {
     @Column(nullable = false, length = 50)
     private String action;
 
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "old_value", columnDefinition = "jsonb")
     private String oldValue;
 
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "new_value", columnDefinition = "jsonb")
     private String newValue;
 
     @Column(name = "ip_address", length = 45)
     private String ipAddress;
 
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "jsonb")
     private String metadata;
 

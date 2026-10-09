@@ -36,6 +36,7 @@
 
         <!-- PEDAGOGIE -->
         <module>services/academic-structure-service</module>
+        <module>services/academic-people-service</module>
     </modules>
 
     <properties>

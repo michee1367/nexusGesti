@@ -20,6 +20,7 @@ $Services = [ordered]@{
     'audit-service'        = 8105
     'reporting-service'    = 8106
     'academic-structure-service' = 8111
+    'academic-people-service'    = 8112
     'api-gateway'          = 8080
 }
 
