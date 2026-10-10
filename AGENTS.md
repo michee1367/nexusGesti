@@ -20,7 +20,7 @@ Plateforme SaaS multi-tenant pour trois domaines :
 La console couvre phases 1-2 (auth direct-grant, tenancy, grilles, années, référentiels, pages ADMIN).
 Toute phase suit la règle **back d'abord, front ensuite** (D13 + colonne Front en §9) :
 le travail front d'une phase ne s'ouvre qu'une fois la brique backend validée.
-Les 25 services sont déclarés en routes sur la passerelle, mais **seuls 13 modules Maven sont construits** (voir §9).
+Les 25 services sont déclarés en routes sur la passerelle, mais **seuls 14 modules Maven sont construits** (voir §9).
 Ne pas supposer qu'un service existe sous prétexte que sa route existe.
 
 ---
@@ -37,7 +37,7 @@ docs/diagrammes/
   finance/     6 modèles + 6 cas d'utilisation
   sequences/   6 séquences (paiement, délibération, rappel lot, clôture, séjour, acte → facture)
   rendu/       56 SVG à générer — ACTUELLEMENT VIDE
-backend/       Maven parent + 13 modules construits (voir §9)
+backend/       Maven parent + 14 modules construits (voir §9)
 frontend/      console socle Next.js 16 (phases 1-2) — mémo dédié dans frontend/AGENTS.md
 scripts/       démarrage local : backend-up.{sh,ps1} + front-up.{sh,ps1} (voir §11)
 ```
@@ -190,11 +190,11 @@ qu'une fois sa brique backend validée (build + `mvn test` + E2E passerelle + co
 | 1 | Socle technique (`shared/*` + passerelle + infra) | **VALIDÉE** — 5 services bootent, `/actuator/health` → 200, Prometheus 5 cibles `up`, **RLS prouvé de bout en bout** (§11, 2026-10-07), D3 et D4 appliqués, `mvn test` vert (59), **commit `5158d45`** | Console socle (base) : layout, auth direct-grant, tenancy — **livrée avec la console (phases 1-2)** |
 | 2 | `tenant-service` (agégat `Etablissement`, `ProfilEtablissement`, grilles) | **VALIDÉE** — plan §12 exécuté le 2026-10-08 : 8+e module, 24 tables + RLS, 54 tests, grille activer/figer → 409 `GRILLE_FIGEE`, E2E passerelle complet (§11 2026-10-08), **commit `e25283e`** | pages socle : dashboard, tenant, grilles + `[type]`, annees, referentiels — **livrée avec la console (phases 1-2)** |
 | 3 | reste du socle (`identity`, `auth`, `notification`, `audit`, `reporting`) | **en cours** — `identity-service` construit le 2026-10-09 (lot 1 : utilisateurs + rôles/permissions, miroir Keycloak) ; `auth` reste à faire | Console identité : pages `/utilisateurs` + `/roles` (2026-10-09, `tsc`+lint+build verts) |
-| 4 | pédagogie (7 services `academic-*`) | **en cours** — lot 4a `academic-structure-service` **commité `3125320`** (niveaux, classes, promotions, semestres, UE, matières, cours ECUE, salles, créneaux, régimes horaires, emplois du temps) ; lot 4b `academic-people-service` **commité `7565e35`** (élèves, dossiers, inscriptions, congés, sanctions, parents/liens, enseignants/affectations, agents, services) ; lot 4c `academic-enrollment-service` construit le 2026-10-10 (inscriptions UE, groupes TD/TP, règles d'éligibilité, parcours — MVP) ; lot 4d `academic-attendance-service` construit le 2026-10-10 (séances, feuilles d'appel, présences, absences, justificatifs, suivi d'assiduité — `/seances` réassigné de exam à attendance) ; lots 4e-4g à faire | 4a/4b : pages pédagogie livrées (`8b26390`) ; 4c/4d à faire (après validation back) |
+| 4 | pédagogie (7 services `academic-*`) | **en cours** — lot 4a `academic-structure-service` **commité `3125320`** (niveaux, classes, promotions, semestres, UE, matières, cours ECUE, salles, créneaux, régimes horaires, emplois du temps) ; lot 4b `academic-people-service` **commité `7565e35`** (élèves, dossiers, inscriptions, congés, sanctions, parents/liens, enseignants/affectations, agents, services) ; lot 4c `academic-enrollment-service` construit le 2026-10-10 (inscriptions UE, groupes TD/TP, règles d'éligibilité, parcours — MVP) ; lot 4d `academic-attendance-service` **commité `1ae85ba`** (séances, feuilles d'appel, présences, absences, justificatifs, suivi d'assiduité — `/seances` réassigné de exam à attendance) ; lot 4e `academic-assessment-service` construit le 2026-10-10 (évaluations, notes, feuilles, moyennes, bulletins, coupons — boot + E2E passerelle validés) ; lots 4f-4g à faire | 4a/4b : pages pédagogie livrées (`8b26390`) ; 4c/4d/4e à faire (après validation back) |
 | 5 | hôpital (6 services) | à faire | à faire (après validation back) |
 | 6 | finance (6 services, OHADA) | à faire | à faire (après validation back) |
 
-### Modules réellement construits (13)
+### Modules réellement construits (14)
 
 ```
 shared/common-domain     noyau pur, aucune dépendance Spring
@@ -210,9 +210,10 @@ services/academic-structure-service pedagogie : arbre, salles, creneaux, emplois
 services/academic-people-service pedagogie : eleves, dossiers, inscriptions, personnel, affectations (8112)
 services/academic-enrollment-service pedagogie : inscriptions UE, groupes TD/TP, eligibilite, parcours (8113)
 services/academic-attendance-service pedagogie : seances, feuilles d appel, presences, absences, justificatifs, assiduite (8114)
+services/academic-assessment-service pedagogie : evaluations, notes, feuilles, moyennes, bulletins, coupons (8115)
 ```
 
-`mvn test` au niveau racine : **BUILD SUCCESS**, ~261 tests verts (59 socle + 54 tenant-service + 16 identity-service + 2 audit + 24 academic-structure + 25 academic-people + 35 academic-enrollment + 44 academic-attendance + 2 common).
+`mvn test` au niveau racine : **BUILD SUCCESS**, ~321 tests verts (60 classes ; ajout de 44 `academic-assessment`).
 
 ### Les 25 routes de la passerelle ≠ les modules construits
 
@@ -892,6 +893,60 @@ Le producteur 4b a révélé que `AuditKafkaConsumer` ne savait **pas persister*
   (via `DataIntegrityViolationException`) et `SQLState 23502`. Correctif : colonne **nullable** ; schéma
   `academic_attendance` recréé (service neuf, non commité) car V1 déjà appliquée par Flyway.
 
+### academic-assessment-service — lot 4e construit (2026-10-10)
+
+**Backend 4e `academic-assessment-service`** (port **8115**, schéma `academic_assessment`, table Flyway
+`flyway_assessment_history`, package `com.nexusgesti.assessment`), **sans Kafka** (D15 différé) :
+
+- **Périmètre** : évaluations (`Evaluation` + `FeuilleNote` + `Note`), bulletins (`Bulletin` +
+  `LigneBulletin` + `SyntheseAbsences`), coupons de notes (`CouponNotes`), moyennes/classement
+  **calculés** (`MoteurCalculMoyenne` + `ResultatMoyenne` + `Classement`, non persistés). **Reporté** :
+  sessions d'examen, rattrapage, délibération par UE (relèvent de `academic-exam` 4f).
+- **Frontière** : `CouponNotes` est exposé en **sous-ressource** `POST /bulletins/{id}/coupons` car
+  `/ped/coupons/**` route vers `academic-fees-service` (8117). `/ped/{notes,evaluations,bulletins,moyennes}/**`
+  routent vers 8115.
+- **Squelette** : `<module>services/academic-assessment-service</module>` (bloc PEDAGOGIE du pom racine),
+  pom miroir `academic-attendance-service` (**sans `spring-kafka`**), `AssessmentApplication`,
+  `config/{JpaConfig,SecurityConfig}` (`@EnableMethodSecurity`, `oauth2ResourceServer` avec
+  `KeycloakJwtConfig.jwtAuthenticationConverter`), `application.yml` (`default_schema`, `spring.flyway.url`,
+  `flyway_assessment_history`, `nexusgesti.security.oauth2.enabled: false`).
+- **Migrations** : `V1__assessment_schema.sql` (6 tables : `evaluation`, `feuille_note`, `note`,
+  `bulletin`, `ligne_bulletin`, `coupon_notes` ; `bulletin.cascade` et `ligne_bulletin.detail` en jsonb
+  **non mappés**, ddl-auto `validate` tolère les colonnes en trop), `V2__rls.sql` (boucle `DO` excluant
+  `flyway_assessment_history`), `V3__app_role.sql`.
+- **Domaine pur** (aucune valeur métier en dur ; pas de commentaires superflus) : `Evaluation.ouvrir/
+  genererFeuille/saisirNote/marquerAbsent/cloturer/publier/annuler` + `estClosePourSaisie` ;
+  `FeuilleNote.ouvrir/verrouiller/enregistrerSaisie/enregistrerAbsence/getProgression/estComplete`
+  (réutilise l'enum `StatutBulletin`) ; `Note.saisir/marquerAbsent/exclure/contester/definir/
+  comptePourMoyenne/getValeurEffective` ; `Bulletin.calculer/publier/genererDocuments/signer/rectifier/
+  ajouterLigne/definirSyntheseAbsences/getSyntheseAbsences` (moyenne pondérée, `poidsNormalise`,
+  `version++` à la rectification) ; `CouponNotes.tirer/detacher/signer/rendre/marquerPerdu` + empreinte
+  **SHA-256** (`calculerEmpreinte`/`verifierEmpreinte`) ; `MoteurCalculMoyenne.calculer/classer`.
+  Exception `AssessmentException` (`NOT_FOUND` 404 ; `TRANSITION_INVALIDE`/`ETAT_INVALIDE`/`CONFLIT`/
+  `ITEM_EXISTANT` 409 ; `INVALIDE` 400).
+- **Persistance / applicatif / web** : 6 entités + repos + `AssessmentPersistenceAdapter` (upsert
+  d'agrégat, suppression des lignes/notes/coupons avant réinsertion, `tenant_id` via
+  `TenantContext.require().asUuid()`), `AssessmentService` (`@Service @Transactional`, références
+  `EVAL-`/`BUL-xxxxxxxx`, numéro coupon `CN-%06d` par année), `AssessmentController` (`/api/v1`,
+  lecture `ADMIN|CUSTOMER` / écriture `ADMIN`, coupons en sous-ressource), `AssessmentExceptionHandler`.
+- **Tests : 44 verts** (domaine `Evaluation`/`FeuilleNote`/`Note`/`Bulletin`/`CouponNotes`/
+  `MoteurCalculMoyenne` + `AssessmentServiceTest` + `@WebMvcTest AssessmentControllerSecurityTest`).
+  `mvn test` racine : **BUILD SUCCESS, ~321 tests**.
+- **Câblage** : pom racine, 12e cible Prometheus `host.docker.internal:8115`, `scripts/backend-up.{sh,ps1}`.
+- **Boot + E2E passerelle (2026-10-10)** : 12/12 services UP ; Flyway V1/V2/V3 `success`, RLS `t/t` sur
+  les 6 tables et `f/f` sur `flyway_assessment_history` ; `POST /ped/evaluations` ADMIN **201**,
+  isolation tenant B **`[]`**, sans `X-Tenant-Id` **400**, sans token **401**, CUSTOMER écriture **403** /
+  lecture **200** ; `ouvrir` → note 12 + note 18 + absence → `moyenne` **15.00** (`nbNotes` 2, `effectif` 3),
+  `cloturer` → pointage **409** `ETAT_INVALIDE`, `publier` **200** ; bulletin 2 lignes (coef 1×10, 3×20) →
+  `calculer` **17.50** → publier/générer/signer → `rectifier` **200 `version` 2** ; coupon **`CN-000002`**
+  (empreinte vérifiée) → tirer/détacher/signer/rendre **200** ; `moyennes/eleve` **12.00**,
+  `moyennes/classe` classement `[18.00 rang1, 12.00 rang2]`.
+- **Piège payé (2026-10-10)** : `POST .../notes` → 500 `UnsupportedOperationException` sur
+  `Evaluation.creerNote` (`notes.add`). Même famille que les listes immutables de 4a : l'adapter chargeait
+  l'agrégat avec `Stream.toList()` et `Evaluation.setNotes` **stockait la liste telle quelle** (contrairement
+  à `Bulletin.setLignes/setCoupons` qui copient). Correctif : `new ArrayList<>(notes)` dans `setNotes`.
+  Règle : tout setter de collection d'un agrégat copie défensivement.
+
 ### Restant
 
 - **Commit `5158d45` (251 fichiers)** : docs + `.gitignore` + `backend/`. Phase 1 close.
@@ -900,11 +955,12 @@ Le producteur 4b a révélé que `AuditKafkaConsumer` ne savait **pas persister*
   D13 appliqué).
 - **Commit 4b le 2026-10-09 : `7565e35`** (academic-people-service + correctifs audit + doc).
 - **Console pédagogie 4a-4b + guides : commitée `8b26390`** (front structure/personnes + guides HTML/PDF).
-- Prochaine étape (§9) : **lots 4c `academic-enrollment-service` (35 tests) et 4d
-  `academic-attendance-service` (44 tests) construits, boot + E2E passerelle validés** (voir §11
-  2026-10-10) — **commits 4c et 4d à faire**. Lots 4e-4g ensuite (D14). Phase 3
-  (reste du socle) : reste `auth` (durcissement + tests), `notification`, `audit`, `reporting` —
-  back d'abord, front ensuite.
+- **Lots 4c/4d commités le 2026-10-10** : `0692137` (enrollment, 35 tests) et `1ae85ba`
+  (attendance, 44 tests).
+- Prochaine étape (§9) : **lot 4e `academic-assessment-service` (44 tests) construit, boot + E2E
+  passerelle validés** (voir §11 2026-10-10) — **commit 4e à faire**. Lots 4f-4g ensuite (D14).
+  Front pédagogie 4c/4d/4e à faire (après validation back). Phase 3 (reste du socle) : reste `auth`
+  (durcissement + tests), `notification`, `audit`, `reporting` — back d'abord, front ensuite.
 - `@Async` de `ReportService.generateAsync` inerte (self-invocation) : génération synchrone.
   À corriger si le rapport doit vraiment être émis hors du thread de requête.
 - `"kyc_level": ["0"]` dans `realm-nexusgesti.json` et `ReportType.KYC_SUMMARY` /
