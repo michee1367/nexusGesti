@@ -1,0 +1,76 @@
+spring:
+  application:
+    name: academic-attendance-service
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5433}/${DB_NAME:nexusgesti}
+    username: ${DB_USER:nexusgesti_app}
+    password: ${DB_PASSWORD:nexusgesti_secret}
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      connection-timeout: 30000
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        default_schema: academic_attendance
+        jdbc:
+          time_zone: UTC
+  flyway:
+    enabled: true
+    # Sans url, Spring Boot derive le DataSource de migration du datasource
+    # applicatif par reflection : il ne voit plus getUrl() une fois celui-ci
+    # enveloppe par TenantAwareDataSource et plante au boot.
+    url: ${FLYWAY_URL:jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5433}/${DB_NAME:nexusgesti}}
+    user: ${FLYWAY_USER:nexusgesti}
+    password: ${FLYWAY_PASSWORD:nexusgesti_secret}
+    schemas: academic_attendance
+    default-schema: academic_attendance
+    table: flyway_attendance_history
+    locations: classpath:db/migration
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:redis_secret}
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${KEYCLOAK_ISSUER:http://localhost:8180/realms/nexusgesti}
+
+server:
+  port: ${ACADEMIC_ATTENDANCE_SERVICE_PORT:8114}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics
+  endpoint:
+    health:
+      show-details: when_authorized
+
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+
+# SecurityConfig declare sa propre SecurityFilterChain : on eteint celle de
+# common-lib, qui matcherait aussi "any request" et ferait echouer le boot.
+nexusgesti:
+  internal-service-token: ${INTERNAL_SERVICE_TOKEN:dev-internal-token}
+  security:
+    oauth2:
+      enabled: false
+
+logging:
+  level:
+    com.nexusgesti: INFO
+  pattern:
+    console: '{"timestamp":"%d","level":"%p","traceId":"%X{traceId}","service":"academic-attendance-service","msg":"%m"}%n'

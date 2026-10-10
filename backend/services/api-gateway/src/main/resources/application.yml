@@ -69,7 +69,7 @@ spring:
         - id: academic-attendance-service
           uri: http://${ACADEMIC_ATTENDANCE_SERVICE_HOST:localhost}:8114
           predicates:
-            - Path=/api/v1/ped/absences/**,/api/v1/ped/appels/**,/api/v1/ped/assiduite/**
+            - Path=/api/v1/ped/absences/**,/api/v1/ped/appels/**,/api/v1/ped/assiduite/**,/api/v1/ped/seances/**
         - id: academic-assessment-service
           uri: http://${ACADEMIC_ASSESSMENT_SERVICE_HOST:localhost}:8115
           predicates:
@@ -77,7 +77,7 @@ spring:
         - id: academic-exam-service
           uri: http://${ACADEMIC_EXAM_SERVICE_HOST:localhost}:8116
           predicates:
-            - Path=/api/v1/ped/sessions/**,/api/v1/ped/seances/**,/api/v1/ped/deliberations/**
+            - Path=/api/v1/ped/sessions/**,/api/v1/ped/deliberations/**
         - id: academic-fees-service
           uri: http://${ACADEMIC_FEES_SERVICE_HOST:localhost}:8117
           predicates:

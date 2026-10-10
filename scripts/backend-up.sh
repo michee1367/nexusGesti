@@ -8,7 +8,7 @@ BACKEND="$ROOT/backend"
 LOGDIR="$BACKEND/logs"
 MVN="${MVN:-mvn}"
 
-SERVICES=(tenant-service identity-service auth-service notification-service audit-service reporting-service academic-structure-service academic-people-service academic-enrollment-service api-gateway)
+SERVICES=(tenant-service identity-service auth-service notification-service audit-service reporting-service academic-structure-service academic-people-service academic-enrollment-service academic-attendance-service api-gateway)
 declare -A PORTS=(
   [tenant-service]=8101
   [identity-service]=8102
@@ -19,6 +19,7 @@ declare -A PORTS=(
   [academic-structure-service]=8111
   [academic-people-service]=8112
   [academic-enrollment-service]=8113
+  [academic-attendance-service]=8114
   [api-gateway]=8080
 )
 

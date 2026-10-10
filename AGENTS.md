@@ -20,7 +20,7 @@ Plateforme SaaS multi-tenant pour trois domaines :
 La console couvre phases 1-2 (auth direct-grant, tenancy, grilles, années, référentiels, pages ADMIN).
 Toute phase suit la règle **back d'abord, front ensuite** (D13 + colonne Front en §9) :
 le travail front d'une phase ne s'ouvre qu'une fois la brique backend validée.
-Les 25 services sont déclarés en routes sur la passerelle, mais **seuls 11 modules Maven sont construits** (voir §9).
+Les 25 services sont déclarés en routes sur la passerelle, mais **seuls 13 modules Maven sont construits** (voir §9).
 Ne pas supposer qu'un service existe sous prétexte que sa route existe.
 
 ---
@@ -37,7 +37,7 @@ docs/diagrammes/
   finance/     6 modèles + 6 cas d'utilisation
   sequences/   6 séquences (paiement, délibération, rappel lot, clôture, séjour, acte → facture)
   rendu/       56 SVG à générer — ACTUELLEMENT VIDE
-backend/       Maven parent + 11 modules construits (voir §9)
+backend/       Maven parent + 13 modules construits (voir §9)
 frontend/      console socle Next.js 16 (phases 1-2) — mémo dédié dans frontend/AGENTS.md
 scripts/       démarrage local : backend-up.{sh,ps1} + front-up.{sh,ps1} (voir §11)
 ```
@@ -190,11 +190,11 @@ qu'une fois sa brique backend validée (build + `mvn test` + E2E passerelle + co
 | 1 | Socle technique (`shared/*` + passerelle + infra) | **VALIDÉE** — 5 services bootent, `/actuator/health` → 200, Prometheus 5 cibles `up`, **RLS prouvé de bout en bout** (§11, 2026-10-07), D3 et D4 appliqués, `mvn test` vert (59), **commit `5158d45`** | Console socle (base) : layout, auth direct-grant, tenancy — **livrée avec la console (phases 1-2)** |
 | 2 | `tenant-service` (agégat `Etablissement`, `ProfilEtablissement`, grilles) | **VALIDÉE** — plan §12 exécuté le 2026-10-08 : 8+e module, 24 tables + RLS, 54 tests, grille activer/figer → 409 `GRILLE_FIGEE`, E2E passerelle complet (§11 2026-10-08), **commit `e25283e`** | pages socle : dashboard, tenant, grilles + `[type]`, annees, referentiels — **livrée avec la console (phases 1-2)** |
 | 3 | reste du socle (`identity`, `auth`, `notification`, `audit`, `reporting`) | **en cours** — `identity-service` construit le 2026-10-09 (lot 1 : utilisateurs + rôles/permissions, miroir Keycloak) ; `auth` reste à faire | Console identité : pages `/utilisateurs` + `/roles` (2026-10-09, `tsc`+lint+build verts) |
-| 4 | pédagogie (7 services `academic-*`) | **en cours** — lot 4a `academic-structure-service` **commité `3125320`** (niveaux, classes, promotions, semestres, UE, matières, cours ECUE, salles, créneaux, régimes horaires, emplois du temps) ; lot 4b `academic-people-service` construit le 2026-10-09 (élèves, dossiers, inscriptions, congés, sanctions, parents/liens, enseignants/affectations, agents, services) ; lots 4c-4g à faire | à faire (après validation back) |
+| 4 | pédagogie (7 services `academic-*`) | **en cours** — lot 4a `academic-structure-service` **commité `3125320`** (niveaux, classes, promotions, semestres, UE, matières, cours ECUE, salles, créneaux, régimes horaires, emplois du temps) ; lot 4b `academic-people-service` **commité `7565e35`** (élèves, dossiers, inscriptions, congés, sanctions, parents/liens, enseignants/affectations, agents, services) ; lot 4c `academic-enrollment-service` construit le 2026-10-10 (inscriptions UE, groupes TD/TP, règles d'éligibilité, parcours — MVP) ; lot 4d `academic-attendance-service` construit le 2026-10-10 (séances, feuilles d'appel, présences, absences, justificatifs, suivi d'assiduité — `/seances` réassigné de exam à attendance) ; lots 4e-4g à faire | 4a/4b : pages pédagogie livrées (`8b26390`) ; 4c/4d à faire (après validation back) |
 | 5 | hôpital (6 services) | à faire | à faire (après validation back) |
 | 6 | finance (6 services, OHADA) | à faire | à faire (après validation back) |
 
-### Modules réellement construits (11)
+### Modules réellement construits (13)
 
 ```
 shared/common-domain     noyau pur, aucune dépendance Spring
@@ -208,9 +208,11 @@ services/tenant-service   socle métier : etablissement, grilles, referentiels (
 services/identity-service socle identité : utilisateurs + rôles/permissions, miroir Keycloak (8102)
 services/academic-structure-service pedagogie : arbre, salles, creneaux, emplois du temps (8111)
 services/academic-people-service pedagogie : eleves, dossiers, inscriptions, personnel, affectations (8112)
+services/academic-enrollment-service pedagogie : inscriptions UE, groupes TD/TP, eligibilite, parcours (8113)
+services/academic-attendance-service pedagogie : seances, feuilles d appel, presences, absences, justificatifs, assiduite (8114)
 ```
 
-`mvn test` au niveau racine : **BUILD SUCCESS**, ~182 tests verts (59 socle + 54 tenant-service + 16 identity-service + 2 audit + 24 academic-structure + 25 academic-people + 2 common).
+`mvn test` au niveau racine : **BUILD SUCCESS**, ~261 tests verts (59 socle + 54 tenant-service + 16 identity-service + 2 audit + 24 academic-structure + 25 academic-people + 35 academic-enrollment + 44 academic-attendance + 2 common).
 
 ### Les 25 routes de la passerelle ≠ les modules construits
 
@@ -789,15 +791,118 @@ Le producteur 4b a révélé que `AuditKafkaConsumer` ne savait **pas persister*
 3. Test `AuditKafkaConsumerTest` (2) ajouté : `payloadSansActionDefautSurEventTypeEtPersiste`,
    `actionExpliciteRacineEstPrioritaire`.
 
+### academic-enrollment-service — lot 4c construit (2026-10-10)
+
+**Backend 4c `academic-enrollment-service`** (port **8113**, schéma `academic_enrollment`, table Flyway
+`flyway_enrollment_history`, package `com.nexusgesti.enrollment`), **périmètre MVP** (D16) :
+
+- **Périmètre** : inscriptions universitaires aux UE (`InscriptionUE`), groupes TD/TP (`Groupe` +
+  `MembreGroupe`), règles d'éligibilité (`RegleInscription` + `Candidat` → `DecisionInscription`),
+  parcours académique **calculé** (`ParcoursAcademique`, non persisté). **Reporté** : `EnrolementExamen`
+  / dispense (dépend de `academic-exam` 4f), pré-requis/équivalence, transfert de programme.
+- **Frontière 4c** : l'inscription **scolaire** (`eleve→classe`) reste chez `academic-people-service`
+  (4b, `/ped/eleves/{id}/inscriptions`) ; `enrollment` prend l'inscription **à l'UE** + les groupes.
+- **Squelette** : `<module>services/academic-enrollment-service</module>` (bloc PEDAGOGIE du pom racine),
+  pom miroir `academic-structure-service` (**sans `spring-kafka`** → aucun événement émis, D15 différé),
+  `EnrollmentApplication`, `config/{JpaConfig,SecurityConfig}` (`@EnableMethodSecurity`, `oauth2ResourceServer`
+  avec `KeycloakJwtConfig.jwtAuthenticationConverter`), `application.yml` (`default_schema`, `spring.flyway.url`,
+  `flyway_enrollment_history`, `nexusgesti.security.oauth2.enabled: false`).
+- **Migrations** : `V1__enrollment_schema.sql` (4 tables : `inscription_ue`, `groupe`, `membre_groupe`,
+  `regle_inscription`), `V2__rls.sql` (boucle `DO` excluant `flyway_enrollment_history` + index unique
+  `ux_groupe_tenant_code(tenant_id, code)`), `V3__app_role.sql`.
+- **Domaine pur** (aucune valeur métier en dur ; pas de commentaires superflus) : `InscriptionUE`
+  (`inscrire`/`placerEnListeAttente`/`valider`/`refuser`/`annuler`, `getCreditsAcquis`/`getCreditsRestants`,
+  `estRattape`), `Groupe` (`ouvrir`/`clore`, `ajouterMembre`/`exclureMembre`, `estComplet`/`getPlacesRestantes`),
+  `RegleInscription.evaluer(Candidat)` (condition/creditsMin/moyenneMin/creneauAge), `Candidat.aRempli`,
+  `ParcoursAcademique` (`estUeAcquise`/`getCreditsAcquis`/`getTauxProgression`/`getMoyennePonderee`).
+  Exception `EnrollmentException` (`NOT_FOUND` 404 ; `TRANSITION_INVALIDE`/`ETAT_INVALIDE`/`GROUPE_COMPLET`/
+  `ITEM_EXISTANT` 409).
+- **Persistance / applicatif / web** : 4 entités + repos + `EnrollmentPersistenceAdapter` (upsert de `Groupe`
+  avec remplacement des membres, `tenant_id` via `TenantContext.require().asUuid()`), `EnrollmentService`
+  (`@Service @Transactional`, `evaluer` agrège les règles applicables par priorité décroissante, `getParcours`
+  calcule depuis les inscriptions de l'élève), `EnrollmentController` (`/api/v1`, `/inscriptions` + sous-ressources
+  `/groupes`/`membres`, `/admissions` + `/regles`/`evaluer`/`parcours/{eleveId}`), `EnrollmentExceptionHandler`
+  (`DataIntegrityViolationException` → **409 `ITEM_EXISTANT`**). Routes passerelle préexistantes : aucune modif
+  (`/api/v1/ped/{inscriptions,admissions,dispenses}/**`).
+- **Tests : 35 verts** (domaine `InscriptionUE`/`Groupe`/`RegleInscription`/`ParcoursAcademique` + `@WebMvcTest`
+  `EnrollmentControllerSecurityTest`). `mvn test` racine : **BUILD SUCCESS, ~217 tests**.
+- **Câblage** : 10e cible Prometheus `host.docker.internal:8113` ; `scripts/backend-up.{sh,ps1}` incluent le service.
+- **Boot + E2E passerelle (2026-10-10)** : 8113 UP ; Flyway V1/V2/V3 `success`, RLS `t/t` sur les 4 tables et
+  `f/f` sur `flyway_enrollment_history` ; `POST /ped/inscriptions` ADMIN **201** (statut INSCRIT),
+  `valider` **200** (VALIDE, `validePar` = subject admin) ; `GET` **200**, sans `X-Tenant-Id` **400**,
+  isolation tenant B **`[]`**, CUSTOMER écriture **403** / lecture **200**, sans token **401** ; groupe
+  `capacite=1` → 1er membre affecte passe le groupe **COMPLET**, 2e membre **409 `GROUPE_COMPLET`** ;
+  règle `creditsMin=60` → `evaluer` **INELIGIBLE** (30 cr.) / **ELIGIBLE** (90 cr.) ; `parcours/{eleveId}?creditsRequis=60`
+  → `creditsAcquis 6.00`, `tauxProgression 0.1000`. Prometheus : **10/10 cibles `up`** (relance du conteneur
+  nécessaire, `/-/reload` renvoie 403).
+
+### academic-attendance-service — lot 4d construit (2026-10-10)
+
+**Backend 4d `academic-attendance-service`** (port **8114**, schéma `academic_attendance`, table Flyway
+`flyway_attendance_history`, package `com.nexusgesti.attendance`), **sans Kafka** (D15 différé) :
+
+- **Périmètre** : séances (`Seance`), feuilles d'appel (`FeuillePresence` + `PresenceEleve`), justificatifs
+  (`Justificatif`) et suivi d'assiduité **calculé** (`SuiviAssiduite` + projection `PresenceSuivi`, non
+  persisté). **Reporté** : `Appel` code-barre/biométrie, `AbsenceNotifiee`, `SeanceAnnuleeComptee` (différés).
+- **Frontière** : `/api/v1/ped/seances/**` **réassigné** de `academic-exam-service` (8116) à `attendance`
+  (8114) — exam utilise `Epreuve`/`SessionExamen`, pas `Seance` ; la passerelle retire `/seances/**` de la
+  route exam et l'ajoute à attendance.
+- **Squelette** : `<module>services/academic-attendance-service</module>` (bloc PEDAGOGIE du pom racine),
+  pom miroir `academic-enrollment-service` (**sans `spring-kafka`**), `AttendanceApplication`,
+  `config/{JpaConfig,SecurityConfig}`, `application.yml` (`default_schema`, `spring.flyway.url`,
+  `flyway_attendance_history`, `nexusgesti.security.oauth2.enabled: false`).
+- **Migrations** : `V1__attendance_schema.sql` (4 tables : `seance`, `feuille_presence`, `presence_eleve`,
+  `justificatif`), `V2__rls.sql` (boucle `DO` excluant `flyway_attendance_history` + index unique
+  `ux_presence_feuille_eleve(tenant_id, feuille_id, eleve_id)`), `V3__app_role.sql`.
+- **Domaine pur** (aucune valeur métier en dur ; pas de commentaires superflus) : enums `StatutPresence`
+  (`estPresent`/`estAbsent`/`estRetard`/`estJustifiee`), `TypeAbsence`, `TypeRetard`, `StatutFeuille`
+  (`estFigee`), `MethodeSaisie`, `StatutJustificatif`, `TypeSeance`, `StatutSeance` ;
+  `Seance.demarrer/cloturer/reporter/annuler(motif)` + `getDureeReelle()` ;
+  `FeuillePresence.ouvrir/pointer/marquerAbsence/marquerRetard/faireAppelGlobal/soumettre/valider/cloturer`
+  (`verifierModifiable` : CLOTUREE → `ETAT_INVALIDE`, VALIDEE → pose `modifieeApresValidation`) +
+  `getTauxPresence`/`getNbAbsents`/`trouver` ; `PresenceEleve.excuser(justificatifId)` (ABSENT → ABSENT_EXCUSE) ;
+  `Justificatif.deposer/accepter/rejeter` ; `SuiviAssiduite.recalculer/getTauxPresence/getTauxAbsenceJustifiee/
+  estEnAlerte` (`respecteRegle` **non évalué** en 4d : pas de REST vers tenant-service). Exception
+  `AttendanceException` (`NOT_FOUND` 404 ; `TRANSITION_INVALIDE`/`ETAT_INVALIDE`/`ITEM_EXISTANT` 409).
+- **Persistance / applicatif / web** : 4 entités + repos + `AttendancePersistenceAdapter` (projection JPQL
+  `findLignesSuivi` joignant `presence_eleve`/`feuille_presence`/`seance`, feuilles `VALIDEE`/`CLOTUREE` ;
+  filtrage annee/periode **en service** ; `tenant_id` via `TenantContext.require().asUuid()`),
+  `AttendanceService` (`@Service @Transactional`, `accepterJustificatif` requalifie les absences du jour via
+  `listFeuillesDate`), `AttendanceController` (`/api/v1`, `/seances` + `{demarrer,terminer,reporter,annuler}`,
+  `/appels` + `{pointer,appel-global,absence,retard,soumettre,valider,cloturer,presences}`,
+  `/absences/justificatifs` + `{accepter,rejeter}`, `/assiduite/{eleveId}`, `/assiduite/classe/{classeId}/taux`,
+  `/assiduite/registre`), `AttendanceExceptionHandler`. DTOs `PointerRequest`/`AppelGlobalRequest`/
+  `AbsenceRequest`/`RetardRequest`/`MotifRequest`.
+- **Tests : 44 verts** (domaine `Seance`/`FeuillePresence`/`PresenceEleve`/`Justificatif`/`SuiviAssiduite` +
+  `AttendanceServiceTest` + `@WebMvcTest AttendanceControllerSecurityTest`). `mvn test` racine :
+  **BUILD SUCCESS, ~261 tests**.
+- **Câblage** : 11e cible Prometheus `host.docker.internal:8114` ; `scripts/backend-up.{sh,ps1}` incluent le service.
+- **Boot + E2E passerelle (2026-10-10)** : 8114 UP ; Flyway V1/V2/V3 `success`, RLS `t/t` sur les 4 tables et
+  `f/f` sur `flyway_attendance_history` ; `POST /ped/seances` ADMIN **201** (+`demarrer` → `EN_COURS`, `terminer`
+  → `TERMINEE`) ; `POST /ped/appels` **201** (3 présences, `effectifTheorique` 3) ; `pointer` PRESENT /
+  `retard` 10 min / `absence` NON_EXCUSE **200** ; `soumettre`→`valider`→`cloturer` **200** ; pointage après
+  clôture **409** ; `tauxPresence` feuille **66.67**, `nbAbsents` 1 ; `GET /ped/assiduite/{eleveId}` →
+  `nbSeancesTenues` 1 ; `GET /ped/assiduite/classe/{id}/taux` **66.67** ; `GET /ped/assiduite/registre` **1** ;
+  justificatif `deposer` **201** puis `accepter` **200** → présence **`ABSENT_EXCUSE`** (`justifiee=true`) et
+  suivi `nbAbsencesJustifiees` 1 / `nbAbsencesInjustifiees` 0 ; isolation tenant B `[]` (seances + appels),
+  sans `X-Tenant-Id` **400**, sans token **401**, CUSTOMER lecture **200** / écriture **403**. Prometheus :
+  **11/11 cibles `up`** (relance du conteneur requise).
+- **Piège payé (2026-10-10)** : `presence_eleve.statut` avait été posée `NOT NULL` — or une feuille ouverte
+  (`BROUILLON`) porte des lignes non encore pointées (statut nul légitime) → insertion **409 `ITEM_EXISTANT`**
+  (via `DataIntegrityViolationException`) et `SQLState 23502`. Correctif : colonne **nullable** ; schéma
+  `academic_attendance` recréé (service neuf, non commité) car V1 déjà appliquée par Flyway.
+
 ### Restant
 
 - **Commit `5158d45` (251 fichiers)** : docs + `.gitignore` + `backend/`. Phase 1 close.
 - **Phase 2 commitée le 2026-10-08** : `e25283e` (tenant-service + doc D7/D10 + E2E + colonne Front).
 - **Console socle commitée le 2026-10-08** : décrite au journal §11 (plomberie + pages socle + ADMIN,
   D13 appliqué).
-- **Commit 4b le 2026-10-09 : à faire** (academic-people-service + correctifs audit + doc).
-- Prochaine étape (§9) : **lot 4c `academic-enrollment-service` (8113)** — `academic-people-service`
-  (4b) construit, testé (25), boot + E2E passerelle validés. Lots 4d-4g ensuite (D14). Phase 3
+- **Commit 4b le 2026-10-09 : `7565e35`** (academic-people-service + correctifs audit + doc).
+- **Console pédagogie 4a-4b + guides : commitée `8b26390`** (front structure/personnes + guides HTML/PDF).
+- Prochaine étape (§9) : **lots 4c `academic-enrollment-service` (35 tests) et 4d
+  `academic-attendance-service` (44 tests) construits, boot + E2E passerelle validés** (voir §11
+  2026-10-10) — **commits 4c et 4d à faire**. Lots 4e-4g ensuite (D14). Phase 3
   (reste du socle) : reste `auth` (durcissement + tests), `notification`, `audit`, `reporting` —
   back d'abord, front ensuite.
 - `@Async` de `ReportService.generateAsync` inerte (self-invocation) : génération synchrone.

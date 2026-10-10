@@ -38,6 +38,7 @@
         <module>services/academic-structure-service</module>
         <module>services/academic-people-service</module>
         <module>services/academic-enrollment-service</module>
+        <module>services/academic-attendance-service</module>
     </modules>
 
     <properties>
