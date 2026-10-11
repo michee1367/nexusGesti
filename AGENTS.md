@@ -190,7 +190,7 @@ qu'une fois sa brique backend validée (build + `mvn test` + E2E passerelle + co
 | 1 | Socle technique (`shared/*` + passerelle + infra) | **VALIDÉE** — 5 services bootent, `/actuator/health` → 200, Prometheus 5 cibles `up`, **RLS prouvé de bout en bout** (§11, 2026-10-07), D3 et D4 appliqués, `mvn test` vert (59), **commit `5158d45`** | Console socle (base) : layout, auth direct-grant, tenancy — **livrée avec la console (phases 1-2)** |
 | 2 | `tenant-service` (agégat `Etablissement`, `ProfilEtablissement`, grilles) | **VALIDÉE** — plan §12 exécuté le 2026-10-08 : 8+e module, 24 tables + RLS, 54 tests, grille activer/figer → 409 `GRILLE_FIGEE`, E2E passerelle complet (§11 2026-10-08), **commit `e25283e`** | pages socle : dashboard, tenant, grilles + `[type]`, annees, referentiels — **livrée avec la console (phases 1-2)** |
 | 3 | reste du socle (`identity`, `auth`, `notification`, `audit`, `reporting`) | **en cours** — `identity-service` construit le 2026-10-09 (lot 1 : utilisateurs + rôles/permissions, miroir Keycloak) ; `auth` reste à faire | Console identité : pages `/utilisateurs` + `/roles` (2026-10-09, `tsc`+lint+build verts) |
-| 4 | pédagogie (7 services `academic-*`) | **en cours** — lot 4a `academic-structure-service` **commité `3125320`** (niveaux, classes, promotions, semestres, UE, matières, cours ECUE, salles, créneaux, régimes horaires, emplois du temps) ; lot 4b `academic-people-service` **commité `7565e35`** (élèves, dossiers, inscriptions, congés, sanctions, parents/liens, enseignants/affectations, agents, services) ; lot 4c `academic-enrollment-service` construit le 2026-10-10 (inscriptions UE, groupes TD/TP, règles d'éligibilité, parcours — MVP) ; lot 4d `academic-attendance-service` **commité `1ae85ba`** (séances, feuilles d'appel, présences, absences, justificatifs, suivi d'assiduité — `/seances` réassigné de exam à attendance) ; lot 4e `academic-assessment-service` construit le 2026-10-10 (évaluations, notes, feuilles, moyennes, bulletins, coupons — boot + E2E passerelle validés) ; lots 4f-4g à faire | 4a/4b : pages pédagogie livrées (`8b26390`) ; 4c/4d/4e à faire (après validation back) |
+| 4 | pédagogie (7 services `academic-*`) | **en cours** — lot 4a `academic-structure-service` **commité `3125320`** (niveaux, classes, promotions, semestres, UE, matières, cours ECUE, salles, créneaux, régimes horaires, emplois du temps) ; lot 4b `academic-people-service` **commité `7565e35`** (élèves, dossiers, inscriptions, congés, sanctions, parents/liens, enseignants/affectations, agents, services) ; lot 4c `academic-enrollment-service` construit le 2026-10-10 (inscriptions UE, groupes TD/TP, règles d'éligibilité, parcours — MVP) ; lot 4d `academic-attendance-service` **commité `1ae85ba`** (séances, feuilles d'appel, présences, absences, justificatifs, suivi d'assiduité — `/seances` réassigné de exam à attendance) ; lot 4e `academic-assessment-service` construit le 2026-10-10 (évaluations, notes, feuilles, moyennes, bulletins, coupons — boot + E2E passerelle validés) ; lot 4f `academic-exam-service` construit le 2026-10-11 (sessions, épreuves, créneaux, convocations, notes d'examen, corrections, délibérations, décisions, résultats, rattrapages, PV — boot + E2E passerelle validés) ; lot 4g `academic-fees-service` à faire | 4a/4b : pages pédagogie livrées (`8b26390`) ; 4c/4d/4e/4f à faire (après validation back) |
 | 5 | hôpital (6 services) | à faire | à faire (après validation back) |
 | 6 | finance (6 services, OHADA) | à faire | à faire (après validation back) |
 
@@ -211,9 +211,10 @@ services/academic-people-service pedagogie : eleves, dossiers, inscriptions, per
 services/academic-enrollment-service pedagogie : inscriptions UE, groupes TD/TP, eligibilite, parcours (8113)
 services/academic-attendance-service pedagogie : seances, feuilles d appel, presences, absences, justificatifs, assiduite (8114)
 services/academic-assessment-service pedagogie : evaluations, notes, feuilles, moyennes, bulletins, coupons (8115)
+services/academic-exam-service pedagogie : sessions, epreuves, creneaux, convocations, notes d examen, corrections, deliberations, resultats, rattrapages, proces-verbaux (8116)
 ```
 
-`mvn test` au niveau racine : **BUILD SUCCESS**, ~321 tests verts (60 classes ; ajout de 44 `academic-assessment`).
+`mvn test` au niveau racine : **BUILD SUCCESS**, ~371 tests verts (61 classes ; ajout de 50 `academic-exam`).
 
 ### Les 25 routes de la passerelle ≠ les modules construits
 
@@ -947,6 +948,75 @@ Le producteur 4b a révélé que `AuditKafkaConsumer` ne savait **pas persister*
   à `Bulletin.setLignes/setCoupons` qui copient). Correctif : `new ArrayList<>(notes)` dans `setNotes`.
   Règle : tout setter de collection d'un agrégat copie défensivement.
 
+### academic-exam-service — lot 4f construit (2026-10-11)
+
+**Backend 4f `academic-exam-service`** (port **8116**, schéma `academic_exam`, table Flyway
+`flyway_exam_history`, package `com.nexusgesti.exam`), **sans Kafka** (D15 différé), **périmètre MVP** (D16) :
+
+- **Périmètre** : sessions d'examen (`SessionExamen` + `Epreuve` + `Creneau` + `Convocation` +
+  `LigneConvocation`), notes d'examen (`NoteExamen`), corrections (`Correction`), délibérations
+  (`Deliberation` + `Decision` + `DecisionUE` + `DetailUE`), résultats officiels (`ResultatOfficiel`),
+  rattrapages (`Rattrapage`) et procès-verbaux (`ProcesVerbal` + `Signature`). 15 tables.
+  **Exclus (D16)** : `PlanSalle`/`Composition`, `Surveillant`/`RoleSurveillant`, `Incident`.
+- **Squelette** : bloc PEDAGOGIE du pom racine, pom miroir `academic-assessment-service` (**sans
+  `spring-kafka`**), `ExamApplication`, `config/{JpaConfig,SecurityConfig}` (`@EnableMethodSecurity`,
+  `oauth2ResourceServer` avec `KeycloakJwtConfig.jwtAuthenticationConverter`), `application.yml`
+  (`default_schema`, `spring.flyway.url`, `flyway_exam_history`, `nexusgesti.security.oauth2.enabled: false`).
+- **Migrations** : `V1__exam_schema.sql` (15 tables), `V2__rls.sql` (boucle `DO` excluant
+  `flyway_exam_history` + index uniques `ux_session_examen_tenant_reference`, `ux_epreuve_tenant_reference`,
+  `ux_convocation_tenant_session_numero`, `ux_deliberation_tenant_reference`, `ux_proces_verbal_tenant_reference`,
+  `ux_resultat_officiel_tenant_reference`), `V3__app_role.sql`.
+- **Domaine pur** (aucune valeur métier en dur ; pas de commentaires superflus) : `SessionExamen`
+  (`programmer`/`ouvrir`/`cloturer`/`annuler(motif)`, `estAnnuelle`/`estCloturee`/`getTotalPointsPrevus`),
+  `Epreuve` (`valider`/`rattacherPeriode`/`declarerHorsMoyenne`, `estHorsMoyenne` — drapeaux
+  `comptabiliseDansMoyenne`/`periodeRattachement`/`evaluationOrigine` conformes au diagramme),
+  `Creneau` (`getDureeMinutes`/`getLibelle`), `Convocation` (`emettre`/`notifier(canal)`),
+  `NoteExamen` (`saisir`/`marquerAbsent`/`exclure(motif)`/`contester`/`valider`/`getValeurEffective`),
+  `Correction` (`ouvrir`/`calculer` — moyenne/ecart/`ecartSignificatif`/`cloturer`), `Deliberation`
+  (`planifier`/`ouvrir`/`decider(classe,eleve)`/`delibererParUE`/`delibererParClasse`/`cloturer`/
+  `getTauxReussite`), `Decision`/`DecisionUE`/`DetailUE` (`estFavorable`/`estAcquise`/`getCreditsAcquis`/
+  `estCompensee`), `ResultatOfficiel.publier`, `Rattrapage` (`declarerExempt(motif)`/`declarerPresence`),
+  `ProcesVerbal` (`soumettre`/`signer`/`homologuer`/`contester`), `Signature` (empreinte). Enums
+  `TypeSession`/`StatutSession`/`TypeEpreuve`/`StatutEpreuve`/`TypeRetard`/`StatutConvocation`/
+  `StatutNoteExamen`/`StatutCorrection`/`StatutDeliberation`/`DecisionType`/`DecisionCode`/`StatutPV`.
+  Exception `ExamException` (`NOT_FOUND` 404 ; `TRANSITION_INVALIDE`/`ETAT_INVALIDE`/`ITEM_EXISTANT` 409 ;
+  `INVALIDE` 400).
+- **Persistance / applicatif / web** : 15 entités + repos + `ExamPersistenceAdapter` (upsert d'agrégat,
+  delete-then-reinsert des enfants `ligne_convocation`/`decision`/`decision_ue`/`detail_ue`/`signature`,
+  JSONB `deliberation.membres` + `rattrapage.epreuves_concernees` via `String` + `@JdbcTypeCode(SqlTypes.JSON)`
+  + `ObjectMapper`, `tenant_id` via `TenantContext.require().asUuid()`), `ExamService`
+  (`@Service @Transactional`, références `SES-`/`EPR-`/`DEL-`/`RES-`/`PV-` + numero convocation
+  `CNV-%03d` par session), `ExamController` (`/api/v1`, lecture `ADMIN|CUSTOMER` / écriture `ADMIN`),
+  `ExamExceptionHandler` (`DataIntegrityViolationException` → **409 `ITEM_EXISTANT`**). Routes passerelle
+  élargies (D17) : `/api/v1/ped/{sessions,epreuves,convocations,notes-examen,corrections,deliberations,
+  decisions,resultats,rattrapages,proces-verbaux}/**`.
+- **Tests : 50 verts** (domaine `SessionExamen`/`Epreuve`/`Convocation`/`NoteExamen`/`Correction`/
+  `Deliberation`/`ProcesVerbal` + `ExamServiceTest` + `@WebMvcTest ExamControllerSecurityTest`).
+  `mvn test` racine : **BUILD SUCCESS, ~371 tests**.
+- **Câblage** : 13e cible Prometheus `host.docker.internal:8116` ; `scripts/backend-up.{sh,ps1}` incluent le service.
+- **Boot + E2E passerelle (2026-10-11)** : 8116 UP ; Flyway V1/V2/V3 `success`, RLS `t/t` sur les 15 tables et
+  `f/f` sur `flyway_exam_history` ; cycle session `creer` **201** → `programmer`/`ouvrir`/`cloturer` **200** ;
+  épreuve **201** + `valider` **200** ; créneau **201** ; convocation **201** (`CNV-001`) + `notifier` **200** ;
+  note **201** + `valider` **200** (`GET notes-examen?epreuveId` → 1) ; correction **201** + `calculer`/`cloturer`
+  **200** ; délibération **201** + `planifier`/`ouvrir` **200** → décision **201** → `cloturer` **200** ;
+  résultat **201** + `GET` **200** ; rattrapage **201** + `exempt` **200** ; PV **201** + `soumettre`/`signer`/
+  `homologuer` **200** ; isolation tenant B **`[]`**, sans `X-Tenant-Id` **400**, sans token **401**,
+  CUSTOMER lecture **200** / écriture **403**. Prometheus : **13/13 cibles `up`**.
+- **Pièges payés (2026-10-11)** :
+  - `Deliberation.decider()` ajoute déjà la décision à l'agrégat ; le service l'ajoutait **une seconde fois**
+    (`ajouterDecision`) → deux lignes de même PK → `DataIntegrityViolationException` → **409 `ITEM_EXISTANT`**.
+    Correctif : ne pas ré-ajouter dans `ExamService.decider`.
+  - colonnes `decision` et `decision_ue.decision` posées `NOT NULL` alors que `decider(classe, eleve)` crée un
+    enregistrement non encore statué (le domaine `estFavorable`/`estAcquise` tolère `null`) → insert refusé.
+    Correctif : colonnes **nullables**.
+  - index unique convocation `(tenant_id, numero)` alors que la numérotation est **par session**
+    (`countConvocationsSession + 1`) → 2 sessions du même tenant produisaient `CNV-001` en collision.
+    Correctif : `ux_convocation_tenant_session_numero (tenant_id, session_id, numero)`.
+  - schéma `academic_exam` recréé après édition de V1/V2 (service neuf, non commité — Flyway n'avait plus de
+    checksum valide).
+- **Note** : `SessionExamen` et `Epreuve` exposent `idSession`/`idEpreuve` (comme `Evaluation`/`Bulletin` en
+  4e : `idEvaluation`/`idBulletin`) — le nom d'attribut suit le diagramme, pas une normalisation `id`.
+
 ### Restant
 
 - **Commit `5158d45` (251 fichiers)** : docs + `.gitignore` + `backend/`. Phase 1 close.
@@ -957,10 +1027,11 @@ Le producteur 4b a révélé que `AuditKafkaConsumer` ne savait **pas persister*
 - **Console pédagogie 4a-4b + guides : commitée `8b26390`** (front structure/personnes + guides HTML/PDF).
 - **Lots 4c/4d commités le 2026-10-10** : `0692137` (enrollment, 35 tests) et `1ae85ba`
   (attendance, 44 tests).
-- Prochaine étape (§9) : **lot 4e `academic-assessment-service` (44 tests) construit, boot + E2E
-  passerelle validés** (voir §11 2026-10-10) — **commit 4e à faire**. Lots 4f-4g ensuite (D14).
-  Front pédagogie 4c/4d/4e à faire (après validation back). Phase 3 (reste du socle) : reste `auth`
-  (durcissement + tests), `notification`, `audit`, `reporting` — back d'abord, front ensuite.
+- Prochaine étape (§9) : **lot 4f `academic-exam-service` (50 tests) construit, boot + E2E
+  passerelle validés** (voir §11 2026-10-11) — **commit 4f à faire**. Lot **4g `academic-fees-service`
+  ensuite** (D14). Front pédagogie 4c/4d/4e/4f à faire (après validation back). Phase 3 (reste du
+  socle) : reste `auth` (durcissement + tests), `notification`, `audit`, `reporting` — back d'abord,
+  front ensuite.
 - `@Async` de `ReportService.generateAsync` inerte (self-invocation) : génération synchrone.
   À corriger si le rapport doit vraiment être émis hors du thread de requête.
 - `"kyc_level": ["0"]` dans `realm-nexusgesti.json` et `ReportType.KYC_SUMMARY` /

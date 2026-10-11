@@ -40,6 +40,7 @@
         <module>services/academic-enrollment-service</module>
         <module>services/academic-attendance-service</module>
         <module>services/academic-assessment-service</module>
+        <module>services/academic-exam-service</module>
     </modules>
 
     <properties>

@@ -77,7 +77,7 @@ spring:
         - id: academic-exam-service
           uri: http://${ACADEMIC_EXAM_SERVICE_HOST:localhost}:8116
           predicates:
-            - Path=/api/v1/ped/sessions/**,/api/v1/ped/deliberations/**
+            - Path=/api/v1/ped/sessions/**,/api/v1/ped/epreuves/**,/api/v1/ped/convocations/**,/api/v1/ped/notes-examen/**,/api/v1/ped/corrections/**,/api/v1/ped/deliberations/**,/api/v1/ped/decisions/**,/api/v1/ped/resultats/**,/api/v1/ped/rattrapages/**,/api/v1/ped/proces-verbaux/**
         - id: academic-fees-service
           uri: http://${ACADEMIC_FEES_SERVICE_HOST:localhost}:8117
           predicates:
