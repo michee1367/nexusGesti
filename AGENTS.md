@@ -20,7 +20,7 @@ Plateforme SaaS multi-tenant pour trois domaines :
 La console couvre phases 1-2 (auth direct-grant, tenancy, grilles, années, référentiels, pages ADMIN).
 Toute phase suit la règle **back d'abord, front ensuite** (D13 + colonne Front en §9) :
 le travail front d'une phase ne s'ouvre qu'une fois la brique backend validée.
-Les 25 services sont déclarés en routes sur la passerelle, mais **seuls 14 modules Maven sont construits** (voir §9).
+Les 25 services sont déclarés en routes sur la passerelle, mais **seuls 15 modules Maven sont construits** (voir §9).
 Ne pas supposer qu'un service existe sous prétexte que sa route existe.
 
 ---
@@ -37,7 +37,7 @@ docs/diagrammes/
   finance/     6 modèles + 6 cas d'utilisation
   sequences/   6 séquences (paiement, délibération, rappel lot, clôture, séjour, acte → facture)
   rendu/       56 SVG à générer — ACTUELLEMENT VIDE
-backend/       Maven parent + 14 modules construits (voir §9)
+backend/       Maven parent + 15 modules construits (voir §9)
 frontend/      console socle Next.js 16 (phases 1-2) — mémo dédié dans frontend/AGENTS.md
 scripts/       démarrage local : backend-up.{sh,ps1} + front-up.{sh,ps1} (voir §11)
 ```
@@ -190,11 +190,11 @@ qu'une fois sa brique backend validée (build + `mvn test` + E2E passerelle + co
 | 1 | Socle technique (`shared/*` + passerelle + infra) | **VALIDÉE** — 5 services bootent, `/actuator/health` → 200, Prometheus 5 cibles `up`, **RLS prouvé de bout en bout** (§11, 2026-10-07), D3 et D4 appliqués, `mvn test` vert (59), **commit `5158d45`** | Console socle (base) : layout, auth direct-grant, tenancy — **livrée avec la console (phases 1-2)** |
 | 2 | `tenant-service` (agégat `Etablissement`, `ProfilEtablissement`, grilles) | **VALIDÉE** — plan §12 exécuté le 2026-10-08 : 8+e module, 24 tables + RLS, 54 tests, grille activer/figer → 409 `GRILLE_FIGEE`, E2E passerelle complet (§11 2026-10-08), **commit `e25283e`** | pages socle : dashboard, tenant, grilles + `[type]`, annees, referentiels — **livrée avec la console (phases 1-2)** |
 | 3 | reste du socle (`identity`, `auth`, `notification`, `audit`, `reporting`) | **en cours** — `identity-service` construit le 2026-10-09 (lot 1 : utilisateurs + rôles/permissions, miroir Keycloak) ; `auth` reste à faire | Console identité : pages `/utilisateurs` + `/roles` (2026-10-09, `tsc`+lint+build verts) |
-| 4 | pédagogie (7 services `academic-*`) | **en cours** — lot 4a `academic-structure-service` **commité `3125320`** (niveaux, classes, promotions, semestres, UE, matières, cours ECUE, salles, créneaux, régimes horaires, emplois du temps) ; lot 4b `academic-people-service` **commité `7565e35`** (élèves, dossiers, inscriptions, congés, sanctions, parents/liens, enseignants/affectations, agents, services) ; lot 4c `academic-enrollment-service` construit le 2026-10-10 (inscriptions UE, groupes TD/TP, règles d'éligibilité, parcours — MVP) ; lot 4d `academic-attendance-service` **commité `1ae85ba`** (séances, feuilles d'appel, présences, absences, justificatifs, suivi d'assiduité — `/seances` réassigné de exam à attendance) ; lot 4e `academic-assessment-service` construit le 2026-10-10 (évaluations, notes, feuilles, moyennes, bulletins, coupons — boot + E2E passerelle validés) ; lot 4f `academic-exam-service` construit le 2026-10-11 (sessions, épreuves, créneaux, convocations, notes d'examen, corrections, délibérations, décisions, résultats, rattrapages, PV — boot + E2E passerelle validés) ; lot 4g `academic-fees-service` à faire | 4a/4b : pages pédagogie livrées (`8b26390`) ; 4c/4d/4e/4f à faire (après validation back) |
+| 4 | pédagogie (7 services `academic-*`) | **en cours** — lot 4a `academic-structure-service` **commité `3125320`** (niveaux, classes, promotions, semestres, UE, matières, cours ECUE, salles, créneaux, régimes horaires, emplois du temps) ; lot 4b `academic-people-service` **commité `7565e35`** (élèves, dossiers, inscriptions, congés, sanctions, parents/liens, enseignants/affectations, agents, services) ; lot 4c `academic-enrollment-service` construit le 2026-10-10 (inscriptions UE, groupes TD/TP, règles d'éligibilité, parcours — MVP) ; lot 4d `academic-attendance-service` **commité `1ae85ba`** (séances, feuilles d'appel, présences, absences, justificatifs, suivi d'assiduité — `/seances` réassigné de exam à attendance) ; lot 4e `academic-assessment-service` construit le 2026-10-10 (évaluations, notes, feuilles, moyennes, bulletins, coupons — boot + E2E passerelle validés) ; lot 4f `academic-exam-service` **commité `1ed5d2c`** (sessions, épreuves, créneaux, convocations, notes d'examen, corrections, délibérations, décisions, résultats, rattrapages, PV — boot + E2E passerelle validés) ; lot 4g `academic-fees-service` **construit le 2026-10-11** (grilles tarifaires, avis, réductions, paiements idempotents, coupons, journaliers — boot + E2E passerelle validés, commit à faire) | 4a/4b : pages pédagogie livrées (`8b26390`) ; 4c/4d/4e/4f à faire (après validation back) |
 | 5 | hôpital (6 services) | à faire | à faire (après validation back) |
 | 6 | finance (6 services, OHADA) | à faire | à faire (après validation back) |
 
-### Modules réellement construits (14)
+### Modules réellement construits (15)
 
 ```
 shared/common-domain     noyau pur, aucune dépendance Spring
@@ -212,9 +212,11 @@ services/academic-enrollment-service pedagogie : inscriptions UE, groupes TD/TP,
 services/academic-attendance-service pedagogie : seances, feuilles d appel, presences, absences, justificatifs, assiduite (8114)
 services/academic-assessment-service pedagogie : evaluations, notes, feuilles, moyennes, bulletins, coupons (8115)
 services/academic-exam-service pedagogie : sessions, epreuves, creneaux, convocations, notes d examen, corrections, deliberations, resultats, rattrapages, proces-verbaux (8116)
+services/academic-fees-service pedagogie : grilles tarifaires, avis, reductions, paiements idempotents, coupons, journaliers (8117)
 ```
 
-`mvn test` au niveau racine : **BUILD SUCCESS**, ~371 tests verts (61 classes ; ajout de 50 `academic-exam`).
+`mvn test` au niveau racine : **BUILD SUCCESS, 364 tests verts** (54 tenant + 16 identity + 24 auth + 2 audit
++ 6 gateway + 24 structure + 25 people + 35 enrollment + 44 attendance + 44 assessment + 50 exam + 40 fees).
 
 ### Les 25 routes de la passerelle ≠ les modules construits
 
@@ -1017,6 +1019,70 @@ Le producteur 4b a révélé que `AuditKafkaConsumer` ne savait **pas persister*
 - **Note** : `SessionExamen` et `Epreuve` exposent `idSession`/`idEpreuve` (comme `Evaluation`/`Bulletin` en
   4e : `idEvaluation`/`idBulletin`) — le nom d'attribut suit le diagramme, pas une normalisation `id`.
 
+### academic-fees-service — lot 4g construit (2026-10-11)
+
+**Backend 4g `academic-fees-service`** (port **8117**, schéma `academic_fees`, table Flyway
+`flyway_fees_history`, package `com.nexusgesti.fees`), **·sans Kafka** (D15 différé), **périmètre MVP** (D16) :
+
+- **Périmètre** : grilles tarifaires (`GrilleTarifaire` + `LigneGrille` + `Reduction`), avis de frais
+  (`AvisPaiement` + `LigneAvis` + `Echeance`), paiements idempotents (`Paiement`), coupons de paiement
+  (`CouponPaiement`), journaliers (`Journalier`). 15 tables. **Exclus (D16)** : recouvrement, bourses, social.
+- **Frontière** : `GrilleTarifaire` reste propriété de fee services (elle est **versionnée** ici,
+  `version` + `figer()` au lieu de `tenant-service`) ; `/api/v1/ped/frais/**`, `/paiements/**`, `/coupons/**`
+  routent vers 8117.
+- **Squelette** : `<module>services/academic-fees-service</module>` (bloc PEDAGOGIE du pom racine),
+  pom miroir `academic-exam-service` (**sans `spring-kafka`**), `FeesApplication`,
+  `config/{JpaConfig,SecurityConfig}` (`@EnableMethodSecurity`, `oauth2ResourceServer` avec
+  `KeycloakJwtConfig.jwtAuthenticationConverter`), `application.yml` (`default_schema`, `spring.flyway.url`,
+  `flyway_fees_history`, `nexusgesti.security.oauth2.enabled: false`).
+- **Migrations** : `V1__fees_schema.sql` (15 tables), `V2__rls.sql` (boucle `DO` excluant
+  `flyway_fees_history` + index uniques `ux_grille_tenant_code(tenant_id, code)`,
+  `ux_reduction_tenant_code(tenant_id, code)`), `V3__app_role.sql`.
+- **Domaine pur** (aucune valeur métier en dur ; pas de commentaires superflus) : `GrilleTarifaire`
+  (`activer`/`figer`/`dupliquer`/`ajouterLigne`/`ajouterReduction`, `verifierModifiable` — FIGEE refuse
+  toute écriture), `LigneGrille` (défauts `obligatoire=true`/`ordre=0` alignés sur le schéma NOT NULL),
+  `Reduction` (POURCENTAGE/MONTANT fixe, `appliquer`), `AvisPaiement` (`emettre`/`appliquerRemise`/
+  `encuisser`/`rembourser`/`annuler`/`listerEcheances` — `appliquerRemise` **distribue** la remise
+  proportionnellement aux lignes et régénère les échéances seulement si `montantRegle == 0`),
+  `Echeance` (`payer`/`regler`), `Paiement` (idempotent, `valider`/`annuler`), `CouponPaiement`
+  (empreinte **SHA-256**, `tirer`/`detacher`/`verifier`/`rendre`/`perdre`), `Journalier`.
+  Exception `FeesException` (`NOT_FOUND` 404 ; `TRANSITION_INVALIDE`/`ETAT_INVALIDE`/`IDEMPOTENCE_EN_COURS`/
+  `ITEM_EXISTANT` 409 ; `INVALIDE` 400).
+- **Persistance / applicatif / web** : 15 entités + repos + `FeesPersistenceAdapter` (jdbc carte des
+  échéances/coupons), `FeesService` (`@Service @Transactional`, idempotence à travers Redis
+  `IdempotencyService` — clé `Idempotency-Key` obligatoire sur `POST /paiements` 400, rejeu renvoie le même
+  paiement), `feesUseCase` (interface d'apllication), `FeesController` (`/api/v1`), `FeesExceptionHandler`.
+- **Tests : 40 verts** (domaine `GrilleTarifaire`/`AvisPaiement`/`ReductionEtEcheance`/`PaiementEtCoupon` +
+  `FeesServiceTest` + `@WebMvcTest FeesControllerSecurityTest`). `mvn test` racine :
+  **BUILD SUCCESS, 364 tests verts** (54 tenant + 16 identity + 24 auth + 2 audit + 6 gateway + 24 structure
+  + 25 people + 35 enrollment + 44 attendance + 44 assessment + 50 exam + **40 fees**).
+- **Câblage** : 14e cible Prometheus `host.docker.internal:8117` (relance du conteneur requise, ✔) ;
+  `scripts/backend-up.{sh,ps1}` incluent le service ; pom racine.
+- **Boot + E2E passerelle (2026-10-11)** : 8117 UP ; Flyway V1/V2/V3 `success`, RLS `t/t` sur les 15 tables et
+  `f/f` sur `flyway_fees_history` ; grille+toutes lignes+reduction+`activer` **201/201/201/200** ; `applicable`
+  **200** ; avis `emettre` (brut 150) → `remise` 10% → **montantReduction 15.00 / montantNet 135.00 / solde 135** ;
+  paiement **400 sans `Idempotency-Key`** ; paiement 135 (clé `final-1`) **201** → rejeu même clé → **même id**
+  (payload 999/VIREMENT ignoré) ; `valider` **200** (`resteARembourser 0`) → avis **REGLE** (`soldeDu 0`),
+  échéances 45/45/45 **REGLEE** (remise répartie) ; coupon **COUPON-PAIEMENT-2026-00002** (séquence par année)
+  → `/ped/coupons/{id}/tirer` **TIRE** avec empreinte SHA-256 → `/verifier` `true` → `remettre` **200** ;
+  journalier création **OUVERT** → `cloturer` **200 CLOTURE** ; isolation tenant B **`[]`** (grilles/avis/coupons/
+  paiements), sans `X-Tenant-Id` **400**, sans token **401**, CUSTOMER lecture **200** / écriture **403**.
+  Prometheus : **14/14 cibles `up`**.
+- **Pièges payés (2026-10-11)** :
+  - `LigneGrille` : Hibernate insère ses propres valeurs au lieu des `DEFAULT` SQL → les NOT NULL
+    `categorie`/`libelle`/`ordre` échouaient à l'insert (23502 → 409 `ITEM_EXISTANT` trompeur).
+    Correctif : défauts domaine `obligatoire=true`, `ordre=0`, `categorie`/`libelle` requis dans le payload.
+  - **Remise perdue : `recalculerSolde()` recalculait l'agrégat depuis les lignes et effaçait
+    `montantReduction`/`montantNet`** (E2E : net 150 au lieu de 135, solde 15, statut PARTIELLEMENT_REGLE
+    après paiement de 135). Correctif : `appliquerRemise` distribue la remise **proportionnellement aux
+    lignes** (brut × remise / brut total, scale 2 HALF_UP), met à jour `ligne.montantReduction`, `calculerNet`,
+    régénère les échéances **seulement si `montantRegle == 0`**, pose `montantReduction = totalReduction`,
+    puis `recalculerSolde`.
+  - Racines `/Journalier` : le binder Jackson échoue (FAIL_ON_UNKNOWN_PROPERTIES actif) si le payload porte
+    des champs inconnus (`libelle`, `devise`) → 400 `HttpMessageNotReadableException`. Seuls `site`/`date`/
+    `fond` sont acceptés.
+- **Restant** : commit 4g sur demande (jamais spontané).
+
 ### Restant
 
 - **Commit `5158d45` (251 fichiers)** : docs + `.gitignore` + `backend/`. Phase 1 close.
@@ -1027,11 +1093,11 @@ Le producteur 4b a révélé que `AuditKafkaConsumer` ne savait **pas persister*
 - **Console pédagogie 4a-4b + guides : commitée `8b26390`** (front structure/personnes + guides HTML/PDF).
 - **Lots 4c/4d commités le 2026-10-10** : `0692137` (enrollment, 35 tests) et `1ae85ba`
   (attendance, 44 tests).
-- Prochaine étape (§9) : **lot 4f `academic-exam-service` (50 tests) construit, boot + E2E
-  passerelle validés** (voir §11 2026-10-11) — **commit 4f à faire**. Lot **4g `academic-fees-service`
-  ensuite** (D14). Front pédagogie 4c/4d/4e/4f à faire (après validation back). Phase 3 (reste du
-  socle) : reste `auth` (durcissement + tests), `notification`, `audit`, `reporting` — back d'abord,
-  front ensuite.
+- **Lot 4f commité le 2026-10-11 : `1ed5d2c`** (exam, 50 tests) ; **lot 4g `academic-fees-service`
+  (40 tests) construite le 2026-10-11** : boot + E2E passerelle validés (voir §11), **commit à faire sur
+  demande** — phase 4 back complète après ce commit. Front pédagogie 4c/4d/4e/4f à faire (après validation
+  back). Phase 3 (reste du socle) : reste `auth` (durcissement + tests), `notification`, `audit`,
+  `reporting` — back d'abord, front ensuite.
 - `@Async` de `ReportService.generateAsync` inerte (self-invocation) : génération synchrone.
   À corriger si le rapport doit vraiment être émis hors du thread de requête.
 - `"kyc_level": ["0"]` dans `realm-nexusgesti.json` et `ReportType.KYC_SUMMARY` /
