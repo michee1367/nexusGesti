@@ -90,8 +90,8 @@
     <h1>Guide d'utilisation<br>NexusGesti</h1>
     <p>De l'ouverture de session aux écrans de gestion scolaire — un mode d'emploi pas-à-pas, avec toutes les définitions.</p>
     <div class="meta">
-      Domaine couvert : Socle + Pédagogie (Structure &amp; Personnes)<br>
-      Console : <strong>http://localhost:3001</strong> &nbsp;·&nbsp; Version du guide : 1.0
+      Domaine couvert : Socle + Pédagogie (Structure, Personnes, Inscriptions, Assiduité, Évaluations, Examens, Frais)<br>
+      Console : <strong>http://localhost:3001</strong> &nbsp;·&nbsp; Version du guide : 1.1
     </div>
   </section>
 
@@ -121,7 +121,7 @@
     <thead><tr><th>Domaine</th><th>Contenu</th><th>État</th></tr></thead>
     <tbody>
       <tr><td><strong>Socle</strong></td><td>Réglages de l'établissement, années scolaires, grilles, référentiels, utilisateurs, audit, rapports</td><td>Disponible</td></tr>
-      <tr><td><strong>Pédagogie</strong></td><td>Structure (classes, salles, emplois du temps…) et Personnes (élèves, parents, enseignants, personnel)</td><td>Disponible</td></tr>
+      <tr><td><strong>Pédagogie</strong></td><td>Structure, Personnes, Inscriptions (UE, groupes, admissions), Assiduité (séances, appels), Évaluations (notes, bulletins), Examens (sessions, délibérations), Frais (grilles, avis, paiements)</td><td>Disponible</td></tr>
       <tr><td><strong>Hôpital</strong></td><td>Patients, rendez-vous, consultations, pharmacie</td><td>À venir</td></tr>
       <tr><td><strong>Finance</strong></td><td>Comptabilité OHADA / SYSCOHADA (RDC)</td><td>À venir</td></tr>
     </tbody>
@@ -197,6 +197,31 @@
       <tr><td><strong>Sanction disciplinaire</strong></td><td>Mesure disciplinaire visant un élève.</td></tr>
       <tr><td><strong>Enseignant</strong></td><td>Membre du corps enseignant. Possède des pièces d'identité et des <em>affectations</em> (classe + matière) ; une affectation peut être <em>titulaire</em>.</td></tr>
       <tr><td><strong>Personnel</strong></td><td>Regroupe les <em>services</em> de l'établissement (direction, scolarité…) et les <em>agents</em> administratifs.</td></tr>
+      <tr><td><strong>Inscription UE</strong></td><td>Rattachement d'un élève à une unité d'enseignement (cursus universitaire) pour une année. Se valide ou se refuse.</td></tr>
+      <tr><td><strong>Groupe TD/TP</strong></td><td>Sous-groupe d'une classe pour les travaux dirigés ou pratiques. Capacité limitée ; un groupe plein refuse les ajouts.</td></tr>
+      <tr><td><strong>Règle d'éligibilité</strong></td><td>Condition d'admission (crédits minimum, moyenne minimum, âge…) évaluée pour un candidat.</td></tr>
+      <tr><td><strong>Séance</strong></td><td>Occurrence d'un cours (une date, un créneau). Se <em>démarre</em>, <em>termine</em>, <em>reporte</em> ou s'<em>annule</em>.</td></tr>
+      <tr><td><strong>Feuille d'appel</strong></td><td>Liste de présence d'une séance. On y pointe chaque élève (présent, absent, retard). Validée ou clôturée, elle n'est plus modifiable.</td></tr>
+      <tr><td><strong>Justificatif</strong></td><td>Document déposé pour excuser une absence. Accepté, il requalifie l'absence en absence justifiée.</td></tr>
+      <tr><td><strong>Assiduité</strong></td><td>Indicateur calculé (taux de présence, absences justifiées / injustifiées) par élève, par classe ou sous forme de registre.</td></tr>
+      <tr><td><strong>Évaluation</strong></td><td>Contrôle noté (devoir, interrogation…). Porte une feuille de notes, puis se <em>clôture</em> et se <em>publie</em>.</td></tr>
+      <tr><td><strong>Note</strong></td><td>Résultat d'un élève à une évaluation ; peut être marquée absente, exclue ou contestée.</td></tr>
+      <tr><td><strong>Bulletin</strong></td><td>Synthèse des notes d'un élève sur une période. Se <em>calcule</em>, se <em>publie</em>, se <em>signe</em> et peut être <em>rectifié</em> (nouvelle version).</td></tr>
+      <tr><td><strong>Coupon de notes</strong></td><td>Extrait sécurisé d'un bulletin, numéroté et protégé par une empreinte.</td></tr>
+      <tr><td><strong>Moyenne / classement</strong></td><td>Calcul automatique (par évaluation, par élève, par classe).</td></tr>
+      <tr><td><strong>Session d'examen</strong></td><td>Période officielle d'examens, contenant des <em>épreuves</em> et des <em>convocations</em>.</td></tr>
+      <tr><td><strong>Épreuve</strong></td><td>Examen d'une matière ou d'une UE au sein d'une session.</td></tr>
+      <tr><td><strong>Convocation</strong></td><td>Document appelant un candidat à une épreuve.</td></tr>
+      <tr><td><strong>Délibération</strong></td><td>Réunion du jury qui décide du passage, du redoublement ou de l'admission.</td></tr>
+      <tr><td><strong>Décision</strong></td><td>Verdict du jury pour un élève (admis, ajourné, repêché…), par classe ou par UE.</td></tr>
+      <tr><td><strong>Résultat officiel</strong></td><td>Résultat publié d'une session.</td></tr>
+      <tr><td><strong>Rattrapage</strong></td><td>Seconde épreuve pour un candidat ajourné.</td></tr>
+      <tr><td><strong>Procès-verbal</strong></td><td>Document officiel d'une session, <em>signé</em> puis <em>homologué</em>.</td></tr>
+      <tr><td><strong>Grille tarifaire</strong></td><td>Barème des frais (scolarité, inscription…), versionné ; s'<em>active</em> et se <em>fige</em>.</td></tr>
+      <tr><td><strong>Avis de paiement</strong></td><td>Appel de fonds émis pour un élève, décomposé en <em>échéances</em> ; accepte une <em>remise</em>.</td></tr>
+      <tr><td><strong>Paiement</strong></td><td>Règlement d'un avis. <em>Idempotent</em> : rejouer la même demande ne crée pas de doublon.</td></tr>
+      <tr><td><strong>Coupon de paiement</strong></td><td>Reçu numéroté d'un paiement, protégé par une empreinte.</td></tr>
+      <tr><td><strong>Journalier</strong></td><td>Caisse journalière (ouverture, fond, clôture) d'un site.</td></tr>
       <tr><td><strong>Rôle / Permission</strong></td><td>Un rôle est un ensemble de permissions (ADMIN, CUSTOMER…). Une permission est un droit élémentaire (verbe + ressource).</td></tr>
       <tr><td><strong>Audit</strong></td><td>Journal horodaté des actions importantes (création d'élève, envoi de notification…).</td></tr>
       <tr><td><strong>Rapport</strong></td><td>Document généré (PDF, CSV, JSON) à partir des données.</td></tr>
@@ -281,6 +306,46 @@
   </ul>
   <div class="callout"><strong>Astuce :</strong> les listes disposent d'une <strong>barre de recherche</strong> (matricule, nom, code…). Le nombre d'éléments est affiché sous le tableau.</div>
 
+  <h2>7.9 Pédagogie · Inscriptions</h2>
+  <ul>
+    <li><strong>Inscriptions UE</strong> : rattachez un élève à une UE, puis <em>Valider</em> (ou refuser / mettre en liste d'attente / annuler).</li>
+    <li><strong>Groupes TD/TP</strong> : créez des groupes (code, capacité) et affectez des <em>membres</em> ; un groupe plein refuse les ajouts. Ouvrez / clôturez un groupe depuis sa fiche.</li>
+    <li><strong>Règles d'éligibilité</strong> : définissez les conditions d'admission (crédits, moyenne, âge).</li>
+    <li><strong>Admissions</strong> : évaluez un <em>candidat</em> (éligible ou non) et consultez le <em>parcours</em> d'un élève (crédits acquis, taux de progression).</li>
+  </ul>
+
+  <h2>7.10 Pédagogie · Assiduité</h2>
+  <ul>
+    <li><strong>Séances</strong> : créez une séance (classe, cours, date, créneau), puis <em>Démarrer</em>, <em>Terminer</em>, <em>Reporter</em> ou <em>Annuler</em>.</li>
+    <li><strong>Feuilles d'appel</strong> : ouvrez une feuille, <em>pointez</em> les présences, marquez une <em>absence</em> ou un <em>retard</em>, puis <em>Soumettre</em>, <em>Valider</em>, <em>Clôturer</em>. Après clôture, la feuille n'est plus pointable.</li>
+    <li><strong>Justificatifs</strong> : déposez un justificatif puis <em>Accepter</em> ou <em>Rejeter</em> ; accepté, il requalifie l'absence.</li>
+    <li><strong>Assiduité</strong> : consultez le <em>suivi d'un élève</em>, le <em>taux d'une classe</em> ou le <em>registre</em>.</li>
+  </ul>
+
+  <h2>7.11 Pédagogie · Évaluations</h2>
+  <ul>
+    <li><strong>Évaluations</strong> : créez une évaluation (<em>Ouvrir</em>), saisissez les <em>notes</em> sur la feuille, marquez une <em>absence</em>, puis <em>Clôturer</em> et <em>Publier</em>.</li>
+    <li><strong>Bulletins</strong> : créez un bulletin, ajoutez des <em>lignes</em>, puis <em>Calculer</em>, <em>Publier</em>, <em>Générer</em>, <em>Signer</em>. Une <em>rectification</em> crée une nouvelle version. Les <em>coupons</em> se tirent depuis le bulletin.</li>
+    <li><strong>Moyennes &amp; classement</strong> : calculez la moyenne d'une <em>évaluation</em>, d'un <em>élève</em>, ou le <em>classement</em> d'une classe.</li>
+  </ul>
+
+  <h2>7.12 Pédagogie · Examens</h2>
+  <ul>
+    <li><strong>Sessions d'examen</strong> : créez une session puis <em>Programmer</em>, <em>Ouvrir</em>, <em>Clôturer</em>, <em>Annuler</em> ; ajoutez-y <em>épreuves</em>, <em>créneaux</em> et <em>convocations</em> (+ notifier).</li>
+    <li><strong>Délibérations</strong> : créez une délibération, <em>Ouvrir</em>, saisissez les <em>décisions</em> (individuelles ou par UE), puis <em>Clôturer</em>. Les <em>résultats</em> se publient depuis la décision.</li>
+    <li><strong>Rattrapages</strong> : déclarez un candidat <em>présent</em> ou <em>exempt</em>.</li>
+    <li><strong>Procès-verbaux</strong> : <em>Soumettre</em>, <em>Signer</em>, <em>Homologuer</em> (ou <em>Contester</em>).</li>
+  </ul>
+
+  <h2>7.13 Pédagogie · Frais</h2>
+  <ul>
+    <li><strong>Grilles tarifaires</strong> : créez une grille, ajoutez des <em>lignes</em> et des <em>réductions</em>, puis <em>Activer</em>, <em>Figer</em> (lecture seule) ou <em>Archiver</em>.</li>
+    <li><strong>Avis de paiement</strong> : <em>Émettre</em> un avis, appliquer une <em>remise</em>, consulter les <em>échéances</em>, <em>Annuler</em> si besoin.</li>
+    <li><strong>Paiements</strong> : enregistrez un paiement (la clé d'idempotence est gérée automatiquement), puis <em>Valider</em>, <em>Rejeter</em> ou <em>Annuler</em>.</li>
+    <li><strong>Coupons</strong> : tirez un coupon (empreinte de sécurité), <em>Vérifier</em>, <em>Remettre</em>, <em>Annuler</em>.</li>
+    <li><strong>Journaliers</strong> : ouvrez un journalier de caisse (site, date, fond) puis <em>Clôturer</em>.</li>
+  </ul>
+
   <!-- ================= 8 ================= -->
   <h1 id="s8">8. Ce que peut faire chaque profil</h1>
   <table>
@@ -303,6 +368,12 @@
       <tr><td><code>GRILLE_FIGEE</code> (409)</td><td>La grille est figée, donc non modifiable</td><td>La dupliquer puis modifier la copie</td></tr>
       <tr><td><code>TRANSITION_INVALIDE</code> (409)</td><td>Changement d'état non autorisé</td><td>Vérifier l'état courant (ex. clôturer une classe déjà clôturée)</td></tr>
       <tr><td><code>ITEM_EXISTANT</code> / <code>MATRICULE_EXISTANT</code> (409)</td><td>Doublon de code ou de matricule</td><td>Utiliser une valeur unique</td></tr>
+      <tr><td><code>ETAT_INVALIDE</code> (409)</td><td>Action interdite dans l'état courant</td><td>Vérifier l'état (ex. pointer une feuille clôturée)</td></tr>
+      <tr><td><code>CONFLIT</code> / <code>CONFLIT_EMPLOI</code> (409)</td><td>Conflit détecté (emploi du temps…)</td><td>Corriger les éléments en double</td></tr>
+      <tr><td><code>GROUPE_COMPLET</code> (409)</td><td>Le groupe TD/TP a atteint sa capacité</td><td>Choisir un autre groupe ou augmenter la capacité</td></tr>
+      <tr><td><code>IDEMPOTENCE_EN_COURS</code> (409)</td><td>Un paiement identique est déjà en cours</td><td>Attendre puis réessayer</td></tr>
+      <tr><td><code>INVALIDE</code> (400)</td><td>Donnée invalide (champ manquant ou incorrect)</td><td>Corriger le formulaire</td></tr>
+      <tr><td><code>NOT_FOUND</code> (404)</td><td>Élément introuvable (souvent : mauvais établissement)</td><td>Vérifier le sélecteur de tenant</td></tr>
       <tr><td><code>AUTH_INVALID_CREDENTIALS</code> (401)</td><td>E-mail ou mot de passe incorrect</td><td>Vérifier les identifiants (§3)</td></tr>
       <tr><td><code>Invalid X-Tenant-Id header</code> (400)</td><td>Établissement non sélectionné ou invalide</td><td>Choisir un établissement dans le sélecteur</td></tr>
       <tr><td><code>KEYCLOAK_INDISPONIBLE</code> (503)</td><td>Le service d'authentification est arrêté</td><td>Relancer le backend</td></tr>
@@ -330,11 +401,14 @@
     <li>Créer un <strong>emploi du temps</strong>, ajouter des <strong>plages</strong>, observer les <strong>conflits</strong>, <strong>publier</strong>.</li>
     <li><strong>Pédagogie · Personnes</strong> : créer un <strong>élève</strong>, ouvrir sa fiche, ajouter une <strong>inscription</strong>.</li>
     <li>Créer un <strong>enseignant</strong> et une <strong>affectation</strong>.</li>
+    <li><strong>Pédagogie · Assiduité</strong> : créer une <strong>séance</strong>, ouvrir la <strong>feuille d'appel</strong>, pointer les élèves.</li>
+    <li><strong>Pédagogie · Évaluations</strong> : créer une <strong>évaluation</strong>, saisir des <strong>notes</strong>, <strong>calculer</strong> et <strong>publier</strong> un <strong>bulletin</strong>.</li>
+    <li><strong>Pédagogie · Frais</strong> : créer une <strong>grille tarifaire</strong>, <strong>émettre</strong> un <strong>avis</strong>, enregistrer un <strong>paiement</strong>.</li>
     <li>Se reconnecter en <span class="badge customer">CUSTOMER</span> et constater que tout est en lecture seule.</li>
   </ol>
 
   <footer>
-    NexusGesti — Guide utilisateur v1.0 · Socle + Pédagogie (Structure &amp; Personnes) ·
+    NexusGesti — Guide utilisateur v1.1 · Socle + Pédagogie (Structure, Personnes, Inscriptions, Assiduité, Évaluations, Examens, Frais) ·
     Console locale : http://localhost:3001
   </footer>
 </div>

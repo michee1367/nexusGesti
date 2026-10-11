@@ -100,7 +100,11 @@
       <li><a href="#s13">Construire l'emploi du temps</a></li>
       <li><a href="#s14">Créer le tuteur (parent)</a></li>
       <li><a href="#s15">Inscrire un élève</a></li>
-      <li><a href="#s16">Vérifier et clôturer</a></li>
+      <li><a href="#s16">Faire l'appel (assiduité)</a></li>
+      <li><a href="#s17">Évaluer et produire un bulletin</a></li>
+      <li><a href="#s18">Organiser les examens</a></li>
+      <li><a href="#s19">Gérer les frais</a></li>
+      <li><a href="#s20">Vérifier et clôturer</a></li>
       <li><a href="#a">Annexe — récapitulatif et erreurs fréquentes</a></li>
     </ol>
   </section>
@@ -157,7 +161,7 @@
       <tr><td>Code</td><td><code>ECOLE-SEC-01</code></td><td>Identifiant court, unique.</td></tr>
       <tr><td>Dénomination</td><td>École Secondaire La Grâce</td><td>Nom officiel affiché.</td></tr>
       <tr><td>Profil</td><td><b>SECONDAIRE</b></td><td>Détermine les règles pédagogiques appliquées.</td></tr>
-      <tr><td>Statut</td><td>PREPARATION</td><td>Se change en ACTIF à la fin (§16).</td></tr>
+      <tr><td>Statut</td><td>PREPARATION</td><td>Se change en ACTIF à la fin (§20).</td></tr>
     </tbody>
   </table>
   <div class="note">
@@ -420,7 +424,85 @@
   <p>Pièces obligatoires : <b>PHOTO_IDENTITE</b> et <b>ACTE_NAISSANCE</b>. Facultatives : BULLETIN_ANTERIEUR, CERTIFICAT_SCOLARITE, SUPPLEMENTAIRE.</p>
 
   <!-- 16 -->
-  <h2 id="s16"><span class="n">16</span>Vérifier et clôturer</h2>
+  <h2 id="s16"><span class="n">16</span>Faire l'appel (assiduité)</h2>
+  <div class="where">Menu <b>Pédagogie · Assiduité → Séances</b>, puis <b>Feuilles d'appel</b></div>
+
+  <h3>16.1 Créer une séance</h3>
+  <p>Choisissez la <b>classe</b>, le <b>cours (matière)</b>, l'<b>enseignant</b>, la <b>salle</b>, l'<b>année</b> et la <b>période</b>, puis la <b>date</b> et les <b>heures</b> de début et de fin.</p>
+  <p>Une séance se crée « Planifiée ». Les actions la font passer à <b>En cours</b> (Démarrer), puis <b>Terminée</b> ; elle peut aussi être <b>Reportée</b> ou <b>Annulée</b> (motif demandé). Le bouton « drapeau » ouvre directement sa feuille d'appel.</p>
+
+  <h3>16.2 Feuille d'appel</h3>
+  <ol>
+    <li>Créez une feuille en choisissant la <b>séance</b>, puis ouvrez son détail.</li>
+    <li>Pointez chaque élève : <b>Présent</b>, <b>Absent</b> ou <b>Retard</b> (durée en minutes) ; l'<b>appel global</b> marque tous présents d'un coup.</li>
+    <li>Enchaînez <b>Soumettre → Valider → Clôturer</b>.</li>
+  </ol>
+  <div class="warn"><b>Après clôture</b>La feuille n'est plus pointable (erreur « état invalide »).</div>
+
+  <h3>16.3 Justificatifs et suivi</h3>
+  <p>Le menu <b>Justificatifs</b> permet de déposer un justificatif (élève, type, date, motif) puis de l'<b>Accepter</b> (l'absence devient justifiée) ou de le <b>Rejeter</b>. Le menu <b>Assiduité</b> offre le suivi d'un élève, le taux d'une classe et le registre.</p>
+
+  <!-- 17 -->
+  <h2 id="s17"><span class="n">17</span>Évaluer et produire un bulletin</h2>
+  <div class="where">Menu <b>Pédagogie · Évaluations → Évaluations</b>, puis <b>Bulletins</b></div>
+
+  <h3>17.1 Créer une évaluation</h3>
+  <p>Renseignez le <b>libellé</b>, le <b>type</b> (interrogation, devoir…), la <b>classe</b>, le <b>cours</b>, l'<b>enseignant</b>, l'<b>année</b>, la <b>période</b>, la <b>date</b>, la <b>note maximale</b> (20) et le <b>coefficient</b>.</p>
+  <p>Enchaînez <b>Ouvrir</b> (saisie autorisée) → <b>Clôturer</b> → <b>Publier</b>. Dans le détail, saisissez les <b>notes</b> par élève ; vous pouvez <b>marquer une absence</b>, <b>exclure</b> une note ou enregistrer une <b>contestation</b>.</p>
+
+  <h3>17.2 Construire un bulletin</h3>
+  <ol>
+    <li>Créez un bulletin (élève, période, année).</li>
+    <li>Ajoutez des <b>lignes</b> (matière, moyenne, coefficient).</li>
+    <li>Enchaînez <b>Calculer → Publier → Générer → Signer</b>.</li>
+  </ol>
+  <div class="note"><b>Rectification</b>Une rectification crée une nouvelle <b>version</b> du bulletin sans écraser la précédente.</div>
+  <p>Le menu <b>Moyennes</b> calcule la moyenne d'une évaluation, d'un élève ou le classement d'une classe.</p>
+
+  <!-- 18 -->
+  <h2 id="s18"><span class="n">18</span>Organiser les examens</h2>
+  <div class="where">Menu <b>Pédagogie · Examens → Sessions</b>, <b>Délibérations</b>, <b>Procès-verbaux</b></div>
+
+  <h3>18.1 Session d'examen</h3>
+  <ol>
+    <li>Créez une session puis enchaînez <b>Programmer → Ouvrir → Clôturer</b> (elle peut être <b>Annulée</b> avec motif).</li>
+    <li>Dans le détail, ajoutez les <b>épreuves</b> (matière, date), les <b>créneaux</b> et les <b>convocations</b> (+ <b>notifier</b> les candidats).</li>
+    <li>Saisissez les <b>notes d'examen</b>, puis les <b>corrections</b> (<b>Calculer</b>, <b>Clôturer</b>).</li>
+  </ol>
+
+  <h3>18.2 Délibération</h3>
+  <ol>
+    <li>Créez une délibération, puis <b>Ouvrir</b>.</li>
+    <li>Saisissez les <b>décisions</b> par classe / élève (admis, ajourné, repêché…).</li>
+    <li><b>Clôturer</b>, puis publiez les <b>résultats</b> depuis la décision.</li>
+  </ol>
+  <div class="note"><b>Statuts</b>La délibération passe de « Planifiée » à « En cours » puis « Clôturée » ; les décisions ne se saisissent qu'en cours de délibération.</div>
+
+  <h3>18.3 Rattrapages et procès-verbal</h3>
+  <p>Le menu <b>Rattrapages</b> permet de déclarer un candidat <b>présent</b> ou <b>exempt</b>. Le menu <b>Procès-verbaux</b> permet de <b>Soumettre</b>, <b>Signer</b> et <b>Homologuer</b> le document (ou de le <b>Contester</b>).</p>
+
+  <!-- 19 -->
+  <h2 id="s19"><span class="n">19</span>Gérer les frais</h2>
+  <div class="where">Menu <b>Pédagogie · Frais</b> → Grilles tarifaires, Avis de paiement, Paiements</div>
+
+  <h3>19.1 Grille tarifaire</h3>
+  <ol>
+    <li>Créez une grille : code <code>SEC-2025</code>, libellé « Frais scolaire secondaire », année 2025-2026, profil SECONDAIRE, devise USD.</li>
+    <li>Ouvrez le détail pour ajouter des <b>lignes de frais</b> et des <b>réductions</b>, puis <b>Activer</b>.</li>
+  </ol>
+  <div class="warn"><b>Grille figée</b>Une grille figée passe en lecture seule : dupliquez-la pour la faire évoluer.</div>
+
+  <h3>19.2 Avis, paiements et coupons</h3>
+  <ol>
+    <li><b>Avis de paiement</b> : créez un avis pour un élève, <b>Émettre</b>, appliquez au besoin une <b>remise</b> (net et échéances recalculés).</li>
+    <li><b>Paiements</b> : enregistrez un règlement (avis, élève, montant, moyen, référence), puis <b>Valider</b> / <b>Rejeter</b> / <b>Annuler</b>. Une clé d'idempotence est posée automatiquement.</li>
+    <li><b>Coupons</b> : tirez un coupon de paiement, <b>Vérifier</b>, <b>Remettre</b> ou <b>Annuler</b>.</li>
+    <li><b>Journaliers</b> : ouvrez la caisse du jour (site, date, fond) puis <b>Clôturer</b>.</li>
+  </ol>
+  <p class="ok"><b>Résultat attendu</b>Quand le solde d'un avis atteint zéro, celui-ci passe au statut « Réglé ».</p>
+
+  <!-- 20 -->
+  <h2 id="s20"><span class="n">20</span>Vérifier et clôturer</h2>
   <ol class="check">
     <li>Établissement créé avec le profil SECONDAIRE.</li>
     <li>Site, cycle, année (avec période) créés.</li>
@@ -431,6 +513,10 @@
     <li>Emploi du temps publié sans conflit.</li>
     <li>Tuteur relié à l'élève.</li>
     <li>Élève INSCRIT avec une inscription VALIDE.</li>
+    <li>Une séance est créée et sa feuille d'appel pointée puis clôturée.</li>
+    <li>Une évaluation est notée et un bulletin publié.</li>
+    <li>Une session d'examen est ouverte et une délibération saisie.</li>
+    <li>Une grille tarifaire est activée, un avis émis et un paiement validé.</li>
   </ol>
   <p>Finalisez en passant l'établissement au statut <b>ACTIF</b> (Plateforme → Établissements).</p>
 
@@ -452,6 +538,10 @@
     <li>Emploi du temps</li>
     <li>Tuteur</li>
     <li>Élève + inscription</li>
+    <li>Séances + feuilles d'appel + justificatifs</li>
+    <li>Évaluations + bulletins</li>
+    <li>Sessions d'examen + délibérations + résultats + PV</li>
+    <li>Grille tarifaire + avis + paiements + coupons</li>
   </ol>
 
   <h3>Erreurs fréquentes</h3>
@@ -462,6 +552,9 @@
       <tr><td>« Aucune affectation »</td><td>La classe n'a aucun enseignant.</td><td>Créer au moins une affectation, dont une titulaire.</td></tr>
       <tr><td>Publication impossible (conflit)</td><td>Salle, classe ou enseignant en double sur un créneau.</td><td>Corriger les plages en double puis republier.</td></tr>
       <tr><td>Inscription non comptée</td><td>Inscription restée EN_ATTENTE.</td><td>Valider l'inscription (statut VALIDE).</td></tr>
+      <tr><td>« État invalide » à la saisie d'un pointage</td><td>La feuille d'appel est déjà validée ou clôturée.</td><td>Ouvrir une nouvelle feuille ou reprendre avant clôture.</td></tr>
+      <tr><td>Décision refusée pendant une délibération</td><td>La délibération n'est pas « En cours ».</td><td>Ouvrir la délibération avant de saisir les décisions.</td></tr>
+      <tr><td>Grille tarifaire non modifiable</td><td>La grille est figée.</td><td>La dupliquer puis modifier la copie.</td></tr>
       <tr><td>Erreur de connexion en fin de session</td><td>Jeton expiré.</td><td>Recharger la page et se reconnecter.</td></tr>
     </tbody>
   </table>

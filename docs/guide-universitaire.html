@@ -101,7 +101,12 @@
       <li><a href="#s16">Construire l'emploi du temps</a></li>
       <li><a href="#s17">Créer le tuteur (parent)</a></li>
       <li><a href="#s18">Inscrire un étudiant</a></li>
-      <li><a href="#s19">Vérifier et clôturer</a></li>
+      <li><a href="#s19">Inscriptions aux UE, groupes et admissions</a></li>
+      <li><a href="#s20">Faire l'appel (assiduité)</a></li>
+      <li><a href="#s21">Évaluer, moyennes et bulletin</a></li>
+      <li><a href="#s22">Examens et délibération par UE</a></li>
+      <li><a href="#s23">Gérer les frais</a></li>
+      <li><a href="#s24">Vérifier et clôturer</a></li>
       <li><a href="#a">Annexe — récapitulatif et erreurs fréquentes</a></li>
     </ol>
   </section>
@@ -157,7 +162,7 @@
       <tr><td>Code</td><td><code>UNIV-NG-01</code></td><td>Identifiant court, unique.</td></tr>
       <tr><td>Dénomination</td><td>Université Nouvelle Génération</td><td>Nom officiel affiché.</td></tr>
       <tr><td>Profil</td><td><b>UNIVERSITAIRE</b></td><td>Active UE, crédits, délibération par UE.</td></tr>
-      <tr><td>Statut</td><td>PREPARATION</td><td>Se change en ACTIF à la fin (§19).</td></tr>
+      <tr><td>Statut</td><td>PREPARATION</td><td>Se change en ACTIF à la fin (§24).</td></tr>
     </tbody>
   </table>
   <div class="note">
@@ -476,7 +481,93 @@
   <p>Pièces obligatoires : <b>PHOTO_IDENTITE</b> et <b>ACTE_NAISSANCE</b>. Facultatives : BULLETIN_ANTERIEUR, CERTIFICAT_SCOLARITE, SUPPLEMENTAIRE.</p>
 
   <!-- 19 -->
-  <h2 id="s19"><span class="n">19</span>Vérifier et clôturer</h2>
+  <h2 id="s19"><span class="n">19</span>Inscriptions aux UE, groupes et admissions</h2>
+  <div class="where">Menu <b>Pédagogie · Inscriptions</b> → Inscriptions UE, Groupes TD/TP, Règles, Admissions</div>
+
+  <h3>19.1 Inscrire un étudiant à une UE</h3>
+  <div class="where">Menu <b>Pédagogie · Inscriptions → Inscriptions UE</b></div>
+  <ol>
+    <li>Créez une inscription en choisissant l'<b>étudiant</b>, l'<b>UE</b>, l'<b>année</b> et le <b>semestre</b>.</li>
+    <li>Enchaînez <b>Valider</b> (ou mettre en <b>liste d'attente</b>, <b>refuser</b>, <b>annuler</b>).</li>
+  </ol>
+  <div class="note"><b>Deux niveaux d'inscription</b>L'inscription <b>scolaire</b> (§18) rattache l'étudiant à une classe ; l'inscription <b>à l'UE</b> (ici) rattache l'étudiant aux blocs de crédits de son semestre.</div>
+
+  <h3>19.2 Groupes TD/TP</h3>
+  <div class="where">Menu <b>Pédagogie · Inscriptions → Groupes TD/TP</b></div>
+  <ol>
+    <li>Créez un groupe : <b>code</b>, <b>type</b> (TD, TP…), <b>classe</b>, <b>capacité</b>.</li>
+    <li>Ouvrez le détail pour ajouter des <b>membres</b> et <b>ouvrir</b> / <b>clore</b> le groupe.</li>
+  </ol>
+  <div class="warn"><b>Groupe complet</b>Quand la capacité est atteinte, tout ajout de membre est refusé (erreur « groupe complet »).</div>
+
+  <h3>19.3 Règles d'éligibilité et admissions</h3>
+  <div class="where">Menu <b>Pédagogie · Inscriptions → Règles</b>, puis <b>Admissions</b></div>
+  <ol>
+    <li><b>Règles</b> : définissez les conditions (crédits minimum, moyenne minimum, âge, condition personnalisée).</li>
+    <li><b>Admissions</b> : évaluez un <b>candidat</b> (éligible ou non selon les règles) et consultez le <b>parcours</b> d'un étudiant (crédits acquis, crédits restants, taux de progression, moyenne pondérée).</li>
+  </ol>
+
+  <!-- 20 -->
+  <h2 id="s20"><span class="n">20</span>Faire l'appel (assiduité)</h2>
+  <div class="where">Menu <b>Pédagogie · Assiduité → Séances</b>, puis <b>Feuilles d'appel</b></div>
+  <ol>
+    <li>Créez une <b>séance</b> : classe, cours (matière), enseignant, salle, année, période, type, date et heures.</li>
+    <li>Faites-la passer à <b>En cours</b> (Démarrer) puis <b>Terminée</b> ; elle peut être <b>Reportée</b> ou <b>Annulée</b>.</li>
+    <li>Ouvrez la <b>feuille d'appel</b> (ou le bouton « drapeau » de la séance), pointez <b>Présent / Absent / Retard</b>, puis <b>Soumettre → Valider → Clôturer</b>.</li>
+  </ol>
+  <div class="note"><b>Justificatifs</b>Le menu <b>Justificatifs</b> permet de déposer puis <b>Accepter</b> (l'absence devient justifiée) ou <b>Rejeter</b> un justificatif. Le menu <b>Assiduité</b> offre le suivi d'un étudiant, le taux d'une classe et le registre.</div>
+
+  <!-- 21 -->
+  <h2 id="s21"><span class="n">21</span>Évaluer, calculer les moyennes et produire un bulletin</h2>
+  <div class="where">Menu <b>Pédagogie · Évaluations → Évaluations</b>, <b>Bulletins</b>, <b>Moyennes</b></div>
+
+  <h3>21.1 Évaluation et notes</h3>
+  <p>Créez l'évaluation (<b>libellé</b>, <b>type</b>, <b>classe</b>, <b>cours</b>, <b>UE</b>, <b>matière</b>, <b>enseignant</b>, <b>année</b>, <b>période</b>, <b>date</b>, <b>note max</b> 20, <b>coefficient</b>), puis <b>Ouvrir</b> → saisir les <b>notes</b> → <b>Clôturer</b> → <b>Publier</b>.</p>
+
+  <h3>21.2 Bulletin</h3>
+  <ol>
+    <li>Créez un bulletin (étudiant, période, année) et ajoutez des <b>lignes</b> (matière / UE, moyenne, coefficient, crédits).</li>
+    <li>Enchaînez <b>Calculer → Publier → Générer → Signer</b> ; une <b>rectification</b> crée une nouvelle version.</li>
+  </ol>
+
+  <h3>21.3 Moyennes et classement</h3>
+  <p>Le menu <b>Moyennes</b> calcule la moyenne d'une <b>évaluation</b>, la moyenne d'un <b>étudiant</b> (avec compensation par UE) ou le <b>classement</b> d'une classe.</p>
+
+  <!-- 22 -->
+  <h2 id="s22"><span class="n">22</span>Organiser les examens et délibérer par UE</h2>
+  <div class="where">Menu <b>Pédagogie · Examens → Sessions</b>, <b>Délibérations</b>, <b>Rattrapages</b>, <b>Procès-verbaux</b></div>
+
+  <h3>22.1 Session d'examen</h3>
+  <ol>
+    <li>Créez une session puis <b>Programmer → Ouvrir → Clôturer</b> (ou <b>Annuler</b> avec motif).</li>
+    <li>Ajoutez les <b>épreuves</b> (rattachées à une UE), les <b>créneaux</b> et les <b>convocations</b> (+ <b>notifier</b>).</li>
+    <li>Saisissez les <b>notes d'examen</b>, puis les <b>corrections</b> (<b>Calculer</b>, <b>Clôturer</b>).</li>
+  </ol>
+
+  <h3>22.2 Délibération par UE</h3>
+  <ol>
+    <li>Créez une délibération, puis <b>Ouvrir</b> (elle doit être « En cours » pour statuer).</li>
+    <li>Saisissez les <b>décisions par UE</b> : chaque UE est acquise ou compensée, avec ses <b>crédits acquis</b>.</li>
+    <li><b>Clôturer</b>, puis publier les <b>résultats</b>.</li>
+  </ol>
+  <div class="note"><b>Compensation</b>Une UE peut être acquise par compensation ; les crédits acquis alimentent le parcours (§19.3) et l'inscription à l'UE suivante.</div>
+
+  <h3>22.3 Rattrapages et procès-verbal</h3>
+  <p>Déclarez un étudiant <b>présent</b> ou <b>exempt</b> dans <b>Rattrapages</b>. Puis <b>Soumettre</b>, <b>Signer</b> et <b>Homologuer</b> le <b>procès-verbal</b> (ou le <b>Contester</b>).</p>
+
+  <!-- 23 -->
+  <h2 id="s23"><span class="n">23</span>Gérer les frais</h2>
+  <div class="where">Menu <b>Pédagogie · Frais</b> → Grilles tarifaires, Avis de paiement, Paiements, Coupons, Journaliers</div>
+  <ol>
+    <li><b>Grille tarifaire</b> : créez la grille (<code>UNIV-2025</code>, année, profil UNIVERSITAIRE, devise USD), ajoutez <b>lignes</b> et <b>réductions</b>, puis <b>Activer</b>. Une grille <b>figée</b> passe en lecture seule.</li>
+    <li><b>Avis de paiement</b> : créez un avis, <b>Émettre</b>, appliquez au besoin une <b>remise</b> (net et échéances recalculés).</li>
+    <li><b>Paiements</b> : enregistrez un règlement puis <b>Valider</b> / <b>Rejeter</b> / <b>Annuler</b> (clé d'idempotence automatique).</li>
+    <li><b>Coupons</b> et <b>Journaliers</b> : tirez un coupon de paiement (<b>Vérifier</b>, <b>Remettre</b>, <b>Annuler</b>) ; ouvrez la caisse du jour puis <b>Clôturer</b>.</li>
+  </ol>
+  <p class="ok"><b>Résultat attendu</b>Quand le solde d'un avis atteint zéro, celui-ci passe au statut « Réglé ».</p>
+
+  <!-- 24 -->
+  <h2 id="s24"><span class="n">24</span>Vérifier et clôturer</h2>
   <ol class="check">
     <li>Établissement créé avec le profil UNIVERSITAIRE.</li>
     <li>Filières, programmes et cycles (Licence, Master) créés.</li>
@@ -489,6 +580,11 @@
     <li>Emploi du temps publié sans conflit.</li>
     <li>Tuteur relié à l'étudiant.</li>
     <li>Étudiant INSCRIT avec une inscription VALIDE.</li>
+    <li>Inscription(s) à l'UE valides et groupes TD/TP affectés.</li>
+    <li>Une séance est créée et sa feuille d'appel pointée puis clôturée.</li>
+    <li>Une évaluation est notée, un bulletin et un classement calculés.</li>
+    <li>Une session d'examen est ouverte et une délibération par UE saisie.</li>
+    <li>Une grille tarifaire est activée, un avis émis et un paiement validé.</li>
   </ol>
   <p>Finalisez en passant l'établissement au statut <b>ACTIF</b> (Plateforme → Établissements).</p>
 
@@ -513,6 +609,11 @@
     <li>Emploi du temps</li>
     <li>Tuteur</li>
     <li>Étudiant + inscription</li>
+    <li>Inscriptions UE + groupes TD/TP + règles/admissions</li>
+    <li>Séances + feuilles d'appel + justificatifs</li>
+    <li>Évaluations + bulletins + moyennes</li>
+    <li>Sessions d'examen + délibérations par UE + résultats + PV</li>
+    <li>Grille tarifaire + avis + paiements + coupons</li>
   </ol>
 
   <h3>Erreurs fréquentes</h3>
@@ -524,6 +625,10 @@
       <tr><td>ECUE refusé</td><td>Cours sans UE.</td><td>Rattacher le cours à une UE.</td></tr>
       <tr><td>Publication impossible (conflit)</td><td>Salle, classe ou enseignant en double sur un créneau.</td><td>Corriger les plages en double puis republier.</td></tr>
       <tr><td>Inscription non comptée</td><td>Inscription restée EN_ATTENTE.</td><td>Valider l'inscription (statut VALIDE).</td></tr>
+      <tr><td>« Groupe complet »</td><td>La capacité du groupe TD/TP est atteinte.</td><td>Choisir un autre groupe ou augmenter sa capacité.</td></tr>
+      <tr><td>Étudiant non éligible</td><td>Une règle d'éligibilité (crédits/moyenne) n'est pas satisfaite.</td><td>Vérifier le parcours et la règle applicable.</td></tr>
+      <tr><td>Décision refusée pendant une délibération</td><td>La délibération n'est pas « En cours ».</td><td>Ouvrir la délibération avant de saisir les décisions.</td></tr>
+      <tr><td>Grille tarifaire non modifiable</td><td>La grille est figée.</td><td>La dupliquer puis modifier la copie.</td></tr>
       <tr><td>Erreur de connexion en fin de session</td><td>Jeton expiré.</td><td>Recharger la page et se reconnecter.</td></tr>
     </tbody>
   </table>

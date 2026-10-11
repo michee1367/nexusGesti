@@ -99,7 +99,10 @@
       <li><a href="#s12">Construire l'emploi du temps</a></li>
       <li><a href="#s13">Créer le tuteur (parent)</a></li>
       <li><a href="#s14">Inscrire un élève</a></li>
-      <li><a href="#s15">Vérifier et clôturer</a></li>
+      <li><a href="#s15">Faire l'appel (assiduité)</a></li>
+      <li><a href="#s16">Évaluer et produire un bulletin</a></li>
+      <li><a href="#s17">Gérer les frais</a></li>
+      <li><a href="#s18">Vérifier et clôturer</a></li>
       <li><a href="#a">Annexe — récapitulatif et erreurs fréquentes</a></li>
     </ol>
   </section>
@@ -511,7 +514,133 @@
   </table>
 
   <!-- 15 -->
-  <h2 id="s15"><span class="n">15</span>Vérifier et clôturer</h2>
+  <h2 id="s15"><span class="n">15</span>Faire l'appel (assiduité)</h2>
+  <div class="where">Menu <b>Pédagogie · Assiduité → Séances</b>, puis <b>Feuilles d'appel</b></div>
+
+  <h3>15.1 Créer une séance</h3>
+  <ol><li>Cliquez sur <b>Nouveau</b> et renseignez la séance :</li></ol>
+  <table>
+    <thead><tr><th>Champ</th><th>Valeur de l'exemple</th></tr></thead>
+    <tbody>
+      <tr><td>Classe</td><td>1<sup>re</sup> Primaire A</td></tr>
+      <tr><td>Cours (matière)</td><td>Mathématiques</td></tr>
+      <tr><td>Enseignant</td><td>Kalala Mbombo Marie</td></tr>
+      <tr><td>Salle</td><td>Salle 1</td></tr>
+      <tr><td>Année / Période</td><td>2025-2026 / 1<sup>er</sup> trimestre</td></tr>
+      <tr><td>Type</td><td>COURS</td></tr>
+      <tr><td>Date</td><td>02/09/2025</td></tr>
+      <tr><td>Heure de début / fin</td><td>08:00 / 09:00</td></tr>
+    </tbody>
+  </table>
+  <p>Une fois créée, une séance est <b>Planifiée</b>. Utilisez les boutons d'action pour la <b>Démarrer</b> (elle passe « En cours »), la <b>Terminer</b>, la <b>Reporter</b> ou l'<b>Annuler</b> (motif demandé).</p>
+  <div class="note"><b>Raccourci</b>Le bouton « drapeau » d'une ligne ouvre directement la <b>feuille d'appel</b> de cette séance.</div>
+
+  <h3>15.2 Ouvrir et remplir la feuille d'appel</h3>
+  <div class="where">Menu <b>Pédagogie · Assiduité → Feuilles d'appel</b></div>
+  <ol>
+    <li>Créez une feuille en choisissant la <b>séance</b>, puis ouvrez son détail.</li>
+    <li>Pointez chaque élève : <b>Présent</b>, <b>Absent</b> ou <b>Retard</b> (durée en minutes).</li>
+    <li>Utilisez au besoin l'<b>appel global</b> pour marquer tout le monde présent d'un coup.</li>
+    <li>Enchaînez <b>Soumettre → Valider → Clôturer</b>.</li>
+  </ol>
+  <div class="warn"><b>Après clôture</b>Une feuille clôturée n'est plus pointable. Toute tentative produit une erreur « état invalide ».</div>
+  <p class="ok"><b>Résultat attendu</b>La feuille affiche un taux de présence et un nombre d'absents ; le suivi d'assiduité se met à jour.</p>
+
+  <h3>15.3 Justifier une absence</h3>
+  <div class="where">Menu <b>Pédagogie · Assiduité → Justificatifs</b></div>
+  <ol>
+    <li>Cliquez sur <b>Déposer un justificatif</b> : élève, type, date de référence, motif, lien du document.</li>
+    <li>Un administrateur <b>Accepte</b> (l'absence du jour devient justifiée) ou <b>Rejette</b> (motif demandé).</li>
+  </ol>
+
+  <h3>15.4 Consulter l'assiduité</h3>
+  <div class="where">Menu <b>Pédagogie · Assiduité → Assiduité</b></div>
+  <p>Trois vues : le <b>suivi d'un élève</b> (taux de présence, absences justifiées / injustifiées), le <b>taux d'une classe</b> et le <b>registre</b> global.</p>
+
+  <!-- 16 -->
+  <h2 id="s16"><span class="n">16</span>Évaluer et produire un bulletin</h2>
+  <div class="where">Menu <b>Pédagogie · Évaluations → Évaluations</b>, puis <b>Bulletins</b></div>
+
+  <h3>16.1 Créer une évaluation</h3>
+  <ol><li>Cliquez sur <b>Nouveau</b> et renseignez l'évaluation :</li></ol>
+  <table>
+    <thead><tr><th>Champ</th><th>Valeur de l'exemple</th></tr></thead>
+    <tbody>
+      <tr><td>Libellé</td><td>Interrogation de mathématiques</td></tr>
+      <tr><td>Type</td><td>INTERROGATION</td></tr>
+      <tr><td>Classe</td><td>1<sup>re</sup> Primaire A</td></tr>
+      <tr><td>Cours / Matière</td><td>Mathématiques</td></tr>
+      <tr><td>Enseignant</td><td>Kalala Mbombo Marie</td></tr>
+      <tr><td>Année / Période</td><td>2025-2026 / 1<sup>er</sup> trimestre</td></tr>
+      <tr><td>Date</td><td>15/10/2025</td></tr>
+      <tr><td>Note max</td><td>20</td></tr>
+      <tr><td>Coefficient</td><td>1</td></tr>
+    </tbody>
+  </table>
+  <p>Une évaluation se crée en brouillon. Les actions s'enchaînent : <b>Ouvrir</b> (saisie des notes autorisée) → <b>Clôturer</b> → <b>Publier</b>.</p>
+
+  <h3>16.2 Saisir les notes</h3>
+  <p>Ouvrez le détail de l'évaluation : chaque élève reçoit une <b>note</b>. Vous pouvez aussi <b>marquer une absence</b>, <b>exclure</b> une note (non comptée) ou enregistrer une <b>contestation</b>.</p>
+
+  <h3>16.3 Construire un bulletin</h3>
+  <div class="where">Menu <b>Pédagogie · Évaluations → Bulletins</b></div>
+  <ol>
+    <li>Créez un bulletin (élève, période, année).</li>
+    <li>Ajoutez des <b>lignes</b> (matière, moyenne, coefficient) ; vous pouvez saisir les absences.</li>
+    <li>Enchaînez <b>Calculer</b> → <b>Publier</b> → <b>Générer</b> → <b>Signer</b>.</li>
+  </ol>
+  <div class="note"><b>Rectification</b>Une rectification crée une <b>nouvelle version</b> du bulletin ; la version précédente reste conservée.</div>
+  <p class="ok"><b>Résultat attendu</b>Le bulletin affiche la moyenne générale calculée à partir des lignes pondérées.</p>
+  <p>Le menu <b>Moyennes</b> permet de calculer la moyenne d'une évaluation, d'un élève, ou le classement d'une classe.</p>
+
+  <!-- 17 -->
+  <h2 id="s17"><span class="n">17</span>Gérer les frais</h2>
+  <div class="where">Menu <b>Pédagogie · Frais</b> → Grilles tarifaires, Avis de paiement, Paiements</div>
+
+  <h3>17.1 Créer une grille tarifaire</h3>
+  <ol><li>Cliquez sur <b>Nouveau</b> :</li></ol>
+  <table>
+    <thead><tr><th>Champ</th><th>Valeur de l'exemple</th></tr></thead>
+    <tbody>
+      <tr><td>Code</td><td><code>PRIM-2025</code></td></tr>
+      <tr><td>Libellé</td><td>Frais scolaire primaire 2025-2026</td></tr>
+      <tr><td>Année</td><td>2025-2026</td></tr>
+      <tr><td>Profil</td><td>PRIMAIRE</td></tr>
+      <tr><td>Devise</td><td>USD</td></tr>
+    </tbody>
+  </table>
+  <ol start="2">
+    <li>Ouvrez le détail pour ajouter des <b>lignes de frais</b> (type de frais, libellé, montant, périodicité, nombre d'échéances) et des <b>réductions</b>.</li>
+    <li><b>Activer</b> la grille. Elle devient alors applicable aux avis.</li>
+  </ol>
+  <div class="warn"><b>Grille figée</b>Une grille <b>figée</b> n'est plus modifiable (elle passe en lecture seule). Pour la faire évoluer, dupliquez-la. Une grille peut aussi être <b>archivée</b>.</div>
+
+  <h3>17.2 Émettre un avis de paiement</h3>
+  <div class="where">Menu <b>Pédagogie · Frais → Avis de paiement</b></div>
+  <ol>
+    <li>Créez un avis pour un élève à partir de la grille, puis <b>Émettre</b>.</li>
+    <li>Vous pouvez appliquer une <b>remise</b> (le net et les échéances sont recalculés) et consulter les <b>échéances</b>.</li>
+    <li><b>Annuler</b> si nécessaire.</li>
+  </ol>
+
+  <h3>17.3 Enregistrer un paiement</h3>
+  <div class="where">Menu <b>Pédagogie · Frais → Paiements</b></div>
+  <table>
+    <thead><tr><th>Champ</th><th>Valeur de l'exemple</th></tr></thead>
+    <tbody>
+      <tr><td>Avis</td><td>l'avis émis à l'étape précédente</td></tr>
+      <tr><td>Élève</td><td>Ilunga Kasongo David</td></tr>
+      <tr><td>Montant</td><td>150</td></tr>
+      <tr><td>Moyen</td><td>ESPECES</td></tr>
+      <tr><td>Référence transaction</td><td>facultatif</td></tr>
+    </tbody>
+  </table>
+  <p>Validez le formulaire puis <b>Valider</b> le paiement (ou le <b>Rejeter</b> / l'<b>Annuler</b>).</p>
+  <div class="note"><b>Idempotence</b>Chaque création porte automatiquement une <b>clé d'idempotence</b> : rejouer la même demande ne crée pas de doublon.</div>
+  <p class="ok"><b>Résultat attendu</b>Une fois le paiement validé, le solde de l'avis diminue ; s'il atteint zéro, l'avis passe au statut « Réglé ».</p>
+
+  <!-- 18 -->
+  <h2 id="s18"><span class="n">18</span>Vérifier et clôturer</h2>
   <ol class="check">
     <li>L'établissement existe et son profil est PRIMAIRE.</li>
     <li>Site, cycle, année (avec période) créés.</li>
@@ -520,6 +649,9 @@
     <li>L'emploi du temps est publié sans conflit.</li>
     <li>Le tuteur est créé et relié à l'élève.</li>
     <li>L'élève est au statut INSCRIT avec une inscription VALIDE.</li>
+    <li>Une séance est créée et sa feuille d'appel est pointée puis clôturée.</li>
+    <li>Une évaluation est notée et un bulletin est publié.</li>
+    <li>Une grille tarifaire est activée, un avis est émis et un paiement est validé.</li>
   </ol>
   <p>Pour finaliser, ouvrez <b>Plateforme → Établissements</b>, sélectionnez l'école et changez son statut en <b>ACTIF</b>.</p>
 
@@ -541,6 +673,9 @@
     <li>Emploi du temps</li>
     <li>Tuteur</li>
     <li>Élève + inscription</li>
+    <li>Séances + feuilles d'appel + justificatifs</li>
+    <li>Évaluations + bulletins</li>
+    <li>Grille tarifaire + avis + paiements</li>
   </ol>
 
   <h3>Erreurs fréquentes</h3>
@@ -550,6 +685,9 @@
       <tr><td>« Une classe primaire exige une seule affectation »</td><td>Plusieurs enseignants affectés à la même classe.</td><td>Ne garder qu'une affectation, de type TITULAIRE.</td></tr>
       <tr><td>« Publication impossible » (conflit)</td><td>Salle, classe ou enseignant utilisé deux fois sur un même créneau.</td><td>Corriger les plages en double puis republier.</td></tr>
       <tr><td>Inscription non comptée</td><td>L'inscription est restée EN_ATTENTE.</td><td>Valider l'inscription (statut VALIDE).</td></tr>
+      <tr><td>« État invalide » à la saisie d'un pointage</td><td>La feuille d'appel est déjà validée ou clôturée.</td><td>Ouvrir une nouvelle feuille ou reprendre avant clôture.</td></tr>
+      <tr><td>« Groupe complet »</td><td>La capacité du groupe TD/TP est atteinte.</td><td>Choisir un autre groupe ou augmenter sa capacité.</td></tr>
+      <tr><td>Grille tarifaire non modifiable</td><td>La grille est figée.</td><td>La dupliquer puis modifier la copie.</td></tr>
       <tr><td>Établissement introuvable après connexion</td><td>Aucun établissement sélectionné.</td><td>Choisir l'établissement ou le créer (§2).</td></tr>
       <tr><td>Erreur de connexion en fin de session</td><td>Jeton expiré.</td><td>Recharger la page et se reconnecter.</td></tr>
     </tbody>

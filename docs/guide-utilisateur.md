@@ -1,7 +1,8 @@
 # Guide utilisateur — NexusGesti
 
 Guide pas-à-pas de la plateforme, de l'ouverture de session jusqu'aux écrans livrés
-aujourd'hui (**socle** + **pédagogie · structure & personnes**).
+aujourd'hui (**socle** + **pédagogie** complète : structure, personnes, inscriptions,
+assiduité, évaluations, examens, frais).
 
 > Ce document est écrit pour un utilisateur non technique. Chaque terme métier est défini
 > dans le **Glossaire** (§4). Les identifiants sont donnés au §3.
@@ -19,7 +20,7 @@ Elle est organisée en **domaines** :
 | Domaine | Contenu | État |
 |---|---|---|
 | **Socle** | Réglages de l'établissement, années scolaires, grilles, référentiels, utilisateurs, audit, rapports | Disponible |
-| **Pédagogie** | Structure (classes, salles, emplois du temps…) et Personnes (élèves, parents, enseignants, personnel) | Disponible |
+| **Pédagogie** | Structure, Personnes, Inscriptions (UE, groupes, admissions), Assiduité (séances, appels), Évaluations (notes, bulletins), Examens (sessions, délibérations), Frais (grilles, avis, paiements) | Disponible |
 | **Hôpital** | Patients, rendez-vous, consultations, pharmacie | À venir |
 | **Finance** | Comptabilité OHADA / SYSCOHADA (RDC) | À venir |
 
@@ -127,6 +128,68 @@ crédits et coefficients.
 **Personnel** : regroupe les **services** de l'établissement (direction, scolarité…) et les
 **agents** administratifs.
 
+**Inscription UE** : rattachement d'un élève à une unité d'enseignement (cursus universitaire)
+pour une année. Elle se valide ou se refuse.
+
+**Groupe TD/TP** : sous-groupe d'une classe pour les travaux dirigés ou pratiques. Sa capacité
+est limitée ; un groupe plein refuse les ajouts.
+
+**Règle d'éligibilité** : condition d'admission (crédits minimum, moyenne minimum, âge…) évaluée
+pour un candidat.
+
+**Séance** : occurrence d'un cours (une date, un créneau). Une séance se *démarre*, *termine*,
+*reporte* ou s'*annule*.
+
+**Feuille d'appel** : liste de présence d'une séance. On y pointe chaque élève (présent, absent,
+retard). Validée ou clôturée, elle n'est plus modifiable.
+
+**Justificatif** : document déposé pour excuser une absence. Un justificatif *accepté* requalifie
+l'absence en absence justifiée.
+
+**Assiduité** : indicateur calculé (taux de présence, absences justifiées / injustifiées) par
+élève, par classe ou sous forme de registre.
+
+**Évaluation** : contrôle noté (devoir, interrogation…). Elle porte une feuille de notes, puis se
+*clôture* et se *publie*.
+
+**Note** : résultat d'un élève à une évaluation ; peut être marquée absente, exclue ou contestée.
+
+**Bulletin** : synthèse des notes d'un élève sur une période. Il se *calcule*, se *publie*, se
+*signe* et peut être *rectifié* (nouvelle version).
+
+**Coupon de notes** : extrait sécurisé d'un bulletin, numéroté et protégé par une empreinte.
+
+**Moyenne / classement** : calcul automatique (par évaluation, par élève, par classe).
+
+**Session d'examen** : période officielle d'examens, contenant des **épreuves** et des
+**convocations**.
+
+**Épreuve** : examen d'une matière ou d'une UE au sein d'une session.
+
+**Convocation** : document appelant un candidat à une épreuve.
+
+**Délibération** : réunion du jury qui décide du passage, du redoublement ou de l'admission.
+
+**Décision** : verdict du jury pour un élève (admis, ajourné, repêché…), par classe ou par UE.
+
+**Résultat officiel** : résultat publié d'une session.
+
+**Rattrapage** : seconde épreuve pour un candidat ajourné.
+
+**Procès-verbal** : document officiel d'une session, *signé* puis *homologué*.
+
+**Grille tarifaire** : barème des frais (scolarité, inscription…), versionné ; elle s'*active* et
+se *fige*.
+
+**Avis de paiement** : appel de fonds émis pour un élève, décomposé en **échéances** ; il accepte
+une **remise**.
+
+**Paiement** : règlement d'un avis. **Idempotent** : rejouer la même demande ne crée pas de doublon.
+
+**Coupon de paiement** : reçu numéroté d'un paiement, protégé par une empreinte.
+
+**Journalier** : caisse journalière (ouverture, fond, clôture) d'un site.
+
 **Rôle** : ensemble de permissions (ADMIN, CUSTOMER…). **Permission** : droit élémentaire
 (verbe + ressource).
 
@@ -225,6 +288,53 @@ Menu de gauche, groupe **« Pédagogie · Personnes »** :
 > **Astuce :** les listes ont une **barre de recherche** (matricule, nom, code…). Le nombre
 > d'éléments est affiché sous le tableau.
 
+### 7.9 Pédagogie · Inscriptions
+Menu de gauche, groupe **« Pédagogie · Inscriptions »** (surtout utile au supérieur) :
+- **Inscriptions UE** : rattachez un élève à une UE, puis **Valider** (ou refuser / mettre en
+  liste d'attente / annuler).
+- **Groupes TD/TP** : créez des groupes (code, capacité) et affectez des **membres** ; un groupe
+  plein refuse les ajouts. Ouvrez / clôturez un groupe depuis sa fiche.
+- **Règles d'éligibilité** : définissez les conditions d'admission (crédits, moyenne, âge).
+- **Admissions** : évaluez un **candidat** (éligible ou non) et consultez le **parcours** d'un
+  élève (crédits acquis, taux de progression).
+
+### 7.10 Pédagogie · Assiduité
+- **Séances** : créez une séance (classe, cours, date, créneau), puis **Démarrer**, **Terminer**,
+  **Reporter** ou **Annuler**.
+- **Feuilles d'appel** : ouvrez une feuille, **pointez** les présences, marquez une **absence** ou
+  un **retard**, puis **Soumettre**, **Valider**, **Clôturer**. Après clôture, la feuille n'est
+  plus pointable.
+- **Justificatifs** : déposez un justificatif puis **Accepter** ou **Rejeter** ; accepté, il
+  requalifie l'absence.
+- **Assiduité** : consultez le **suivi d'un élève**, le **taux d'une classe** ou le **registre**.
+
+### 7.11 Pédagogie · Évaluations
+- **Évaluations** : créez une évaluation (**Ouvrir**), saisissez les **notes** sur la feuille,
+  marquez une **absence**, puis **Clôturer** et **Publier**.
+- **Bulletins** : créez un bulletin, ajoutez des **lignes**, puis **Calculer**, **Publier**,
+  **Générer**, **Signer**. Une **rectification** crée une nouvelle version. Les **coupons** se
+  tirent depuis le bulletin.
+- **Moyennes & classement** : calculez la moyenne d'une **évaluation**, d'un **élève**, ou le
+  **classement** d'une classe.
+
+### 7.12 Pédagogie · Examens
+- **Sessions d'examen** : créez une session puis **Programmer**, **Ouvrir**, **Clôturer**,
+  **Annuler** ; ajoutez-y **épreuves**, **créneaux** et **convocations** (+ notifier).
+- **Délibérations** : créez une délibération, **Ouvrir**, saisissez les **décisions**
+  (individuelles ou par UE), puis **Clôturer**. Les **résultats** se publient depuis la décision.
+- **Rattrapages** : déclarez un candidat **présent** ou **exempt**.
+- **Procès-verbaux** : **Soumettre**, **Signer**, **Homologuer** (ou **Contester**).
+
+### 7.13 Pédagogie · Frais
+- **Grilles tarifaires** : créez une grille, ajoutez des **lignes** et des **réductions**, puis
+  **Activer**, **Figer** (lecture seule) ou **Archiver**.
+- **Avis de paiement** : **Émettre** un avis, appliquer une **remise**, consulter les **échéances**,
+  **Annuler** si besoin.
+- **Paiements** : enregistrez un paiement (la clé d'idempotence est gérée automatiquement), puis
+  **Valider**, **Rejeter** ou **Annuler**.
+- **Coupons** : tirez un coupon (empreinte de sécurité), **Vérifier**, **Remettre**, **Annuler**.
+- **Journaliers** : ouvrez un journalier de caisse (site, date, fond) puis **Clôturer**.
+
 ---
 
 ## 8. Ce que peut faire chaque profil (récapitulatif)
@@ -248,6 +358,12 @@ En tant que CUSTOMER, les boutons de création/modification n'apparaissent pas :
 | `GRILLE_FIGEE` (409) | La grille est figée, donc non modifiable | La dupliquer puis modifier la copie |
 | `TRANSITION_INVALIDE` (409) | Changement d'état non autorisé | Vérifier l'état courant (ex. clôturer une classe déjà clôturée) |
 | `ITEM_EXISTANT` / `MATRICULE_EXISTANT` (409) | Doublon de code ou de matricule | Utiliser une valeur unique |
+| `ETAT_INVALIDE` (409) | Action interdite dans l'état courant | Vérifier l'état (ex. pointer une feuille clôturée) |
+| `CONFLIT` / `CONFLIT_EMPLOI` (409) | Conflit détecté (emploi du temps…) | Corriger les éléments en double |
+| `GROUPE_COMPLET` (409) | Le groupe TD/TP a atteint sa capacité | Choisir un autre groupe ou augmenter la capacité |
+| `IDEMPOTENCE_EN_COURS` (409) | Un paiement identique est déjà en cours | Attendre puis réessayer |
+| `INVALIDE` (400) | Donnée invalide (champ manquant ou incorrect) | Corriger le formulaire |
+| `NOT_FOUND` (404) | Élément introuvable (souvent : mauvais établissement) | Vérifier le sélecteur de tenant |
 | `AUTH_INVALID_CREDENTIALS` (401) | E-mail ou mot de passe incorrect | Vérifier les identifiants (§3) |
 | `Invalid X-Tenant-Id header` (400) | Établissement non sélectionné ou invalide | Choisir un établissement dans le sélecteur |
 | `KEYCLOAK_INDISPONIBLE` (503) | Le service d'authentification est arrêté | Relancer le backend |
@@ -277,4 +393,9 @@ En tant que CUSTOMER, les boutons de création/modification n'apparaissent pas :
 7. Créer un **emploi du temps**, ajouter des **plages**, observer les **conflits**, **publier**.
 8. **Pédagogie · Personnes** : créer un **élève**, ouvrir sa fiche, ajouter une **inscription**.
 9. Créer un **enseignant** et une **affectation**.
-10. Se reconnecter en **CUSTOMER** et constater que tout est **en lecture seule**.
+10. **Pédagogie · Assiduité** : créer une **séance**, ouvrir la **feuille d'appel**, pointer les élèves.
+11. **Pédagogie · Évaluations** : créer une **évaluation**, saisir des **notes**, **calculer** et
+    **publier** un **bulletin**.
+12. **Pédagogie · Frais** : créer une **grille tarifaire**, **émettre** un **avis**, enregistrer un
+    **paiement**.
+13. Se reconnecter en **CUSTOMER** et constater que tout est **en lecture seule**.
