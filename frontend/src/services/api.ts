@@ -71,6 +71,57 @@ import type {
   ResultatValidation,
   StatutEnseignant,
 } from "@/types";
+import type {
+  InscriptionUE,
+  MembreGroupe,
+  Groupe,
+  RegleInscription,
+  Candidat,
+  ParcoursAcademique,
+  Seance,
+  FeuillePresence,
+  PresenceEleve,
+  Justificatif,
+  SuiviAssiduite,
+  PointerRequest,
+  AppelGlobalRequest,
+  AbsenceRequest,
+  RetardRequest,
+  Evaluation,
+  FeuilleNote,
+  Note,
+  LigneBulletin,
+  SyntheseAbsences,
+  CouponNotes,
+  Bulletin,
+  ResultatMoyenne,
+  Classement,
+  SaisirNoteRequest,
+  EleveRequest,
+  MotifEleveRequest,
+  SessionExamen,
+  Epreuve,
+  CreneauExamen,
+  Convocation,
+  NoteExamen,
+  Correction,
+  Deliberation,
+  DecisionExamen,
+  DecisionUE,
+  ResultatOfficiel,
+  Rattrapage,
+  ProcesVerbal,
+  SaisirNoteExamenRequest,
+  DeciderRequest,
+  Reduction,
+  LigneGrille,
+  GrilleTarifaire,
+  AvisPaiement,
+  Paiement,
+  CouponPaiement,
+  Journalier,
+  RemiseRequest,
+} from "@/types";
 
 export const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080/api/v1";
 export const TENANT_KEY = "x_tenant_id";
@@ -647,4 +698,332 @@ export const peopleApi = {
 };
 
 export { rawFetch as apiFetch };
+
+const qp = (params: Record<string, string | number | null | undefined>): string => {
+  const usp = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) {
+    if (value !== undefined && value !== null && value !== "") usp.set(key, String(value));
+  }
+  const qs = usp.toString();
+  return qs ? `?${qs}` : "";
+};
+
+export const enrollmentApi = {
+  inscriptions: {
+    list: () => rawFetch<InscriptionUE[]>("/ped/inscriptions"),
+    get: (id: string) => rawFetch<InscriptionUE>(`/ped/inscriptions/${id}`),
+    create: (body: Partial<InscriptionUE>) =>
+      rawFetch<InscriptionUE>("/ped/inscriptions", jsonInit("POST", body)),
+    update: (id: string, body: Partial<InscriptionUE>) =>
+      rawFetch<InscriptionUE>(`/ped/inscriptions/${id}`, jsonInit("PUT", body)),
+    valider: (id: string) => rawFetch<InscriptionUE>(`/ped/inscriptions/${id}/valider`, { method: "POST" }),
+    refuser: (id: string, motif: string) =>
+      rawFetch<InscriptionUE>(`/ped/inscriptions/${id}/refuser`, jsonInit("POST", { motif })),
+    listeAttente: (id: string, rang?: number) =>
+      rawFetch<InscriptionUE>(`/ped/inscriptions/${id}/liste-attente`, jsonInit("POST", { rang })),
+    annuler: (id: string) => rawFetch<InscriptionUE>(`/ped/inscriptions/${id}/annuler`, { method: "POST" }),
+  },
+  groupes: {
+    list: () => rawFetch<Groupe[]>("/ped/inscriptions/groupes"),
+    get: (id: string) => rawFetch<Groupe>(`/ped/inscriptions/groupes/${id}`),
+    create: (body: Partial<Groupe>) =>
+      rawFetch<Groupe>("/ped/inscriptions/groupes", jsonInit("POST", body)),
+    update: (id: string, body: Partial<Groupe>) =>
+      rawFetch<Groupe>(`/ped/inscriptions/groupes/${id}`, jsonInit("PUT", body)),
+    ouvrir: (id: string) => rawFetch<Groupe>(`/ped/inscriptions/groupes/${id}/ouvrir`, { method: "POST" }),
+    clore: (id: string) => rawFetch<Groupe>(`/ped/inscriptions/groupes/${id}/clore`, { method: "POST" }),
+    membres: (id: string) => rawFetch<MembreGroupe[]>(`/ped/inscriptions/groupes/${id}/membres`),
+    ajouterMembre: (id: string, body: Partial<MembreGroupe>) =>
+      rawFetch<Groupe>(`/ped/inscriptions/groupes/${id}/membres`, jsonInit("POST", body)),
+    exclureMembre: (id: string, membreId: string) =>
+      rawFetch<Groupe>(`/ped/inscriptions/groupes/${id}/membres/${membreId}`, { method: "DELETE" }),
+  },
+  regles: {
+    list: () => rawFetch<RegleInscription[]>("/ped/admissions/regles"),
+    get: (id: string) => rawFetch<RegleInscription>(`/ped/admissions/regles/${id}`),
+    create: (body: Partial<RegleInscription>) =>
+      rawFetch<RegleInscription>("/ped/admissions/regles", jsonInit("POST", body)),
+    update: (id: string, body: Partial<RegleInscription>) =>
+      rawFetch<RegleInscription>(`/ped/admissions/regles/${id}`, jsonInit("PUT", body)),
+    remove: (id: string) => rawFetch<void>(`/ped/admissions/regles/${id}`, { method: "DELETE" }),
+  },
+  evaluer: (candidat: Candidat) =>
+    rawFetch<{ decision: string }>("/ped/admissions/evaluer", jsonInit("POST", candidat)),
+  parcours: (eleveId: string, params?: { programmeId?: string; creditsRequis?: number }) =>
+    rawFetch<ParcoursAcademique>(`/ped/admissions/parcours/${eleveId}${qp(params ?? {})}`),
+};
+
+export const attendanceApi = {
+  seances: {
+    list: (params?: { date?: string }) => rawFetch<Seance[]>(`/ped/seances${qp(params ?? {})}`),
+    get: (id: string) => rawFetch<Seance>(`/ped/seances/${id}`),
+    create: (body: Partial<Seance>) => rawFetch<Seance>("/ped/seances", jsonInit("POST", body)),
+    update: (id: string, body: Partial<Seance>) => rawFetch<Seance>(`/ped/seances/${id}`, jsonInit("PUT", body)),
+    demarrer: (id: string) => rawFetch<Seance>(`/ped/seances/${id}/demarrer`, { method: "POST" }),
+    terminer: (id: string) => rawFetch<Seance>(`/ped/seances/${id}/terminer`, { method: "POST" }),
+    reporter: (id: string) => rawFetch<Seance>(`/ped/seances/${id}/reporter`, { method: "POST" }),
+    annuler: (id: string, motif: string) =>
+      rawFetch<Seance>(`/ped/seances/${id}/annuler`, jsonInit("POST", { motif })),
+  },
+  appels: {
+    list: () => rawFetch<FeuillePresence[]>("/ped/appels"),
+    get: (id: string) => rawFetch<FeuillePresence>(`/ped/appels/${id}`),
+    create: (body: Partial<FeuillePresence>) => rawFetch<FeuillePresence>("/ped/appels", jsonInit("POST", body)),
+    presences: (id: string) => rawFetch<PresenceEleve[]>(`/ped/appels/${id}/presences`),
+    pointer: (id: string, body: PointerRequest) =>
+      rawFetch<FeuillePresence>(`/ped/appels/${id}/pointer`, jsonInit("POST", body)),
+    appelGlobal: (id: string, body: AppelGlobalRequest) =>
+      rawFetch<FeuillePresence>(`/ped/appels/${id}/appel-global`, jsonInit("POST", body)),
+    absence: (id: string, body: AbsenceRequest) =>
+      rawFetch<FeuillePresence>(`/ped/appels/${id}/absence`, jsonInit("POST", body)),
+    retard: (id: string, body: RetardRequest) =>
+      rawFetch<FeuillePresence>(`/ped/appels/${id}/retard`, jsonInit("POST", body)),
+    soumettre: (id: string) => rawFetch<FeuillePresence>(`/ped/appels/${id}/soumettre`, { method: "POST" }),
+    valider: (id: string) => rawFetch<FeuillePresence>(`/ped/appels/${id}/valider`, { method: "POST" }),
+    cloturer: (id: string) => rawFetch<FeuillePresence>(`/ped/appels/${id}/cloturer`, { method: "POST" }),
+  },
+  justificatifs: {
+    list: () => rawFetch<Justificatif[]>("/ped/absences/justificatifs"),
+    get: (id: string) => rawFetch<Justificatif>(`/ped/absences/justificatifs/${id}`),
+    create: (body: Partial<Justificatif>) =>
+      rawFetch<Justificatif>("/ped/absences/justificatifs", jsonInit("POST", body)),
+    accepter: (id: string) =>
+      rawFetch<Justificatif>(`/ped/absences/justificatifs/${id}/accepter`, { method: "POST" }),
+    rejeter: (id: string, motif: string) =>
+      rawFetch<Justificatif>(`/ped/absences/justificatifs/${id}/rejeter`, jsonInit("POST", { motif })),
+  },
+  assiduite: {
+    eleve: (eleveId: string, params?: { anneeId?: string; periodeId?: string }) =>
+      rawFetch<SuiviAssiduite>(`/ped/assiduite/${eleveId}${qp(params ?? {})}`),
+    classeTaux: (classeId: string) => rawFetch<number>(`/ped/assiduite/classe/${classeId}/taux`),
+    registre: (params?: { classeId?: string; date?: string }) =>
+      rawFetch<FeuillePresence[]>(`/ped/assiduite/registre${qp(params ?? {})}`),
+  },
+};
+
+export const assessmentApi = {
+  evaluations: {
+    list: (params?: { classeId?: string; periodeId?: string }) =>
+      rawFetch<Evaluation[]>(`/ped/evaluations${qp(params ?? {})}`),
+    get: (id: string) => rawFetch<Evaluation>(`/ped/evaluations/${id}`),
+    create: (body: Partial<Evaluation>) =>
+      rawFetch<Evaluation>("/ped/evaluations", jsonInit("POST", body)),
+    update: (id: string, body: Partial<Evaluation>) =>
+      rawFetch<Evaluation>(`/ped/evaluations/${id}`, jsonInit("PUT", body)),
+    ouvrir: (id: string) => rawFetch<Evaluation>(`/ped/evaluations/${id}/ouvrir`, { method: "POST" }),
+    cloturer: (id: string) => rawFetch<Evaluation>(`/ped/evaluations/${id}/cloturer`, { method: "POST" }),
+    publier: (id: string) => rawFetch<Evaluation>(`/ped/evaluations/${id}/publier`, { method: "POST" }),
+    annuler: (id: string, motif?: string) =>
+      rawFetch<Evaluation>(`/ped/evaluations/${id}/annuler`, jsonInit("POST", { motif })),
+    feuille: (id: string) => rawFetch<FeuilleNote>(`/ped/evaluations/${id}/feuille`),
+    notes: (id: string) => rawFetch<Note[]>(`/ped/evaluations/${id}/notes`),
+    saisirNote: (id: string, body: SaisirNoteRequest) =>
+      rawFetch<Evaluation>(`/ped/evaluations/${id}/notes`, jsonInit("POST", body)),
+    marquerAbsent: (id: string, body: EleveRequest) =>
+      rawFetch<Evaluation>(`/ped/evaluations/${id}/notes/absence`, jsonInit("POST", body)),
+    exclureNote: (id: string, body: MotifEleveRequest) =>
+      rawFetch<Evaluation>(`/ped/evaluations/${id}/notes/exclusion`, jsonInit("POST", body)),
+    contesterNote: (id: string, body: MotifEleveRequest) =>
+      rawFetch<Evaluation>(`/ped/evaluations/${id}/notes/contestation`, jsonInit("POST", body)),
+  },
+  notes: {
+    list: (params?: { evaluationId?: string; eleveId?: string }) =>
+      rawFetch<Note[]>(`/ped/notes${qp(params ?? {})}`),
+  },
+  bulletins: {
+    list: (params?: { eleveId?: string; classeId?: string; periodeId?: string }) =>
+      rawFetch<Bulletin[]>(`/ped/bulletins${qp(params ?? {})}`),
+    get: (id: string) => rawFetch<Bulletin>(`/ped/bulletins/${id}`),
+    create: (body: Partial<Bulletin>) =>
+      rawFetch<Bulletin>("/ped/bulletins", jsonInit("POST", body)),
+    ajouterLigne: (id: string, body: Partial<LigneBulletin>) =>
+      rawFetch<Bulletin>(`/ped/bulletins/${id}/lignes`, jsonInit("POST", body)),
+    definirAbsences: (id: string, body: Partial<SyntheseAbsences>) =>
+      rawFetch<Bulletin>(`/ped/bulletins/${id}/absences`, jsonInit("POST", body)),
+    calculer: (id: string) => rawFetch<Bulletin>(`/ped/bulletins/${id}/calculer`, { method: "POST" }),
+    publier: (id: string) => rawFetch<Bulletin>(`/ped/bulletins/${id}/publier`, { method: "POST" }),
+    generer: (id: string) => rawFetch<Bulletin>(`/ped/bulletins/${id}/generer`, { method: "POST" }),
+    signer: (id: string) => rawFetch<Bulletin>(`/ped/bulletins/${id}/signer`, { method: "POST" }),
+    rectifier: (id: string, motif?: string) =>
+      rawFetch<Bulletin>(`/ped/bulletins/${id}/rectifier`, jsonInit("POST", { motif })),
+    coupons: (id: string) => rawFetch<CouponNotes[]>(`/ped/bulletins/${id}/coupons`),
+    creerCoupon: (id: string, observation?: string) =>
+      rawFetch<CouponNotes>(`/ped/bulletins/${id}/coupons`, jsonInit("POST", { observation })),
+    tirerCoupon: (id: string, couponId: string) =>
+      rawFetch<CouponNotes>(`/ped/bulletins/${id}/coupons/${couponId}/tirer`, { method: "POST" }),
+    detacherCoupon: (id: string, couponId: string) =>
+      rawFetch<CouponNotes>(`/ped/bulletins/${id}/coupons/${couponId}/detacher`, { method: "POST" }),
+    signerCoupon: (id: string, couponId: string) =>
+      rawFetch<CouponNotes>(`/ped/bulletins/${id}/coupons/${couponId}/signer`, { method: "POST" }),
+    rendreCoupon: (id: string, couponId: string) =>
+      rawFetch<CouponNotes>(`/ped/bulletins/${id}/coupons/${couponId}/rendre`, { method: "POST" }),
+  },
+  moyennes: {
+    evaluation: (evaluationId: string) =>
+      rawFetch<ResultatMoyenne>(`/ped/moyennes/evaluation/${evaluationId}`),
+    eleve: (eleveId: string, periodeId?: string) =>
+      rawFetch<ResultatMoyenne>(`/ped/moyennes/eleve/${eleveId}${qp({ periodeId })}`),
+    classe: (classeId: string) => rawFetch<Classement[]>(`/ped/moyennes/classe/${classeId}`),
+  },
+};
+
+export const examApi = {
+  sessions: {
+    list: (params?: { anneeId?: string; classeId?: string }) =>
+      rawFetch<SessionExamen[]>(`/ped/sessions${qp(params ?? {})}`),
+    get: (id: string) => rawFetch<SessionExamen>(`/ped/sessions/${id}`),
+    create: (body: Partial<SessionExamen>) => rawFetch<SessionExamen>("/ped/sessions", jsonInit("POST", body)),
+    programmer: (id: string) => rawFetch<SessionExamen>(`/ped/sessions/${id}/programmer`, { method: "POST" }),
+    ouvrir: (id: string) => rawFetch<SessionExamen>(`/ped/sessions/${id}/ouvrir`, { method: "POST" }),
+    cloturer: (id: string) => rawFetch<SessionExamen>(`/ped/sessions/${id}/cloturer`, { method: "POST" }),
+    annuler: (id: string, motif?: string) =>
+      rawFetch<SessionExamen>(`/ped/sessions/${id}/annuler`, jsonInit("POST", { motif })),
+    epreuves: (sessionId: string) => rawFetch<Epreuve[]>(`/ped/sessions/${sessionId}/epreuves`),
+    ajouterEpreuve: (sessionId: string, body: Partial<Epreuve>) =>
+      rawFetch<Epreuve>(`/ped/sessions/${sessionId}/epreuves`, jsonInit("POST", body)),
+    creneaux: (sessionId: string) => rawFetch<CreneauExamen[]>(`/ped/sessions/${sessionId}/creneaux`),
+    ajouterCreneau: (sessionId: string, body: Partial<CreneauExamen>) =>
+      rawFetch<CreneauExamen>(`/ped/sessions/${sessionId}/creneaux`, jsonInit("POST", body)),
+    convocations: (sessionId: string) => rawFetch<Convocation[]>(`/ped/sessions/${sessionId}/convocations`),
+    creerConvocation: (sessionId: string, body: Partial<Convocation>) =>
+      rawFetch<Convocation>(`/ped/sessions/${sessionId}/convocations`, jsonInit("POST", body)),
+  },
+  epreuves: {
+    get: (id: string) => rawFetch<Epreuve>(`/ped/epreuves/${id}`),
+    valider: (id: string) => rawFetch<Epreuve>(`/ped/epreuves/${id}/valider`, { method: "POST" }),
+    horsMoyenne: (id: string) => rawFetch<Epreuve>(`/ped/epreuves/${id}/hors-moyenne`, { method: "POST" }),
+    rattacherPeriode: (id: string, periodeId: string) =>
+      rawFetch<Epreuve>(`/ped/epreuves/${id}/periode`, jsonInit("POST", { eleveId: periodeId })),
+  },
+  convocations: {
+    get: (id: string) => rawFetch<Convocation>(`/ped/convocations/${id}`),
+    emettre: (id: string) => rawFetch<Convocation>(`/ped/convocations/${id}/emettre`, { method: "POST" }),
+    notifier: (id: string, canal?: string) =>
+      rawFetch<Convocation>(`/ped/convocations/${id}/notifier`, jsonInit("POST", { canal })),
+  },
+  notes: {
+    list: (params?: { epreuveId?: string; eleveId?: string }) =>
+      rawFetch<NoteExamen[]>(`/ped/notes-examen${qp(params ?? {})}`),
+    saisir: (epreuveId: string, body: SaisirNoteExamenRequest) =>
+      rawFetch<NoteExamen>(`/ped/epreuves/${epreuveId}/notes`, jsonInit("POST", body)),
+    marquerAbsent: (epreuveId: string, body: EleveRequest) =>
+      rawFetch<NoteExamen>(`/ped/epreuves/${epreuveId}/notes/absence`, jsonInit("POST", body)),
+    exclure: (id: string, motif?: string) =>
+      rawFetch<NoteExamen>(`/ped/notes-examen/${id}/exclure`, jsonInit("POST", { motif })),
+    contester: (id: string, motif?: string) =>
+      rawFetch<NoteExamen>(`/ped/notes-examen/${id}/contester`, jsonInit("POST", { motif })),
+    valider: (id: string) => rawFetch<NoteExamen>(`/ped/notes-examen/${id}/valider`, { method: "POST" }),
+  },
+  corrections: {
+    ouvrir: (epreuveId: string) =>
+      rawFetch<Correction>(`/ped/epreuves/${epreuveId}/corrections`, jsonInit("POST", {})),
+    get: (id: string) => rawFetch<Correction>(`/ped/corrections/${id}`),
+    calculer: (id: string) => rawFetch<Correction>(`/ped/corrections/${id}/calculer`, { method: "POST" }),
+    cloturer: (id: string) => rawFetch<Correction>(`/ped/corrections/${id}/cloturer`, { method: "POST" }),
+  },
+  deliberations: {
+    list: (sessionId?: string) => rawFetch<Deliberation[]>(`/ped/deliberations${qp({ sessionId })}`),
+    get: (id: string) => rawFetch<Deliberation>(`/ped/deliberations/${id}`),
+    create: (body: Partial<Deliberation>) =>
+      rawFetch<Deliberation>("/ped/deliberations", jsonInit("POST", body)),
+    planifier: (id: string) => rawFetch<Deliberation>(`/ped/deliberations/${id}/planifier`, { method: "POST" }),
+    ouvrir: (id: string) => rawFetch<Deliberation>(`/ped/deliberations/${id}/ouvrir`, { method: "POST" }),
+    cloturer: (id: string) => rawFetch<Deliberation>(`/ped/deliberations/${id}/cloturer`, { method: "POST" }),
+    decider: (id: string, body: DeciderRequest) =>
+      rawFetch<DecisionExamen>(`/ped/deliberations/${id}/decisions`, jsonInit("POST", body)),
+    ajouterDecisionUE: (id: string, body: Partial<DecisionUE>) =>
+      rawFetch<DecisionUE>(`/ped/deliberations/${id}/decisions-ue`, jsonInit("POST", body)),
+  },
+  resultats: {
+    publier: (decisionId: string) =>
+      rawFetch<ResultatOfficiel>(`/ped/decisions/${decisionId}/resultats`, { method: "POST" }),
+    get: (id: string) => rawFetch<ResultatOfficiel>(`/ped/resultats/${id}`),
+  },
+  rattrapages: {
+    list: (eleveId?: string) => rawFetch<Rattrapage[]>(`/ped/rattrapages${qp({ eleveId })}`),
+    get: (id: string) => rawFetch<Rattrapage>(`/ped/rattrapages/${id}`),
+    create: (body: Partial<Rattrapage>) =>
+      rawFetch<Rattrapage>("/ped/rattrapages", jsonInit("POST", body)),
+    exempt: (id: string, motif?: string) =>
+      rawFetch<Rattrapage>(`/ped/rattrapages/${id}/exempt`, jsonInit("POST", { motif })),
+  },
+  procesVerbaux: {
+    list: (sessionId?: string) => rawFetch<ProcesVerbal[]>(`/ped/proces-verbaux${qp({ sessionId })}`),
+    get: (id: string) => rawFetch<ProcesVerbal>(`/ped/proces-verbaux/${id}`),
+    create: (body: Partial<ProcesVerbal>) =>
+      rawFetch<ProcesVerbal>("/ped/proces-verbaux", jsonInit("POST", body)),
+    soumettre: (id: string) => rawFetch<ProcesVerbal>(`/ped/proces-verbaux/${id}/soumettre`, { method: "POST" }),
+    signer: (id: string, role?: string) =>
+      rawFetch<ProcesVerbal>(`/ped/proces-verbaux/${id}/signer`, jsonInit("POST", { role })),
+    homologuer: (id: string) => rawFetch<ProcesVerbal>(`/ped/proces-verbaux/${id}/homologuer`, { method: "POST" }),
+    contester: (id: string, motif?: string) =>
+      rawFetch<ProcesVerbal>(`/ped/proces-verbaux/${id}/contester`, jsonInit("POST", { motif })),
+  },
+};
+
+export const feesApi = {
+  grilles: {
+    list: (params?: { anneeId?: string; profil?: string }) =>
+      rawFetch<GrilleTarifaire[]>(`/ped/frais/grilles${qp(params ?? {})}`),
+    applicable: (params?: { anneeId?: string; profil?: string }) =>
+      rawFetch<GrilleTarifaire>(`/ped/frais/grilles/applicable${qp(params ?? {})}`),
+    get: (id: string) => rawFetch<GrilleTarifaire>(`/ped/frais/grilles/${id}`),
+    create: (body: Partial<GrilleTarifaire>) =>
+      rawFetch<GrilleTarifaire>("/ped/frais/grilles", jsonInit("POST", body)),
+    activer: (id: string) => rawFetch<GrilleTarifaire>(`/ped/frais/grilles/${id}/activer`, { method: "POST" }),
+    figer: (id: string) => rawFetch<GrilleTarifaire>(`/ped/frais/grilles/${id}/figer`, { method: "POST" }),
+    archiver: (id: string) => rawFetch<GrilleTarifaire>(`/ped/frais/grilles/${id}/archiver`, { method: "POST" }),
+    ajouterLigne: (id: string, body: Partial<LigneGrille>) =>
+      rawFetch<GrilleTarifaire>(`/ped/frais/grilles/${id}/lignes`, jsonInit("POST", body)),
+    ajouterReduction: (id: string, body: Partial<Reduction>) =>
+      rawFetch<GrilleTarifaire>(`/ped/frais/grilles/${id}/reductions`, jsonInit("POST", body)),
+  },
+  avis: {
+    list: (params?: { eleveId?: string; anneeId?: string }) =>
+      rawFetch<AvisPaiement[]>(`/ped/frais/avis${qp(params ?? {})}`),
+    get: (id: string) => rawFetch<AvisPaiement>(`/ped/frais/avis/${id}`),
+    create: (body: Partial<AvisPaiement>) =>
+      rawFetch<AvisPaiement>("/ped/frais/avis", jsonInit("POST", body)),
+    valider: (id: string) => rawFetch<AvisPaiement>(`/ped/frais/avis/${id}/valider`, { method: "POST" }),
+    emettre: (id: string) => rawFetch<AvisPaiement>(`/ped/frais/avis/${id}/emettre`, { method: "POST" }),
+    annuler: (id: string, motif?: string) =>
+      rawFetch<AvisPaiement>(`/ped/frais/avis/${id}/annuler`, jsonInit("POST", { motif })),
+    remise: (id: string, body: RemiseRequest) =>
+      rawFetch<AvisPaiement>(`/ped/frais/avis/${id}/remise`, jsonInit("POST", body)),
+  },
+  paiements: {
+    list: (params?: { eleveId?: string; avisId?: string }) =>
+      rawFetch<Paiement[]>(`/ped/paiements${qp(params ?? {})}`),
+    get: (id: string) => rawFetch<Paiement>(`/ped/paiements/${id}`),
+    create: (body: Partial<Paiement>, idempotencyKey: string) =>
+      rawFetch<Paiement>("/ped/paiements", {
+        ...jsonInit("POST", body),
+        headers: { ...jsonInit("POST", body).headers, "Idempotency-Key": idempotencyKey },
+      }),
+    valider: (id: string) => rawFetch<Paiement>(`/ped/paiements/${id}/valider`, { method: "POST" }),
+    rejeter: (id: string, motif: string) =>
+      rawFetch<Paiement>(`/ped/paiements/${id}/rejeter`, jsonInit("POST", { motif })),
+    annuler: (id: string, motif: string) =>
+      rawFetch<Paiement>(`/ped/paiements/${id}/annuler`, jsonInit("POST", { motif })),
+  },
+  coupons: {
+    list: (params?: { eleveId?: string; anneeId?: string }) =>
+      rawFetch<CouponPaiement[]>(`/ped/coupons${qp(params ?? {})}`),
+    get: (id: string) => rawFetch<CouponPaiement>(`/ped/coupons/${id}`),
+    tirer: (id: string) => rawFetch<CouponPaiement>(`/ped/coupons/${id}/tirer`, { method: "POST" }),
+    remettre: (id: string, destinataire?: string) =>
+      rawFetch<CouponPaiement>(`/ped/coupons/${id}/remettre`, jsonInit("POST", { destinataire })),
+    annuler: (id: string, motif?: string) =>
+      rawFetch<CouponPaiement>(`/ped/coupons/${id}/annuler`, jsonInit("POST", { motif })),
+    verifier: (id: string) => rawFetch<boolean>(`/ped/coupons/${id}/verifier`, { method: "POST" }),
+  },
+  journaliers: {
+    list: (params?: { date?: string; site?: string }) =>
+      rawFetch<Journalier[]>(`/ped/frais/journaliers${qp(params ?? {})}`),
+    get: (id: string) => rawFetch<Journalier>(`/ped/frais/journaliers/${id}`),
+    ouvrir: (body: Partial<Journalier>) =>
+      rawFetch<Journalier>("/ped/frais/journaliers", jsonInit("POST", body)),
+    cloturer: (id: string) => rawFetch<Journalier>(`/ped/frais/journaliers/${id}/cloturer`, { method: "POST" }),
+  },
+};
 export { tryRefresh };

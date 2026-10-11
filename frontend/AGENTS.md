@@ -8,10 +8,10 @@ Frontend de la **Console socle** de NexusGesti (SaaS multi-tenant : socle, péda
 Base : copie adaptée de `C:\Users\PC\Documents\ged_ministere\front`, **tout contenu GED supprimé**.
 Backend : passerelle Spring Cloud Gateway sur `http://localhost:8080/api/v1` (voir `.env`, non versionné).
 Le périmètre couvre le **socle** (tenants, établissements, grilles, référentiels, années,
-utilisateurs, rôles/permissions) et la **pédagogie — lots 4a (structure) et 4b (people)**
-(`academic-structure-service` 8111 + `academic-people-service` 8112).
-Hôpital / finance n'ont pas encore de pages. Les lots pédagogie 4c-4g (enrollment, attendance,
-assessment, exam, fees) n'ont ni backend ni front.
+utilisateurs, rôles/permissions) et **toute la pédagogie — lots 4a à 4g** (structure,
+people, enrollment, attendance, assessment, exam, fees), branchée sur les services
+`academic-*` 8111→8117.
+Hôpital / finance n'ont pas encore de pages.
 
 ## Stack
 
@@ -50,7 +50,9 @@ Le port de dev par défaut (3000) est **occupé par Grafana** → lancer la cons
   et `X-Tenant-Id` (si tenant), erreurs normalisées en `ApiError {status, code, message}`.
   Codes métier utiles : `TENANT_ALREADY_EXISTS` 409, `GRILLE_FIGEE` 409, `TRANSITION_INVALIDE` 409,
   `UTILISATEUR_EXISTANT` 409, `ROLE_EXISTANT` 409, `PERMISSION_EXISTANTE` 409,
-  `KEYCLOAK_INDISPONIBLE` 503, `AUTH_INVALID_CREDENTIALS` 401.
+  `KEYCLOAK_INDISPONIBLE` 503, `AUTH_INVALID_CREDENTIALS` 401 ; pédagogie : `ETAT_INVALIDE` 409,
+  `CONFLIT` / `CONFLIT_EMPLOI` 409, `GROUPE_COMPLET` 409, `ITEM_EXISTANT` 409,
+  `IDEMPOTENCE_EN_COURS` 409, `INVALIDE` 400, `NOT_FOUND` 404.
 - **Routes** :
   - Publiques : `/` → redirection `/dashboard`, `/login`.
   - Authentifiées (groupe `(app)` avec `AppShell` = Sidebar + Header ; le groupe `(app)`
@@ -68,6 +70,24 @@ Le port de dev par défaut (3000) est **occupé par Grafana** → lancer la cons
       inscriptions, congés, sanctions, parents), `/pedagogie/parents`, `/pedagogie/enseignants`
       (+ `/pedagogie/enseignants/[id]` : pièces, affectations, statut), `/pedagogie/personnel`
       (onglets Agents / Services).
+    - Inscriptions (4c) : `/pedagogie/inscriptions-ue`, `/pedagogie/groupes`
+      (+ `/pedagogie/groupes/[id]` : membres, ouvrir/clore), `/pedagogie/regles-inscription`,
+      `/pedagogie/admissions` (évaluation d'éligibilité + parcours d'un élève).
+    - Assiduité (4d) : `/pedagogie/seances`, `/pedagogie/appels`
+      (+ `/pedagogie/appels/[id]` : pointage, absence, retard, soumettre/valider/clôturer),
+      `/pedagogie/justificatifs`, `/pedagogie/assiduite` (suivi élève + taux par classe + registre).
+    - Évaluations (4e) : `/pedagogie/evaluations` (+ `/pedagogie/evaluations/[id]` : feuille,
+      notes, absence, exclusion, contestation), `/pedagogie/bulletins`
+      (+ `/pedagogie/bulletins/[id]` : lignes, absences, calculer/publier/générer/signer/rectifier,
+      coupons), `/pedagogie/moyennes` (évaluation, élève, classement de classe).
+    - Examens (4f) : `/pedagogie/sessions` (+ `/pedagogie/sessions/[id]` : épreuves, créneaux,
+      convocations, notes d'examen, corrections), `/pedagogie/deliberations`
+      (+ `/pedagogie/deliberations/[id]` : décisions individuelles/UE, résultats),
+      `/pedagogie/rattrapages`, `/pedagogie/proces-verbaux`.
+    - Frais (4g) : `/pedagogie/grilles-tarifaires` (+ `/pedagogie/grilles-tarifaires/[id]` :
+      lignes, réductions, activer/figer/archiver), `/pedagogie/avis-paiements`
+      (+ `/pedagogie/avis-paiements/[id]` : échéances, remise, valider/émettre/annuler),
+      `/pedagogie/paiements`, `/pedagogie/coupons-paiement`, `/pedagogie/journaliers`.
 - `ProtectedLayout` engage la session (`ANONYME` → `/login`) mais ne coupe pas par rôle :
   les pages ADMIN utilisent `useAuth().user?.isAdmin` pour afficher / bloquer.
 
@@ -95,10 +115,26 @@ Le port de dev par défaut (3000) est **occupé par Grafana** → lancer la cons
   tableaux `[y,m,d]` / `[h,m]`). Les écrans détail (`[id]`) utilisent `Tabs` + `useApi`.
   Les clés d'id diffèrent selon l'entité (`idNiveau`, `idClasse`, `idAnnee`, `idSite`,
   `idProgramme`…) — vérifier le DTO avant de les utiliser pour les listes déroulantes.
+- **Pages Pédagogie 4c-4g** : DTO (InscriptionUE, Groupe, Seance, FeuillePresence, Justificatif,
+  SuiviAssiduite, Evaluation, Bulletin, CouponNotes, SessionExamen, Epreuve, Convocation,
+  NoteExamen, Deliberation, Rattrapage, ProcesVerbal, GrilleTarifaire, AvisPaiement, Paiement,
+  CouponPaiement, Journalier… + enums), clients `enrollmentApi`, `attendanceApi`, `assessmentApi`,
+  `examApi`, `feesApi` dans `api.ts`. Attention aux clés d'id non homogènes : `idInscription`,
+  `idGroupe`, `idRegle`, `idSeance`, `idFeuille`, `idJustificatif`, `idEvaluation`, `idBulletin`,
+  `idSession`, `idAvis`, `idPaiement` ; les autres entités (Deliberation, Rattrapage, ProcesVerbal,
+  GrilleTarifaire, CouponPaiement, Journalier…) exposent `id`.
+  `feesApi.paiements.create(body, idempotencyKey)` renseigne l'en-tête `Idempotency-Key`
+  (**obligatoire** sur `POST /ped/paiements`).
+- Transitions d'état vérifiées côté domaine Java : `SessionExamen` BROUILLON→PROGRAMMEE→EN_COURS→…
+  (**pas de statut « OUVERTE »**), `Deliberation` PLANIFIEE→EN_COURS→CLOTUREE (**pas de BROUILLON**,
+  décisions uniquement EN_COURS), `ProcesVerbal` BROUILLON→SOUMIS→SIGNE→HOMOLOGUE (**pas
+  d'EN_SIGNATURE**), `AvisPaiement` BROUILLON→EMIS (**pas de statut « VALIDE »**).
 - Champs obligatoires `POST /socle/tenants` : `code` (≤30), `denomination` (≤150), `profil`
   (`PRIMAIRE | SECONDAIRE | UNIVERSITAIRE`), `statut`.
 - Ports : console **3001** (Grafana occupe 3000), passerelle 8080 (API), Keycloak 8180 (tokens),
-  tenant-service 8101, identity-service 8102, academic-structure-service 8111, academic-people-service 8112.
+  tenant-service 8101, identity-service 8102, academic-structure 8111, academic-people 8112,
+  academic-enrollment 8113, academic-attendance 8114, academic-assessment 8115, academic-exam 8116,
+  academic-fees 8117.
   Utilisateurs de test (runtime, provisionnés par `backend/infrastructure/keycloak/provision.sh`) :
   `demo.admin@nexusgesti.com` / `Admin_pass123!` (ADMIN), `demo.customer@nexusgesti.com` /
   `demo_secret_customer` (CUSTOMER).

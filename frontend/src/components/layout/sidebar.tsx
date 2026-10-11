@@ -30,6 +30,24 @@ import {
   HeartHandshake,
   Presentation,
   Briefcase,
+  ClipboardList,
+  ListChecks,
+  UserPlus,
+  CalendarCheck,
+  ClipboardCheck,
+  FileCheck,
+  Activity,
+  FileSpreadsheet,
+  ScrollText,
+  TrendingUp,
+  Gavel,
+  RotateCcw,
+  FileSignature,
+  Wallet,
+  Receipt,
+  CreditCard,
+  Ticket,
+  Coins,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -80,6 +98,41 @@ const peopleItems: NavItem[] = [
   { href: "/pedagogie/personnel", label: "Personnel", icon: Briefcase },
 ];
 
+const enrollmentItems: NavItem[] = [
+  { href: "/pedagogie/inscriptions-ue", label: "Inscriptions UE", icon: ClipboardList },
+  { href: "/pedagogie/groupes", label: "Groupes TD/TP", icon: Users },
+  { href: "/pedagogie/regles-inscription", label: "Règles d'éligibilité", icon: ListChecks },
+  { href: "/pedagogie/admissions", label: "Admissions", icon: UserPlus },
+];
+
+const attendanceItems: NavItem[] = [
+  { href: "/pedagogie/seances", label: "Séances", icon: CalendarCheck },
+  { href: "/pedagogie/appels", label: "Feuilles d'appel", icon: ClipboardCheck },
+  { href: "/pedagogie/justificatifs", label: "Justificatifs", icon: FileCheck },
+  { href: "/pedagogie/assiduite", label: "Assiduité", icon: Activity },
+];
+
+const assessmentItems: NavItem[] = [
+  { href: "/pedagogie/evaluations", label: "Évaluations", icon: FileSpreadsheet },
+  { href: "/pedagogie/bulletins", label: "Bulletins", icon: ScrollText },
+  { href: "/pedagogie/moyennes", label: "Moyennes & classement", icon: TrendingUp },
+];
+
+const examItems: NavItem[] = [
+  { href: "/pedagogie/sessions", label: "Sessions d'examen", icon: CalendarClock },
+  { href: "/pedagogie/deliberations", label: "Délibérations", icon: Gavel },
+  { href: "/pedagogie/rattrapages", label: "Rattrapages", icon: RotateCcw },
+  { href: "/pedagogie/proces-verbaux", label: "Procès-verbaux", icon: FileSignature },
+];
+
+const feesItems: NavItem[] = [
+  { href: "/pedagogie/grilles-tarifaires", label: "Grilles tarifaires", icon: Wallet },
+  { href: "/pedagogie/avis-paiements", label: "Avis de paiement", icon: Receipt },
+  { href: "/pedagogie/paiements", label: "Paiements", icon: CreditCard },
+  { href: "/pedagogie/coupons-paiement", label: "Coupons", icon: Ticket },
+  { href: "/pedagogie/journaliers", label: "Journaliers", icon: Coins },
+];
+
 const adminItems: NavItem[] = [
   { href: "/tenants", label: "Tenants", icon: Users },
   { href: "/utilisateurs", label: "Utilisateurs", icon: UserCog },
@@ -97,6 +150,11 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
     { items: navItems },
     { title: "Pédagogie · Structure", items: structureItems },
     { title: "Pédagogie · Personnes", items: peopleItems },
+    { title: "Pédagogie · Inscriptions", items: enrollmentItems },
+    { title: "Pédagogie · Assiduité", items: attendanceItems },
+    { title: "Pédagogie · Évaluations", items: assessmentItems },
+    { title: "Pédagogie · Examens", items: examItems },
+    { title: "Pédagogie · Frais", items: feesItems },
   ];
 
   const renderItem = ({ href, label, icon: Icon }: NavItem) => {

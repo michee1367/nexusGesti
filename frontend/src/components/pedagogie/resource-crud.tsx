@@ -61,6 +61,7 @@ interface ResourceCrudProps<T> {
   fields: FieldDef[];
   columns: ColumnDef<T>[];
   searchKeys?: string[];
+  initialSearch?: string;
   canWrite?: boolean;
   createLabel?: string;
   rowActions?: (row: T, reload: () => void) => ReactNode;
@@ -104,6 +105,7 @@ export function ResourceCrud<T extends object>({
   fields,
   columns,
   searchKeys = [],
+  initialSearch = "",
   canWrite = false,
   createLabel = "Nouveau",
   rowActions,
@@ -112,7 +114,7 @@ export function ResourceCrud<T extends object>({
 }: ResourceCrudProps<T>) {
   const { tenantId } = useTenant();
   const { data, loading, error, reload } = useApi(list, [tenantId]);
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState(initialSearch);
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<T | null>(null);
   const [values, setValues] = useState<Record<string, FormValue>>(() => defaultValues(fields));
