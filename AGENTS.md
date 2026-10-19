@@ -14,13 +14,19 @@ Plateforme SaaS multi-tenant pour trois domaines :
 | **Socle** | tenancy, identité, auth, notification, reporting, audit |
 | **Pédagogie** | écoles primaire/secondaire + université |
 | **Hôpital** | patients, RDV, consultations, pharmacie |
+| **Boulangerie** | produits/recettes, production, vente/caisse, clients/fidélité, approvisionnement, personnel (adossé à la finance) |
 | **Finance** | comptabilité OHADA / SYSCOHADA RDC |
 
 **Périmètre actuel : documentation + backend `./backend` + console socle `./frontend` (phases 1-2).**
 La console couvre phases 1-2 (auth direct-grant, tenancy, grilles, années, référentiels, pages ADMIN).
 Toute phase suit la règle **back d'abord, front ensuite** (D13 + colonne Front en §9) :
 le travail front d'une phase ne s'ouvre qu'une fois la brique backend validée.
-Les 25 services sont déclarés en routes sur la passerelle, mais **seuls 15 modules Maven sont construits** (voir §9).
+Les 31 services sont **modélisés** (voir §2), mais la passerelle n'en route encore que **25** — le domaine
+`boulangerie` (6 services) est **en cours d'implémentation** : le domaine est modélisé en PlantUML et le
+**lot 1 `boulangerie-produit-service` est construit** (routes `/api/v1/boul/**`) **avec son front lot 1**
+(`./frontend`, pages `/boulangerie/{produits,recettes,gammes,categories}`), et le **lot 2
+`boulangerie-production-service` est construit** (plans, fournées, port 8142) **avec son front lot 2**
+(pages `/boulangerie/{plans,fournees}`). **Seuls 17 modules Maven sont construits** (voir §9).
 Ne pas supposer qu'un service existe sous prétexte que sa route existe.
 
 ---
@@ -34,19 +40,20 @@ docs/diagrammes/
   socle/       6 modèles + 6 cas d'utilisation
   pedagogie/   7 modèles + 7 cas d'utilisation
   hopital/     6 modèles + 6 cas d'utilisation
+  boulangerie/ 6 modèles + 6 cas d'utilisation
   finance/     6 modèles + 6 cas d'utilisation
-  sequences/   6 séquences (paiement, délibération, rappel lot, clôture, séjour, acte → facture)
-  rendu/       56 SVG à générer — ACTUELLEMENT VIDE
-backend/       Maven parent + 15 modules construits (voir §9)
+  sequences/   9 séquences (paiement, délibération, rappel lot, clôture, séjour, acte → facture, fournée, vente/caisse, réception)
+  rendu/       71 SVG à générer — ACTUELLEMENT VIDE
+backend/       Maven parent + 17 modules construits (voir §9)
 frontend/      console socle Next.js 16 (phases 1-2) — mémo dédié dans frontend/AGENTS.md
 scripts/       démarrage local : backend-up.{sh,ps1} + front-up.{sh,ps1} (voir §11)
 ```
 
-**56 fichiers `.puml`.** Ne pas casser le compte.
+**71 fichiers `.puml`.** Ne pas casser le compte.
 **0 SVG pour l'instant** : `docs/diagrammes/rendu/` est vide, le rendu n'a jamais été fait ni versionné.
-§4 reste la procédure de rendu à suivre un jour ; entre temps, ne pas écrire « 56 SVG » dans un fichier de suivi.
+§4 reste la procédure de rendu à suivre un jour ; entre temps, ne pas écrire « 71 SVG » dans un fichier de suivi.
 
-Services hôpital : `patient`, `rdv`, `consultation`, `pharmacie`, `hospitalisation`, `plateau-technique`. 25 services au total.
+Services hôpital : `patient`, `rdv`, `consultation`, `pharmacie`, `hospitalisation`, `plateau-technique`. Services boulangerie : `produit`, `production`, `vente`, `clients`, `approvisionnement`, `personnel`. 31 services au total (25 routés).
 
 ---
 
@@ -186,15 +193,15 @@ qu'une fois sa brique backend validée (build + `mvn test` + E2E passerelle + co
 
 | Phase | Périmètre | État back | État front |
 |---|---|---|---|
-| 0 | Rendu SVG des 56 diagrammes | **écartée par l'utilisateur** | — |
+| 0 | Rendu SVG des 71 diagrammes | **écartée par l'utilisateur** | — |
 | 1 | Socle technique (`shared/*` + passerelle + infra) | **VALIDÉE** — 5 services bootent, `/actuator/health` → 200, Prometheus 5 cibles `up`, **RLS prouvé de bout en bout** (§11, 2026-10-07), D3 et D4 appliqués, `mvn test` vert (59), **commit `5158d45`** | Console socle (base) : layout, auth direct-grant, tenancy — **livrée avec la console (phases 1-2)** |
 | 2 | `tenant-service` (agégat `Etablissement`, `ProfilEtablissement`, grilles) | **VALIDÉE** — plan §12 exécuté le 2026-10-08 : 8+e module, 24 tables + RLS, 54 tests, grille activer/figer → 409 `GRILLE_FIGEE`, E2E passerelle complet (§11 2026-10-08), **commit `e25283e`** | pages socle : dashboard, tenant, grilles + `[type]`, annees, referentiels — **livrée avec la console (phases 1-2)** |
-| 3 | reste du socle (`identity`, `auth`, `notification`, `audit`, `reporting`) | **en cours** — `identity-service` construit le 2026-10-09 (lot 1 : utilisateurs + rôles/permissions, miroir Keycloak) ; `auth` reste à faire | Console identité : pages `/utilisateurs` + `/roles` (2026-10-09, `tsc`+lint+build verts) |
+| 3 | reste du socle (`identity`, `auth`, `notification`, `audit`, `reporting`) | **en cours** — `identity-service` construit le 2026-10-09 (lot 1 : utilisateurs + rôles/permissions, miroir Keycloak) ; **self-service signup MVP** (2026-10-11) : `auth-service` `register` enrichi (rôle `ADMIN`, attribut Keycloak `tenant_id`, payload `user.created` portant `etablissement`) ; `tenant-service` + `identity-service` devenus **consommateurs Kafka** `tenant.events`/`user.created` (création `Etablissement` + ligne proxy utilisateur, idempotents) ; **login par email `resolve-tenant`** (2026-10-12) ; reste `auth` durcissement + `notification`/`audit`/`reporting` | Console identité : pages `/utilisateurs` + `/roles` (2026-10-09) ; **landing publique `/` + `/signup` self-service** (2026-10-11) ; **login email-first + sélecteurs « par nom » pédagogie** (2026-10-12, `tsc`+lint verts) |
 | 4 | pédagogie (7 services `academic-*`) | **en cours** — lot 4a `academic-structure-service` **commité `3125320`** (niveaux, classes, promotions, semestres, UE, matières, cours ECUE, salles, créneaux, régimes horaires, emplois du temps) ; lot 4b `academic-people-service` **commité `7565e35`** (élèves, dossiers, inscriptions, congés, sanctions, parents/liens, enseignants/affectations, agents, services) ; lot 4c `academic-enrollment-service` construit le 2026-10-10 (inscriptions UE, groupes TD/TP, règles d'éligibilité, parcours — MVP) ; lot 4d `academic-attendance-service` **commité `1ae85ba`** (séances, feuilles d'appel, présences, absences, justificatifs, suivi d'assiduité — `/seances` réassigné de exam à attendance) ; lot 4e `academic-assessment-service` construit le 2026-10-10 (évaluations, notes, feuilles, moyennes, bulletins, coupons — boot + E2E passerelle validés) ; lot 4f `academic-exam-service` **commité `1ed5d2c`** (sessions, épreuves, créneaux, convocations, notes d'examen, corrections, délibérations, décisions, résultats, rattrapages, PV — boot + E2E passerelle validés) ; lot 4g `academic-fees-service` **commité `6772a05`** (grilles tarifaires, avis, réductions, paiements idempotents, coupons, journaliers — boot + E2E passerelle validés) — **phase 4 back complète** | 4a/4b : pages pédagogie livrées (`8b26390`) ; 4c-4g : pages pédagogie construites le 2026-10-11 (`tsc` + lint + build verts), **commit à faire** |
 | 5 | hôpital (6 services) | à faire | à faire (après validation back) |
 | 6 | finance (6 services, OHADA) | à faire | à faire (après validation back) |
 
-### Modules réellement construits (15)
+### Modules réellement construits (17)
 
 ```
 shared/common-domain     noyau pur, aucune dépendance Spring
@@ -204,8 +211,8 @@ services/auth-service
 services/notification-service
 services/audit-service
 services/reporting-service
-services/tenant-service   socle métier : etablissement, grilles, referentiels (8101)
-services/identity-service socle identité : utilisateurs + rôles/permissions, miroir Keycloak (8102)
+services/tenant-service   socle métier : etablissement, grilles, referentiels (8101) + consommateur `tenant.events`/`user.created`
+services/identity-service socle identité : utilisateurs + rôles/permissions, miroir Keycloak (8102) + consommateur `tenant.events`/`user.created`
 services/academic-structure-service pedagogie : arbre, salles, creneaux, emplois du temps (8111)
 services/academic-people-service pedagogie : eleves, dossiers, inscriptions, personnel, affectations (8112)
 services/academic-enrollment-service pedagogie : inscriptions UE, groupes TD/TP, eligibilite, parcours (8113)
@@ -213,10 +220,13 @@ services/academic-attendance-service pedagogie : seances, feuilles d appel, pres
 services/academic-assessment-service pedagogie : evaluations, notes, feuilles, moyennes, bulletins, coupons (8115)
 services/academic-exam-service pedagogie : sessions, epreuves, creneaux, convocations, notes d examen, corrections, deliberations, resultats, rattrapages, proces-verbaux (8116)
 services/academic-fees-service pedagogie : grilles tarifaires, avis, reductions, paiements idempotents, coupons, journaliers (8117)
+services/boulangerie-produit-service boulangerie : gammes, categories, produits, fiches recette versionnees, ingredients, cout de revient (8141) + producteur `boulangerie.events`
+services/boulangerie-production-service boulangerie : plans de production, fournées, consommations par lot, pertes valorisées (8142) + producteur `boulangerie.events`
 ```
 
-`mvn test` au niveau racine : **BUILD SUCCESS, 364 tests verts** (54 tenant + 16 identity + 24 auth + 2 audit
-+ 6 gateway + 24 structure + 25 people + 35 enrollment + 44 attendance + 44 assessment + 50 exam + 40 fees).
+`mvn test` au niveau racine : **BUILD SUCCESS, 420 tests verts** (54 tenant + 16 identity + 24 auth + 2 audit
++ 6 gateway + 24 structure + 25 people + 35 enrollment + 44 attendance + 44 assessment + 50 exam + 40 fees
++ **30 produit** + **26 production**).
 
 ### Les 25 routes de la passerelle ≠ les modules construits
 
@@ -230,9 +240,20 @@ Vérifier l'existence du module avant d'appeler un service.
 | pédagogie | `/api/v1/ped/**` | `academic-structure` 8111 · `academic-people` 8112 · `academic-enrollment` 8113 · `academic-attendance` 8114 · `academic-assessment` 8115 · `academic-exam` 8116 · `academic-fees` 8117 |
 | hôpital | `/api/v1/hop/**` | `patient` 8121 · `rdv` 8122 · `consultation` 8123 · `pharmacie` 8124 · `hospitalisation` 8125 · `plateau-technique` 8126 |
 | finance | `/api/v1/fin/**` | `fin-compta-core` 8131 · `fin-facturation` 8132 · `fin-stock` 8133 · `fin-inventaire` 8134 · `fin-immobilisation` 8135 · `fin-etats` 8136 |
+| boulangerie | `/api/v1/boul/**` | `boulangerie-produit` 8141 (lot 1) · `production` 8142 (lot 2) · `approvisionnement` 8143 · `vente` 8144 · `clients` 8145 · `personnel` 8146 (à venir) |
 | passerelle | — | `api-gateway` 8080 (Keycloak sur 8180) |
 
 Pas de `fin-tresorerie` : la trésorerie est un préfixe de `fin-compta-core` (`/api/v1/fin/tresorerie/**`).
+
+**Boulangerie (6 services) : en cours d'implémentation (D18-D20).** Les 6 modèles + 6 UC + 3 séquences
+existent. Le **lot 1 `boulangerie-produit-service` (8141) est construit** (routes `/api/v1/boul/{produits,
+gammes,categories,recettes}/**`, producteur `boulangerie.events`) **avec son front lot 1** ; le **lot 2
+`boulangerie-production-service` (8142) est construit** (routes `/api/v1/boul/{plans,fournees}/**`,
+producteur `boulangerie.events`) **avec son front lot 2** ; les lots 3→6 (`approvisionnement`, `vente`,
+`clients`, `personnel`, ports 8143-8146) restent à faire, la route
+`/api/v1/boul/**` s'élargit lot par lot (D17). Le domaine est adossé à la finance (`fin-stock`,
+`fin-facturation`, `fin-compta-core`) et activé par le profil `BOULANGERIE` (§2, profil ajouté dans
+`socle/modele-tenant-service.puml`).
 
 ### Multi-tenancy — implémenté en phase 1
 
@@ -255,7 +276,7 @@ Pas de `fin-tresorerie` : la trésorerie est un préfixe de `fin-compta-core` (`
 | D3 | `GrilleTarifaire` | Reste propriété de `academic-fees-service`, **mais** ajouter `version : Integer` + `figer()` à `pedagogie/modele-academic-fees-service.puml:91` (exigé par `sq-hopital-acte-facturation.puml:23` et `modele-hopital-plateau-technique-service.puml:600`). Les deux déclarations `<<tenant-service>>` à `hopital/modele-hopital-hospitalisation-service.puml:318` et `hopital/modele-hopital-plateau-technique-service.puml:580` sont donc à corriger en `<<academic-fees>>`. **Appliqué le 2026-10-07.** |
 | D4 | `Ecriture` | **Tranché et appliqué le 2026-10-07 : propriétaire `fin-compta-core`.** La classe complète (attributs + méthodes) et les enums `StatutEcriture` / `OrigineEcriture` sont déclarées dans `finance/modele-fin-compta-core-service.puml` (package `ecritures`), avec `Ecriture --> Journal` et `Ecriture --> Exercice`. `finance/modele-fin-etats-service.puml` ne garde qu'une référence `class Ecriture <<fin-compta-core>> #transparent`, ses relations (`*-- LigneEcriture`, `--> Piece`, `--> ModeleEcriture`, `o-- Lettrage`) et sa note `REGLE D EQUILIBRE`. `SensEcriture` reste dans `fin-etats` (type de `LigneEcriture`). |
 | D5 | Idempotence | `IdempotencyService` prend une clé `String`. Clé composite `sourceId` + `codeActe` via `SourceId.compositeWith(CodeActe)`. |
-| D6 | Portée phase 2 | Modèle **complet** de `modele-tenant-service.puml` (~24 tables). Aucun seed en migration : les lignes sont scopées tenant → les 17 conteneurs `Referentiel` sont créés dans `POST /tenants`. |
+| D6 | Portée phase 2 | Modèle **complet** de `modele-tenant-service.puml` (~24 tables). Aucun seed en migration : les lignes sont scopées tenant → les 23 conteneurs `Referentiel` (17 historiques + 6 boulangerie, voir D20) sont créés dans `POST /tenants`. |
 | D7 | `Filiere` / `Programme` / `Cycle` | **Propriétaire = tenant-service** (décidé le 2026-10-07). `pedagogie/modele-academic-structure-service.puml` les passe en `<<tenant-service>> #transparent` (étape 8 du plan §12). |
 | D8 | Création cross-tenant | `X-Tenant-Id` = **UUID du nouveau tenant**, `Etablissement.id = tenant_id = l'en-tête`. Aucun bypass RLS, `409` si déjà présent. |
 | D9 | Rôles `tenant-service` | Écriture `ADMIN`, lecture `ADMIN` ou `CUSTOMER`. |
@@ -267,6 +288,9 @@ Pas de `fin-tresorerie` : la trésorerie est un préfixe de `fin-compta-core` (`
 | D15 | Communication inter-services pédagogie | **Hybride** : REST interne (`InternalServiceAuthFilter`) pour les contrôles bloquants avant écriture ; Kafka `ped.events` pour notifications/audit + projections. Émissions vers `fin.events` différées (hôpital/finance). |
 | D16 | Périmètre phase 4 | **MVP d'abord** : `fees` sans recouvrement/bourses/social, `exam` sans plan-salle/surveillance/incidents. |
 | D17 | Routes passerelle | La passerelle élargit ses `Path=` au fur et à mesure des contrôleurs réels (les prédicats cibles ne sont pas tous implémentés). |
+| D18 | Domaine boulangerie | **Modélisé le 2026-10-17** (6 modèles + 6 UC + 3 séquences, 56→71 `.puml`). Implémentation : **autonome, finance différée**. La boulangerie détient son état opérationnel (catalogue, recettes, plans, fournées, consommations déclarées, tickets, acomptes, réceptions) et **émet** des événements vers `boulangerie.events` (dont les intentions stock `mouvement.stock` : `SORTIE_CONSOMMATION`/`ENTREE_PRODUCTION`/`SORTIE_PERTE`/`SORTIE_VENTE`/`ENTREE_ACHAT`, et `vente.encaissee`). Elle **ne stocke aucun** `Article`/`Lot`/`MouvementStock`/`Ecriture` (propriété `fin-stock`/`fin-compta-core`, phase 6) : les références inventaire sont des chaînes logiques (`articleCode`, `lotNumero`, `tiersCode`). Même logique que l'hôpital (phase 5 avant finance). |
+| D19 | Décomposition boulangerie | **6 services** (`boulangerie-{produit,production,approvisionnement,vente,clients,personnel}-service`), ports **8141-8146**, préfixe passerelle **`/api/v1/boul/**`**, schémas `boulangerie_<service>`, tables Flyway `flyway_boulangerie_<service>_history`, packages `com.nexusgesti.boulangerie.<service>`. Ordre des lots (D14) : `produit`→`production`→`approvisionnement`→`vente`→`clients`→`personnel`. `FicheRecette` reste dans `produit-service` ; le reporting passe par `reporting-service` (pas de service dédié). |
+| D20 | Profil & référentiels boulangerie | `BOULANGERIE` ajouté à `ProfilEtablissement` et à la validation `register` ; **6 `NatureReferentiel`** ajoutées (`GAMME_PRODUIT`, `CATEGORIE_PRODUIT`, `ALLERGENE`, `TYPE_PERTE`, `MODE_PAIEMENT_CAISSE`, `POSTE_BOULANGERIE`) → `creerReferentiels` boucle sur `values()` : tout établissement génère désormais **23** conteneurs (au lieu de 17), quel que soit le profil (comportement historique conservé : toutes les natures pour tous). **6e topic** Kafka `boulangerie.events` ; `audit-service` s'y abonne. |
 
 ### Points de vigilance payés
 
@@ -1083,8 +1107,243 @@ Le producteur 4b a révélé que `AuditKafkaConsumer` ne savait **pas persister*
     `fond` sont acceptés.
 - **Restant** : commit 4g sur demande (jamais spontané).
 
+### Self-service signup — landing + inscription établissement (2026-10-11)
+
+MVP d'inscription publique : un visiteur crée **compte + établissement** en une étape (D15 événementiel).
+
+- **`auth-service` `register` enrichi** : record `AuthUseCase.EtablissementInfo(denomination, code, profil)`
+  ajouté à `RegisterCommand` ; le service assigne le rôle **`ADMIN`** (au lieu de `CUSTOMER`) et pose
+  l'attribut Keycloak **`tenant_id`** = UUID de l'en-tête (`TenantContext.get()`), via
+  `IdentityProviderPort.setUserAttribute`. `AuthController.RegisterRequest` porte un
+  `@Valid EtablissementRequest` (`denomination` ≤150, `code` ≤30, `profil` PRIMAIRE|SECONDAIRE|UNIVERSITAIRE).
+  `UserRegistrationKafkaPublisher` enrichit le payload `user.created` d'un objet `etablissement`
+  (`denomination`, `code`, `profil`).
+- **`tenant-service` devient consommateur Kafka** (dépendance `spring-kafka` + `KafkaConsumerConfig`
+  + `spring.kafka` dans `application.yml`, group-id `tenant-service`) : `UserCreatedConsumer`
+  (`tenant.events`, filtre `eventType=user.created`, `TenantContext.setIfPresent(tenantId)` avant
+  écriture RLS) → `EtablissementUseCase.creer(UUID, Etablissement)`. **Idempotent** : `TenantException`
+  `TENANT_ALREADY_EXISTS` est absorbée (rejeu d'événement ignoré).
+- **`identity-service` devient consommateur Kafka** (mêmes ajouts, group-id `identity-service`) :
+  `UtilisateurUseCase.enregistrerDepuisEvenement(EnregistrerUtilisateurCommand)` **ne touche pas
+  Keycloak** (ligne proxy locale uniquement), idempotent via `findByKeycloakUserId` + `existsByEmail`.
+- **Frontend** : `/` devient une **landing publique** (présente socle + pédagogie/hôpital/finance) ;
+  nouvelle page **`/signup`** (compte + établissement) : génère `tenantId = randomUUID()`,
+  `setTenantId` **avant** `authApi.register` (le `X-Tenant-Id` = UUID du nouvel établissement, D8),
+  auto-connexion puis **polling** `GET /socle/tenants/{id}` jusqu'à 200 avant `/dashboard`.
+  `authApi.register` accepte `etablissement?`. `/login` gagne les liens accueil/signup.
+  **Bug corrigé** dans `(app)/tenants/page.tsx` : `setTenantId(id)` est désormais appelé **avant**
+  `tenantApi.create` (sinon la création partait avec l'ancien `X-Tenant-Id`).
+- **Tests** : `tenant-service` 58 (dont 4 `UserCreatedConsumerTest`), `identity-service` 19 (dont 3),
+  `auth-service` 24. `mvn -pl auth,tenant,identity -am test` → **BUILD SUCCESS**.
+- **E2E passerelle (2026-10-11)** : `POST /socle/auth/register` **201** ; login → token avec rôle
+  **`ADMIN`** ; `GET /socle/tenants/{uuid}` **200** (`code`/`denomination`/`profil` PRIMAIRE,
+  `statut` **PREPARATION**) créé par le consommateur ; `GET /socle/utilisateurs?query=` **200**,
+  ligne proxy (`typeCompte` KEYCLOAK, `statut` ACTIF, rôle ADMIN, `keycloakUserId` aligné).
+- **Caveat** : rôle `ADMIN` attribué globalement et `X-Tenant-Id` de confiance (un inscrit ADMIN
+  pourrait viser un autre tenant) — durcissement = lot ultérieur.
+
+### Login email-first + sélecteurs « par nom » (2026-10-12)
+
+**Backend — login par email (lot phase 3 `auth`).** `POST /api/v1/socle/auth/resolve-tenant`
+`{email}` → `{tenantId}` (404 `AUTH_TENANT_NOT_FOUND`). Chaîne : `AuthController` +
+`AuthUseCase.resolveTenant` + `AuthService` + `IdentityProviderPort.findTenantIdByEmail` /
+`KeycloakIdentityProviderAdapter` (attribut Keycloak `tenant_id`) ; route publique
+(`AuthSecurityConfig`), **exemptée de `X-Tenant-Id`** dans la passerelle
+(`TenantHeaderFilter.isExempt`) et dans `common-lib/TenantFilter.shouldNotFilter`. Côté
+socle, `GET /api/v1/socle/tenants/{id}/identite` (public) expose `{id, denomination, code,
+profil, statut}`. `provision.sh` pose l'attribut `tenant_id` sur les comptes démo.
+Tests : `auth-service` **26**, `tenant-service` **59**.
+
+**Frontend — login + sélecteurs.** `/login` devient email-first (résolution du tenant →
+`setTenantId` → `/tenants/{id}/identite` affiché → mot de passe ; **repli manuel UUID**
+conservé) ; `header.tsx` affiche la dénomination. Refonte « par nom plutôt qu'UUID » de
+**toute la console pédagogie** : `labels.ts` (labels par entité + `lookupLabel`/`toSelectOptions`),
+`hooks/use-lookup.ts` (`useXxxMap`), `components/common/entity-select.tsx` (`EntitySelect<T>`),
+et `resource-crud.tsx` étendu (`FieldDef.entityKey`, `ColumnDef.lookupKey`, prop `entities`) —
+les `fields`/`columns` restent des consts module-level. Listes et écrans détail migrés (élève en
+premier, puis classes/UE/cours/matières/salles/créneaux/années/périodes/sessions/épreuves/grilles/
+réductions/sites/programmes). Reste `prompt` de `coupons-paiement` « Remettre » (destinataire) et
+les ids utilisateur `saisiePar`/`affectePar` (pas de map). `tsc` + ESLint verts.
+
+### Domaine boulangerie — modélisation PlantUML (2026-10-17)
+
+**Modélisation seule, aucun code.** Ajout d'un 4e domaine `boulangerie` (6 services), adossé à la
+finance, activé par un profil `BOULANGERIE`. 15 nouveaux `.puml` (11→12 fichiers par domaine, séquences
+6→9) : le dépôt passe de **56 à 71 `.puml`**.
+
+- **`docs/diagrammes/boulangerie/`** (nouveau) : 6 modèles de classes + 6 cas d'usage —
+  `produit` (catalogue, gammes, catégories, recettes versionnées, allergènes, DLC, coût de revient),
+  `production` (plans, fournées, consommation par lot, pertes valorisées, ateliers, fours),
+  `vente` (session de caisse, ventes idempotentes, paiements, commandes client, acomptes),
+  `clients` (clients, programme de fidélité versionné, cartes, mouvements de points),
+  `approvisionnement` (fournisseurs, besoin calculé, commandes d'achat, réceptions contrôlées),
+  `personnel` (employés, contrats, plannings, présences, période de paie, fiches de paie).
+- **3 séquences** dans `docs/diagrammes/sequences/` : `sq-boulangerie-production-fournee`,
+  `sq-boulangerie-vente-encaissement`, `sq-boulangerie-approvisionnement-reception`.
+- **Réutilisation de la finance** (entités déclarées `<<fin-stock>>` / `<<fin-facturation>>` /
+  `<<fin-compta-core>>` `#transparent`, jamais dupliquées) : `Article`, `Lot`, `MouvementStock`,
+  `PrixMoyenCalcule` (fin-stock) ; `Tiers`, `Facture`, `Reglement` (fin-facturation) ; `Ecriture`,
+  `Journal`, `Exercice`, `Compte` (fin-compta-core). Enums nouveaux déclarés localement
+  (`UniteStock` reste `<<fin-stock>>`).
+- **Garde-fous modélisés** : vente idempotente (clé `sourceId` + `numeroTicket`) → `vente.encaissee`
+  → `D 571/C 701` (espèces) ou `D 411/C 701` (crédit) ; consommation tracée par lot (FEFO) ;
+  **aucun produit fini en stock avant validation de la fournée** ; toute perte valorisée au prix
+  moyen (`SORTIE_PERTE`) ; réception contrôlée bloquante (`exigerControleReception`) et rapprochement
+  trois voies ; points de fidélité sur vente encaissée seulement ; paie figée à la validation ;
+  planning confronté au plan de production.
+- **`socle/modele-tenant-service.puml`** : `BOULANGERIE` ajouté à `ProfilEtablissement` ; nouvelles
+  valeurs `NatureReferentiel` (`GAMME_PRODUIT`, `CATEGORIE_PRODUIT`, `ALLERGENE`, `TYPE_PERTE`,
+  `MODE_PAIEMENT_CAISSE`, `POSTE_BOULANGERIE`). `GrilleStock` (déjà définie) couvre les besoins
+  boulangerie (rotation de lots, tolérance d'inventaire, contrôle de réception, délai de réappro).
+- **`README.md`** (domaine, arborescence, tableau 31 services / 71 diagrammes, principe « adossé au
+  socle finance ») et **`docs/architecture.md`** (sous-graphe `Boulangerie` + 2 flux : vente → écriture,
+  fournée → produit fini ; profil `BOULANGERIE`).
+- **Validation** : 15/15 nouveaux `.puml` rendus en SVG (`-Playout=smetana`, sortie temporaire, rien
+  dans `rendu/` — D1). Aucune route `/api/v1/boul/**`, aucun module Maven : à faire dans une phase
+  ultérieure (back d'abord, D13).
+
+### Boulangerie — Étape 0 (prérequis transverses) (2026-10-17)
+
+**Aucun service boulangerie encore construit.** Brique de préparation posée avant les lots (D18-D20) :
+
+- **`tenant-service`** : `BOULANGERIE` ajouté à `ProfilEtablissement` ; 6 valeurs ajoutées à
+  `NatureReferentiel` (`GAMME_PRODUIT`, `CATEGORIE_PRODUIT`, `ALLERGENE`, `TYPE_PERTE`,
+  `MODE_PAIEMENT_CAISSE`, `POSTE_BOULANGERIE`). `EtablissementService.creerReferentiels` boucle sur
+  `values()` → **tout établissement génère 23 conteneurs** (17 historiques + 6 boulangerie), quel que
+  soit le profil (comportement historique conservé : toutes les natures pour tous).
+- **`auth-service`** : regex du profil `register` (`AuthController.EtablissementRequest`) élargie à
+  `PRIMAIRE|SECONDAIRE|UNIVERSITAIRE|BOULANGERIE`.
+- **Passerelle** : `RewritePath` élargi à `/api/v1/(socle|ped|hop|fin|boul)/(.*)` (les routes
+  `boul/**` seront ajoutées lot par lot, D17).
+- **Kafka** : 6e topic `boulangerie.events` (`infrastructure/kafka/topics.sh`) ; `audit-service`
+  `AuditKafkaConsumer` s'y abonne (5e topic écouté) ; `extractServiceName` produit `boulangerie-service`.
+- **Front** : `ProfilEtablissement` (types), `/signup` (zod + select), `/tenants` (création ADMIN),
+  label du dashboard — `BOULANGERIE` disponible partout.
+- **Docs** : décisions D18/D19/D20 ; D6 et guides (`guide-utilisateur.{md,html}`,
+  `guide-{primaire,secondaire,universitaire}.html`) réalignés 17 → 23 référentiels.
+- **Reste** : lots 2→6 (`production`→`approvisionnement`→`vente`→`clients`→`personnel`),
+  ports 8142-8146, préfixe `/api/v1/boul/**`.
+
+### boulangerie-produit-service — lot 1 construit (2026-10-17)
+
+**Backend 1 `boulangerie-produit-service`** (port **8141**, schéma `boulangerie_produit`, table Flyway
+`flyway_boulangerie_produit_history`, package `com.nexusgesti.boulangerie.produit`), **avec Kafka**
+(émet vers `boulangerie.events`, D18) :
+
+- **Périmètre** : gammes (`Gamme`), catégories (`CategorieProduit`), produits (`Produit`), fiches recette
+  versionnées (`FicheRecette` + `IngredientRecette` + `LigneCout`), besoins matières et coût de revient
+  **calculés** (`BesoinMatiere` / `CoutRecette`, non persistés). 6 tables.
+- **Squelette** : `<module>services/boulangerie-produit-service</module>` (nouveau bloc BOULANGERIE du
+  pom racine), pom miroir `academic-fees-service` **avec `spring-kafka`** (producer), `ProduitApplication`,
+  `config/{JpaConfig,SecurityConfig,KafkaConfig}`, `application.yml` (`default_schema`,
+  `spring.flyway.url`, `flyway_boulangerie_produit_history`, `nexusgesti.security.oauth2.enabled: false`).
+- **Migrations** : `V1__produit_schema.sql` (6 tables), `V2__rls.sql` (boucle `DO` excluant
+  `flyway_boulangerie_produit_history` + index uniques `ux_gamme_tenant_code`, `ux_categorie_tenant_code`,
+  `ux_produit_tenant_code`, `ux_fiche_recette_tenant_code`), `V3__app_role.sql`.
+- **Domaine pur** (aucune valeur métier en dur) : `Produit` (`estFabricable`/`contientAllergene`/`getPrixTTC`
+  TVA/`activer`/`desactiver`), `FicheRecette` (`activer`/`figer`/`estFigee`/`verifierModifiable`/
+  `ajouterIngredient`/`ajouterLigneCout`/`getCoutMatiere(Map)`/`getCoutRevient(Map)`/`getBesoinsMatiere(qte)`),
+  `IngredientRecette` (`getQuantiteNette`/`getQuantiteBrute` = taux de perte), `LigneCout`, enums `UniteVente`/
+  `Allergene`/`NatureCout`. `unite` d'ingrédient et `articleCode` sont des **chaînes logiques**
+  (`UniteStock`/`Article` restent `fin-stock`, non construits). Exception `ProduitException`
+  (`NOT_FOUND` 404 ; `TRANSITION_INVALIDE`/`ETAT_INVALIDE`/`ITEM_EXISTANT` 409 ; `INVALIDE` 400).
+- **Persistance / applicatif / web** : 6 entités + repos + `ProduitPersistenceAdapter` (upsert de recette avec
+  delete-then-reinsert des enfants, JSONB `produit.allergenes`, `tenant_id` via `TenantContext.require().asUuid()`),
+  `ProduitService` (`@Service @Transactional`; `fabricable` recalculé à chaque activation de recette via
+  `countRecettesActives`; `creerRecette` pose `version = maxVersion(code)+1`), `ProduitController` (`/api/v1`,
+  `/gammes`, `/categories`, `/produits`, `/recettes` + sous-ressources `/ingredients`, `/activer`, `/figer`,
+  `/besoins`, `/cout` — `cout` accepte `prix=CODE:MONTANT` répétable faute de `fin-stock`), `ProduitExceptionHandler`.
+- **Événements** (`boulangerie.events`) : `produit.cree`, `recette.activee`, `recette.figee` (audit-service
+  les persiste).
+- **Tests : 30 verts** (domaine `Produit`/`FicheRecette` + `ProduitServiceTest` + `@WebMvcTest
+  ProduitControllerSecurityTest`). `mvn test` racine : **BUILD SUCCESS, 394 tests**.
+- **Câblage** : pom racine (bloc BOULANGERIE), route passerelle `boulangerie-produit-service`
+  (`/api/v1/boul/{produits,gammes,categories,recettes}/**`), 15e cible Prometheus `host.docker.internal:8141`,
+  `scripts/backend-up.{sh,ps1}` (entrée 8141).
+- **Boot + E2E passerelle (2026-10-17)** : 8141 UP + gateway UP ; Flyway V1/V2/V3 `success`, RLS `t/t` ;
+  `POST /boul/gammes`+`/categories`+`/produits` **201**, `GET produit` **200** ; recette **201** `version` 1 →
+  2 ingrédients **201** → `besoins?quantite=20` farine brute **12.2400** → `cout?prix=...` **12.64** →
+  `activer` **200** (produit `fabricable` passe `false`→`true`) → `figer` **200** → ajout sur recette figée
+  **409** → re-création recette **version 2** ; isolation tenant B **`[]`**, sans token **401**, sans
+  `X-Tenant-Id` **400**, CUSTOMER lecture **200** / écriture **403** ; **26 OK / 0 KO**
+  (`scripts/test-boulangerie-lot1-produit.sh`) ; `audit-service` persiste `produit.cree` / `recette.activee` /
+  `recette.figee` (chacun **1**).
+- **Pièges payés (2026-10-17)** :
+  - **Validation de schéma Hibernate vs SQL** : le champ `temperatureCuissonC` était mappé par la stratégie de
+    nommage en `temperature_cuissonc` (le `C` final isolé ne déclenche pas d'underscore) alors que la migration
+    pose `temperature_cuisson_c` → **boot KO `Schema-validation: missing column`**. Correctif : `@Column(name =
+    "temperature_cuisson_c")` explicite. Règle : tout champ finissant par une lettre majuscule isolée
+    (`...C`, `...HT`) doit porter un `@Column(name=...)` explicite.
+  - **Topic Kafka absent sur une infra déjà lancée** : `kafka-init` ne s'exécute qu'à la **création** du
+    conteneur ; le broker tournait depuis 4 jours, avant l'ajout de `boulangerie.events` à `topics.sh` →
+    `UNKNOWN_TOPIC_OR_PARTITION` en boucle, `kafkaTemplate.send()` **bloque** (métadonnées indisponibles) →
+    dépasse le `TimeLimiter` 10 s de la passerelle → **503 SERVICE_UNAVAILABLE** sur les seuls endpoints qui
+    émettent (`POST /boul/produits`, `/recettes/{id}/activer|figer`). Correctif : créer le topic
+    (`kafka-topics --create ... --if-not-exists`) **et** `scripts/backend-up.{sh,ps1}` rejouent désormais
+    `docker compose run --rm kafka-init` (idempotent) après l'attente Kafka.
+- **Front Lot 1** : construit le 2026-10-17 après validation back (D13). Console `./frontend` :
+  types `Gamme`, `CategorieProduit`, `Produit`, `FicheRecette`, `IngredientRecette`, `LigneCout`,
+  `BesoinMatiere`, `CoutRecette` + enums `UniteVente`, `Allergene`, `NatureCout` dans
+  `src/types/index.ts` ; client `boulangerieApi` (préfixe `/boul/**`) dans `src/services/api.ts` ;
+  labels `gammeLabel`/`categorieLabel`/`produitLabel`/`recetteLabel`/`ingredientLabel` +
+  lookups `useGammesMap`/`useCategoriesMap`/`useProduitsMap` (keyed par `code`) ; constantes
+  `UNITE_VENTE`/`ALLERGENE`/`NATURE_COUT` ; groupe sidebar « Boulangerie · Produits ».
+  Pages (liste `ADMIN`|`CUSTOMER`, mutations `ADMIN`) : `/boulangerie/produits`
+  (+ `[id]` : caractéristiques, recettes du produit, activer/désactiver),
+  `/boulangerie/recettes` (+ `[id]` : ingrédients + ajout, lignes de coût, besoins matières,
+  coût de revient, activer/figer), `/boulangerie/gammes`, `/boulangerie/categories`
+  (`ResourceCrud` en création seule — le backend n'expose ni `PUT` ni `DELETE`).
+  **Vérifs** : `npx tsc --noEmit` 0 erreur ; `npm run lint` 0 erreur (2 warnings préexistants
+  `avatar.tsx`) ; `npm run build` OK (routes `/boulangerie/{produits,recettes,gammes,categories}`
+  + `[id]` générées). **Détail** dans `frontend/AGENTS.md`.
+
+### boulangerie-production-service — lot 2 construit (2026-10-17)
+
+**Backend 2 `boulangerie-production-service`** (port **8142**, schéma `boulangerie_production`, table
+Flyway `flyway_boulangerie_production_history`, package `com.nexusgesti.boulangerie.production`),
+**avec Kafka** (producteur `boulangerie.events`, D18) :
+
+- **Périmètre** : plans de production (`PlanProduction` + `LignePlan`), fournées (`Fournee` +
+  `LigneConsommation` + `PerteProduction`), besoins matières agrégés (calculés via `RecetteProvider`
+  client → 8141, non persistés). 4 tables.
+- **Domaine pur** (aucune valeur métier en dur) : `PlanProduction` (`planifier`/`valider`/`lancer`/
+  `cloturer`, ≥1 ligne exigée à la création, besoins agrégés par `articleCode`) ; `Fournee`
+  (`lancer` PLANIFIEE→EN_COURS + `dateDebut`, `enregistrerRendu` (EN_COURS uniquement),
+  `cuire` EN_COURS→CUITE, `valider` CUITE→VALIDEE + `dateFin`, `annuler(motif)` sauf VALIDEE/ANNULEE,
+  `getRendement()` scale 4 HALF_UP, `getEcartMatiere()` somme des écarts). Exception
+  `ProductionException` (`NOT_FOUND` 404 ; `TRANSITION_INVALIDE`/`ETAT_INVALIDE`/`ITEM_EXISTANT` 409 ;
+  `INVALIDE` 400).
+- **Câblage** : route passerelle `/api/v1/boul/{plans,fournees}/**` → 8142 ; cible Prometheus
+  `host.docker.internal:8142` ; `scripts/backend-up.{sh,ps1}` (8142) ; pom racine (bloc BOULANGERIE).
+- **Événements** (`boulangerie.events`) : `plan.valide`, `fournee.validee` (→ `ENTREE_PRODUCTION`),
+  `mouvement.stock` (`SORTIE_CONSOMMATION` par consommation déclarée, `SORTIE_PERTE` valorisée au
+  prix moyen à la validation).
+- **Tests : 26 verts** (domaine `PlanProduction`/`Fournee` + `ProductionServiceTest` +
+  `@WebMvcTest ProductionControllerSecurityTest` — 401 sans token, 403 sans rôle, lecture CUSTOMER,
+  création/transition ADMIN). `mvn test` racine : **BUILD SUCCESS, 420 tests**.
+- **Contraintes de l'API** : `POST /plans` exige ≥1 ligne ; `POST /fournees/{id}/enregistrer-rendu`
+  body `{quantite}` ; `/annuler` body `{motif}` (obligatoire) ; `/consommations` body =
+  `List<LigneConsommation>` ; `/pertes` body `{articleCode, quantite, typePerte, motif?, prixMoyen?}`
+  (le back valorise côté domaine).
+- **Front Lot 2** : construit le 2026-10-17 après validation back (D13). Console `./frontend` :
+  types `StatutPlan`/`StatutFournee`/`TypePerte`/`LignePlan`/`PlanProduction`/`LigneConsommation`/
+  `PerteProduction`/`Fournee` dans `src/types/index.ts` ; groupes `plans`/`fournees` dans
+  `boulangerieApi` ; constantes `STATUT_PLAN`/`STATUT_FOURNEE`/`TYPE_PERTE` ; labels `planLabel`/
+  `fourneeLabel` ; lookup `useRecettesCodeMap` (keyed par `code`, les FK recette sont des codes) ;
+  sidebar « Boulangerie · Production ». Pages : `/boulangerie/plans` (liste + création custom avec
+  lignes imbriquées — `ResourceCrud` ne gère pas les listes et le back exige ≥1 ligne) + `[id]`
+  (lignes, besoins matières, valider/lancer/clôturer) ; `/boulangerie/fournees` (liste + création)
+  + `[id]` (cycle PLANIFIEE→EN_COURS→CUITE→VALIDEE avec rendu, cuisson, validation, annulation
+  motivée, consommations par lot + pertes valorisées, rendement/écart affichés).
+  **Vérifs** : `npx tsc --noEmit` 0 erreur ; `npm run lint` 0 erreur (2 warnings préexistants
+  `avatar.tsx`) ; `npm run build` OK (routes `/boulangerie/{plans,fournees}` + `[id]` générées).
+
 ### Restant
 
+- **Boulangerie lots 1-2** construits et documentés le 2026-10-17 (back : 30 tests produit + 26 tests
+  production ; front : types/pages/sidebars lot 1 et lot 2, `tsc` + lint + build verts) ;
+  **commits à faire sur demande** (back lot 1 + lot 2 + fronts, tout en `??` non tracké).
+  Reste les lots 3→6 (`approvisionnement`→`personnel`, ports 8143-8146), back d'abord (D13).
 - **Commit `5158d45` (251 fichiers)** : docs + `.gitignore` + `backend/`. Phase 1 close.
 - **Phase 2 commitée le 2026-10-08** : `e25283e` (tenant-service + doc D7/D10 + E2E + colonne Front).
 - **Console socle commitée le 2026-10-08** : décrite au journal §11 (plomberie + pages socle + ADMIN,
@@ -1099,6 +1358,12 @@ Le producteur 4b a révélé que `AuditKafkaConsumer` ne savait **pas persister*
   `tsc` + lint + build verts), **commit à faire** ; guides utilisateur à mettre à jour Ensuite.
   Phase 3 (reste du socle) : reste `auth` (durcissement + tests), `notification`,
   `audit`, `reporting` — back d'abord, front ensuite.
+- **Self-service signup (landing + `/signup`)** construit le 2026-10-11 (`auth` enrichi + consommateurs
+  Kafka `tenant`/`identity` + front ; E2E passerelle vert), **commit à faire** (voir journal §11).
+- **Login email-first + refonte « par nom » des sélecteurs pédagogie** construits le 2026-10-12
+  (`auth` `resolve-tenant` + `tenant` `identite` + front ; `tsc`/ESLint verts), **commit à faire**
+  (voir journal §11). Reste au backlog : `coupons-paiement` « Remettre » (destinataire via `prompt`),
+  `saisiePar`/`affectePar` (id court, pas de map utilisateur).
 - `@Async` de `ReportService.generateAsync` inerte (self-invocation) : génération synchrone.
   À corriger si le rapport doit vraiment être émis hors du thread de requête.
 - `"kyc_level": ["0"]` dans `realm-nexusgesti.json` et `ReportType.KYC_SUMMARY` /
