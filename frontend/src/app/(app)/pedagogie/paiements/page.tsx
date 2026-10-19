@@ -8,12 +8,14 @@ import { humanize, formatDate } from "@/components/pedagogie/format";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/components/providers/auth-provider";
+import { useTenant } from "@/components/providers/tenant-provider";
+import { useElevesMap, useAvisMap } from "@/hooks/use-lookup";
 import { feesApi } from "@/services/api";
 import type { Paiement } from "@/types";
 
 const fields: FieldDef[] = [
-  { name: "avis", label: "Avis (UUID)", colSpan: 2 },
-  { name: "eleve", label: "Élève (UUID)", colSpan: 2 },
+  { name: "avis", label: "Avis", type: "select", entityKey: "avis", colSpan: 2 },
+  { name: "eleve", label: "Élève", type: "select", entityKey: "eleves", colSpan: 2 },
   { name: "montant", label: "Montant", type: "number", required: true },
   { name: "moyen", label: "Moyen", type: "select", options: enumOptions(MOYEN_PAIEMENT) },
   { name: "referenceTransaction", label: "Référence transaction" },
@@ -22,7 +24,7 @@ const fields: FieldDef[] = [
 
 const columns: ColumnDef<Paiement>[] = [
   { key: "reference", label: "Référence", render: (row) => <span className="font-mono font-medium text-slate-900">{row.reference}</span> },
-  { key: "eleve", label: "Élève", render: (row) => (row.eleve ? <span className="font-mono text-xs">{row.eleve.slice(0, 8)}…</span> : "—") },
+  { key: "eleve", label: "Élève", lookupKey: "eleves" },
   { key: "montant", label: "Montant", render: (row) => <span className="font-semibold">{row.montant}</span> },
   { key: "moyen", label: "Moyen", render: (row) => (row.moyen ? humanize(row.moyen) : "—") },
   { key: "date", label: "Date", render: (row) => formatDate(row.date) },
@@ -50,6 +52,9 @@ const columns: ColumnDef<Paiement>[] = [
 
 export default function PaiementsPage() {
   const { isAdmin } = useAuth();
+  const { tenantId } = useTenant();
+  const eleves = useElevesMap([tenantId]);
+  const avis = useAvisMap([tenantId]);
 
   const create = (body: Partial<Paiement>) => feesApi.paiements.create(body, crypto.randomUUID());
 
@@ -111,6 +116,7 @@ export default function PaiementsPage() {
       create={create}
       fields={fields}
       columns={columns}
+      entities={{ eleves, avis }}
       searchKeys={["reference", "eleve", "statut", "moyen"]}
       canWrite={isAdmin}
       rowActions={actions}

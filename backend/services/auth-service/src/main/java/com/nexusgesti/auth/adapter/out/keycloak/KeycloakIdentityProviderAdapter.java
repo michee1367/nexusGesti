@@ -194,6 +194,36 @@ public class KeycloakIdentityProviderAdapter implements IdentityProviderPort {
         return UUID.fromString(users.getFirst().id());
     }
 
+    @Override
+    public java.util.Optional<UUID> findTenantIdByEmail(String email) {
+        String adminToken = obtainAdminToken();
+        List<KeycloakUserRepresentation> users = webClient.get()
+                .uri("/admin/realms/{realm}/users?email={email}&exact=true",
+                        properties.realm(), email)
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminToken)
+                .retrieve()
+                .bodyToFlux(KeycloakUserRepresentation.class)
+                .collectList()
+                .block();
+
+        if (users == null || users.isEmpty()) {
+            return java.util.Optional.empty();
+        }
+        Map<String, List<String>> attributes = users.getFirst().attributes();
+        if (attributes == null) {
+            return java.util.Optional.empty();
+        }
+        List<String> tenant = attributes.get("tenant_id");
+        if (tenant == null || tenant.isEmpty() || tenant.getFirst() == null || tenant.getFirst().isBlank()) {
+            return java.util.Optional.empty();
+        }
+        try {
+            return java.util.Optional.of(UUID.fromString(tenant.getFirst().trim()));
+        } catch (IllegalArgumentException e) {
+            return java.util.Optional.empty();
+        }
+    }
+
 
     private void finalizeUserAccount(UUID userId, String adminToken) {
         for (String action : List.of(

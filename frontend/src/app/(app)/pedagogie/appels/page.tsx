@@ -9,14 +9,16 @@ import { formatDate, humanize } from "@/components/pedagogie/format";
 import { LoadingView } from "@/components/common/async-state";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/components/providers/auth-provider";
+import { useTenant } from "@/components/providers/tenant-provider";
+import { useClassesMap, useCoursMap, useEnseignantsMap, useSeancesMap } from "@/hooks/use-lookup";
 import { attendanceApi } from "@/services/api";
 import type { FeuillePresence } from "@/types";
 
 const fields: FieldDef[] = [
-  { name: "seanceId", label: "Séance (UUID)", colSpan: 2 },
-  { name: "classeId", label: "Classe (UUID)", colSpan: 2 },
-  { name: "coursId", label: "Cours (UUID)" },
-  { name: "enseignantId", label: "Enseignant (UUID)" },
+  { name: "seanceId", label: "Séance", type: "select", entityKey: "seances", colSpan: 2 },
+  { name: "classeId", label: "Classe", type: "select", entityKey: "classes", colSpan: 2 },
+  { name: "coursId", label: "Cours", type: "select", entityKey: "cours" },
+  { name: "enseignantId", label: "Enseignant", type: "select", entityKey: "enseignants" },
   { name: "date", label: "Date", type: "date" },
   { name: "methode", label: "Méthode", type: "select", options: enumOptions(METHODE_SAISIE) },
 ];
@@ -35,7 +37,7 @@ const columns: ColumnDef<FeuillePresence>[] = [
   {
     key: "classeId",
     label: "Classe",
-    render: (row) => (row.classeId ? <span className="font-mono text-xs">{row.classeId.slice(0, 8)}…</span> : "—"),
+    lookupKey: "classes",
   },
   {
     key: "effectifTheorique",
@@ -62,6 +64,11 @@ const columns: ColumnDef<FeuillePresence>[] = [
 
 function AppelsContent() {
   const { isAdmin } = useAuth();
+  const { tenantId } = useTenant();
+  const seances = useSeancesMap([tenantId]);
+  const classes = useClassesMap([tenantId]);
+  const cours = useCoursMap([tenantId]);
+  const enseignants = useEnseignantsMap([tenantId]);
   const seance = useSearchParams().get("seance") ?? "";
   return (
     <ResourceCrud<FeuillePresence>
@@ -72,6 +79,7 @@ function AppelsContent() {
       create={attendanceApi.appels.create}
       fields={fields}
       columns={columns}
+      entities={{ seances, classes, cours, enseignants }}
       searchKeys={["seanceId", "classeId", "statut"]}
       initialSearch={seance}
       canWrite={isAdmin}

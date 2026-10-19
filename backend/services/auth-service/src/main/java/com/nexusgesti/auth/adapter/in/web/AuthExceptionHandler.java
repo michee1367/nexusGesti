@@ -33,6 +33,7 @@ public class AuthExceptionHandler {
             case "AUTH_INVALID_CREDENTIALS" -> HttpStatus.UNAUTHORIZED;
             case "AUTH_ACCOUNT_LOCKED" -> HttpStatus.TOO_MANY_REQUESTS;
             case "AUTH_INVALID_REFRESH_TOKEN", "AUTH_SESSION_INVALID" -> HttpStatus.UNAUTHORIZED;
+            case "AUTH_TENANT_NOT_FOUND", "AUTH_USER_NOT_FOUND" -> HttpStatus.NOT_FOUND;
             case "MFA_INVALID_CODE" -> HttpStatus.UNPROCESSABLE_ENTITY;
             case "MFA_ALREADY_VERIFIED" -> HttpStatus.CONFLICT;
             default -> HttpStatus.BAD_REQUEST;

@@ -84,6 +84,14 @@ class TenantControllerSecurityTest {
     }
 
     @Test
+    void identiteEstPubliqueSansToken() throws Exception {
+        when(etablissementUseCase.get(any())).thenReturn(etablissement());
+        mvc.perform(get("/api/v1/tenants/" + tenantId + "/identite")
+                        .header("X-Tenant-Id", tenantId))
+                .andExpect(status().isOk());
+    }
+
+    @Test
     void changementStatutRefuseAuRoleCUSTOMER() throws Exception {
         mvc.perform(patch("/api/v1/tenants/" + tenantId + "/statut")
                         .with(jwt().authorities(new SimpleGrantedAuthority("ROLE_CUSTOMER")))

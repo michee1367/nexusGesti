@@ -8,10 +8,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PageHeader, LoadingView, ErrorState, EmptyState } from "@/components/common/async-state";
+import { EntitySelect } from "@/components/common/entity-select";
 import { formatDate } from "@/components/pedagogie/format";
+import { classeLabel, eleveLabel } from "@/components/pedagogie/labels";
 import { useApi } from "@/hooks/use-api";
 import { useTenant } from "@/components/providers/tenant-provider";
-import { attendanceApi } from "@/services/api";
+import { attendanceApi, peopleApi, structureApi } from "@/services/api";
 import type { SuiviAssiduite } from "@/types";
 import type { ApiError } from "@/types";
 
@@ -69,8 +71,16 @@ export default function AssiduitePage() {
               }}
             >
               <div className="flex-1">
-                <Label className="mb-1 block">Élève (UUID)</Label>
-                <Input value={eleveId} onChange={(event) => setEleveId(event.target.value)} placeholder="121f5678-…" />
+                <Label className="mb-1 block">Élève</Label>
+                <EntitySelect
+                  fetcher={() => peopleApi.eleves.list()}
+                  keyOf={(eleve) => eleve.idEleve}
+                  labelOf={eleveLabel}
+                  value={eleveId}
+                  onChange={setEleveId}
+                  deps={[tenantId]}
+                  placeholder="Sélectionner un élève…"
+                />
               </div>
               <Button type="submit" disabled={!eleveId || suiviLoading}>
                 <Search className="h-4 w-4" />
@@ -137,8 +147,16 @@ export default function AssiduitePage() {
               }}
             >
               <div className="flex-1">
-                <Label className="mb-1 block">Classe (UUID)</Label>
-                <Input value={classeId} onChange={(event) => setClasseId(event.target.value)} placeholder="…" />
+                <Label className="mb-1 block">Classe</Label>
+                <EntitySelect
+                  fetcher={() => structureApi.classes.list()}
+                  keyOf={(classe) => classe.idClasse}
+                  labelOf={classeLabel}
+                  value={classeId}
+                  onChange={setClasseId}
+                  deps={[tenantId]}
+                  placeholder="Sélectionner une classe…"
+                />
               </div>
               <Button type="submit" disabled={!classeId}>
                 <BookOpenCheck className="h-4 w-4" />
@@ -168,8 +186,16 @@ export default function AssiduitePage() {
         <CardContent className="p-4 pt-2">
           <div className="mb-4 flex flex-wrap items-end gap-2">
             <div className="w-64">
-              <Label className="mb-1 block">Classe (UUID)</Label>
-              <Input value={classeId} onChange={(event) => setClasseId(event.target.value)} />
+              <Label className="mb-1 block">Classe</Label>
+              <EntitySelect
+                fetcher={() => structureApi.classes.list()}
+                keyOf={(classe) => classe.idClasse}
+                labelOf={classeLabel}
+                value={classeId}
+                onChange={setClasseId}
+                deps={[tenantId]}
+                placeholder="Sélectionner une classe…"
+              />
             </div>
             <div className="w-40">
               <Label className="mb-1 block">Date</Label>

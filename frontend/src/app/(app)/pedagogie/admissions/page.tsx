@@ -9,16 +9,20 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PageHeader, LoadingView, ErrorState, EmptyState } from "@/components/common/async-state";
+import { EntitySelect } from "@/components/common/entity-select";
 import { formatDate } from "@/components/pedagogie/format";
+import { eleveLabel, lookupLabel, programmeLabel } from "@/components/pedagogie/labels";
 import { useApi } from "@/hooks/use-api";
+import { useUesMap } from "@/hooks/use-lookup";
 import { useAuth } from "@/components/providers/auth-provider";
 import { useTenant } from "@/components/providers/tenant-provider";
-import { enrollmentApi } from "@/services/api";
+import { enrollmentApi, etablissementApi, peopleApi } from "@/services/api";
 import type { Candidat, ParcoursAcademique } from "@/types";
 
 export default function AdmissionsPage() {
   const { isAdmin } = useAuth();
   const { tenantId } = useTenant();
+  const ues = useUesMap([tenantId]);
 
   const [candidat, setCandidat] = useState<Candidat>({
     eleveId: "",
@@ -74,18 +78,27 @@ export default function AdmissionsPage() {
               }}
             >
               <div>
-                <Label className="mb-1 block">Élève (UUID) *</Label>
-                <Input
-                  value={candidat.eleveId ?? ""}
-                  onChange={(event) => setCandidat({ ...candidat, eleveId: event.target.value })}
-                  placeholder="121f5678-…"
+                <Label className="mb-1 block">Élève *</Label>
+                <EntitySelect
+                  fetcher={() => peopleApi.eleves.list()}
+                  keyOf={(eleve) => eleve.idEleve}
+                  labelOf={eleveLabel}
+                  value={candidat.eleveId}
+                  onChange={(value) => setCandidat({ ...candidat, eleveId: value })}
+                  deps={[tenantId]}
+                  placeholder="Sélectionner un élève…"
                 />
               </div>
               <div>
-                <Label className="mb-1 block">Programme (UUID)</Label>
-                <Input
+                <Label className="mb-1 block">Programme</Label>
+                <EntitySelect
+                  fetcher={() => etablissementApi.programmes.list()}
+                  keyOf={(programme) => programme.idProgramme}
+                  labelOf={programmeLabel}
                   value={candidat.programmeId ?? ""}
-                  onChange={(event) => setCandidat({ ...candidat, programmeId: event.target.value })}
+                  onChange={(value) => setCandidat({ ...candidat, programmeId: value })}
+                  deps={[tenantId]}
+                  placeholder="Sélectionner un programme…"
                 />
               </div>
               <div>
@@ -152,8 +165,16 @@ export default function AdmissionsPage() {
             }}
           >
             <div className="min-w-64 flex-1">
-              <Label className="mb-1 block">Élève (UUID)</Label>
-              <Input value={parcoursEleve} onChange={(event) => setParcoursEleve(event.target.value)} placeholder="121f5678-…" />
+              <Label className="mb-1 block">Élève</Label>
+              <EntitySelect
+                fetcher={() => peopleApi.eleves.list()}
+                keyOf={(eleve) => eleve.idEleve}
+                labelOf={eleveLabel}
+                value={parcoursEleve}
+                onChange={setParcoursEleve}
+                deps={[tenantId]}
+                placeholder="Sélectionner un élève…"
+              />
             </div>
             <div className="w-40">
               <Label className="mb-1 block">Crédits requis</Label>
@@ -192,7 +213,7 @@ export default function AdmissionsPage() {
                   <tbody>
                     {parcours.data.inscriptions.map((item) => (
                       <tr key={item.idInscription} className="border-b border-border last:border-0">
-                        <td className="px-3 py-2 font-mono text-xs">{item.ueId?.slice(0, 8)}…</td>
+                        <td className="px-3 py-2 text-xs">{lookupLabel(ues, item.ueId)}</td>
                         <td className="px-3 py-2">{item.creditsAcquis}</td>
                         <td className="px-3 py-2">{item.statut ?? "—"}</td>
                         <td className="px-3 py-2">{formatDate(item.dateInscription)}</td>

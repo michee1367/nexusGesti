@@ -121,6 +121,18 @@ import type {
   CouponPaiement,
   Journalier,
   RemiseRequest,
+  Gamme,
+  CategorieProduit,
+  Produit,
+  FicheRecette,
+  IngredientRecette,
+  BesoinMatiere,
+  CoutRecette,
+  PlanProduction,
+  Fournee,
+  LigneConsommation,
+  PerteProduction,
+  TypePerte,
 } from "@/types";
 
 export const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080/api/v1";
@@ -280,10 +292,27 @@ export const authApi = {
     lastName: string;
     countryCode: string;
     acceptedTerms: boolean;
+    etablissement?: {
+      denomination: string;
+      code: string;
+      profil: ProfilEtablissement;
+    };
   }): Promise<{ userId: string; status: string }> {
     return rawFetch("/socle/auth/register", jsonInit("POST", payload));
   },
+
+  async resolveTenant(email: string): Promise<{ tenantId: string }> {
+    return rawFetch("/socle/auth/resolve-tenant", jsonInit("POST", { email }));
+  },
 };
+
+export interface IdentiteEtablissement {
+  id: string;
+  denomination: string;
+  code: string;
+  profil: string | null;
+  statut: string | null;
+}
 
 export const tenantApi = {
   create(payload: Partial<Etablissement> & { code: string; denomination: string; profil: ProfilEtablissement }): Promise<Etablissement> {
@@ -296,6 +325,12 @@ export const tenantApi = {
 
   changeStatut(id: string, statut: StatutEtablissement, motif?: string): Promise<Etablissement> {
     return rawFetch(`/socle/tenants/${id}/statut`, jsonInit("PATCH", { statut, motif }));
+  },
+
+  identite(id: string): Promise<IdentiteEtablissement> {
+    return rawFetch(`/socle/tenants/${id}/identite`, {
+      headers: { "X-Tenant-Id": id },
+    });
   },
 };
 
@@ -1024,6 +1059,80 @@ export const feesApi = {
     ouvrir: (body: Partial<Journalier>) =>
       rawFetch<Journalier>("/ped/frais/journaliers", jsonInit("POST", body)),
     cloturer: (id: string) => rawFetch<Journalier>(`/ped/frais/journaliers/${id}/cloturer`, { method: "POST" }),
+  },
+};
+
+export const boulangerieApi = {
+  gammes: {
+    list: () => rawFetch<Gamme[]>("/boul/gammes"),
+    create: (body: Partial<Gamme>) =>
+      rawFetch<Gamme>("/boul/gammes", jsonInit("POST", body)),
+  },
+  categories: {
+    list: () => rawFetch<CategorieProduit[]>("/boul/categories"),
+    create: (body: Partial<CategorieProduit>) =>
+      rawFetch<CategorieProduit>("/boul/categories", jsonInit("POST", body)),
+  },
+  produits: {
+    list: (params?: { gammeCode?: string; categorieCode?: string }) =>
+      rawFetch<Produit[]>(`/boul/produits${qp(params ?? {})}`),
+    get: (id: string) => rawFetch<Produit>(`/boul/produits/${id}`),
+    create: (body: Partial<Produit>) =>
+      rawFetch<Produit>("/boul/produits", jsonInit("POST", body)),
+    activer: (id: string) => rawFetch<Produit>(`/boul/produits/${id}/activer`, { method: "POST" }),
+    desactiver: (id: string) => rawFetch<Produit>(`/boul/produits/${id}/desactiver`, { method: "POST" }),
+  },
+  recettes: {
+    list: (params?: { produitCode?: string }) =>
+      rawFetch<FicheRecette[]>(`/boul/recettes${qp(params ?? {})}`),
+    get: (id: string) => rawFetch<FicheRecette>(`/boul/recettes/${id}`),
+    create: (body: Partial<FicheRecette>) =>
+      rawFetch<FicheRecette>("/boul/recettes", jsonInit("POST", body)),
+    ajouterIngredient: (id: string, body: Partial<IngredientRecette>) =>
+      rawFetch<FicheRecette>(`/boul/recettes/${id}/ingredients`, jsonInit("POST", body)),
+    activer: (id: string) => rawFetch<FicheRecette>(`/boul/recettes/${id}/activer`, { method: "POST" }),
+    figer: (id: string) => rawFetch<FicheRecette>(`/boul/recettes/${id}/figer`, { method: "POST" }),
+    besoins: (id: string, quantite: number) =>
+      rawFetch<BesoinMatiere[]>(`/boul/recettes/${id}/besoins${qp({ quantite })}`),
+    cout: (id: string, prix?: Record<string, number>) => {
+      const usp = new URLSearchParams();
+      for (const [code, montant] of Object.entries(prix ?? {})) {
+        if (code && montant !== undefined && montant !== null) usp.append("prix", `${code}:${montant}`);
+      }
+      const qs = usp.toString();
+      return rawFetch<CoutRecette>(`/boul/recettes/${id}/cout${qs ? `?${qs}` : ""}`);
+    },
+  },
+  plans: {
+    list: () => rawFetch<PlanProduction[]>("/boul/plans"),
+    get: (id: string) => rawFetch<PlanProduction>(`/boul/plans/${id}`),
+    create: (body: Partial<PlanProduction>) =>
+      rawFetch<PlanProduction>("/boul/plans", jsonInit("POST", body)),
+    valider: (id: string) => rawFetch<PlanProduction>(`/boul/plans/${id}/valider`, { method: "POST" }),
+    lancer: (id: string) => rawFetch<PlanProduction>(`/boul/plans/${id}/lancer`, { method: "POST" }),
+    cloturer: (id: string) => rawFetch<PlanProduction>(`/boul/plans/${id}/cloturer`, { method: "POST" }),
+  },
+  fournees: {
+    list: () => rawFetch<Fournee[]>("/boul/fournees"),
+    get: (id: string) => rawFetch<Fournee>(`/boul/fournees/${id}`),
+    create: (body: Partial<Fournee>) =>
+      rawFetch<Fournee>("/boul/fournees", jsonInit("POST", body)),
+    lancer: (id: string) => rawFetch<Fournee>(`/boul/fournees/${id}/lancer`, { method: "POST" }),
+    cuire: (id: string) => rawFetch<Fournee>(`/boul/fournees/${id}/cuire`, { method: "POST" }),
+    enregistrerRendu: (id: string, quantite: number) =>
+      rawFetch<Fournee>(`/boul/fournees/${id}/enregistrer-rendu`, jsonInit("POST", { quantite })),
+    valider: (id: string) => rawFetch<Fournee>(`/boul/fournees/${id}/valider`, { method: "POST" }),
+    annuler: (id: string, motif: string) =>
+      rawFetch<Fournee>(`/boul/fournees/${id}/annuler`, jsonInit("POST", { motif })),
+    consommations: (id: string, lignes: Partial<LigneConsommation>[]) =>
+      rawFetch<Fournee>(`/boul/fournees/${id}/consommations`, jsonInit("POST", lignes)),
+    pertes: {
+      list: (id: string) => rawFetch<PerteProduction[]>(`/boul/fournees/${id}/pertes`),
+      create: (
+        id: string,
+        body: { articleCode: string; quantite: number; typePerte: TypePerte; motif?: string; prixMoyen?: number },
+      ) => rawFetch<Fournee>(`/boul/fournees/${id}/pertes`, jsonInit("POST", body)),
+    },
   },
 };
 export { tryRefresh };

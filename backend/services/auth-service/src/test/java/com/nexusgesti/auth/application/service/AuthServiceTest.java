@@ -62,7 +62,8 @@ class AuthServiceTest {
     @DisplayName("register — succès avec termes acceptés")
     void register_success() {
         RegisterCommand command = new RegisterCommand(
-                "user@test.com", "+33612345678", "P@ssword1234!", "Jean", "Dupont", "FR", true);
+                "user@test.com", "+33612345678", "P@ssword1234!", "Jean", "Dupont", "FR", true,
+                new EtablissementInfo("École Test", "ECO-01", "PRIMAIRE"));
         when(identityProvider.registerUser(command)).thenReturn(USER_ID);
 
         RegisteredUser result = authService.register(command);
@@ -70,7 +71,7 @@ class AuthServiceTest {
         assertThat(result.userId()).isEqualTo(USER_ID);
         assertThat(result.email()).isEqualTo("user@test.com");
         assertThat(result.status()).isEqualTo("PENDING_VERIFICATION");
-        verify(identityProvider).assignRealmRole(USER_ID, "CUSTOMER");
+        verify(identityProvider).assignRealmRole(USER_ID, "ADMIN");
         verify(identityProvider).setUserAttribute(USER_ID, "mfa_verified", "false");
         verify(eventPublisher).publishUserRegistered(result, command);
     }
@@ -79,11 +80,30 @@ class AuthServiceTest {
     @DisplayName("register — échec si termes non acceptés")
     void register_termsNotAccepted() {
         RegisterCommand command = new RegisterCommand(
-                "user@test.com", "+33612345678", "P@ssword1234!", "Jean", "Dupont", "FR", false);
+                "user@test.com", "+33612345678", "P@ssword1234!", "Jean", "Dupont", "FR", false, null);
 
         assertThatThrownBy(() -> authService.register(command))
                 .isInstanceOf(AuthService.AuthException.class)
                 .hasFieldOrPropertyWithValue("code", "TERMS_NOT_ACCEPTED");
+    }
+
+    @Test
+    @DisplayName("resolveTenant — retourne l'établissement associé à l'email")
+    void resolveTenant_success() {
+        UUID tenant = UUID.randomUUID();
+        when(identityProvider.findTenantIdByEmail("user@test.com")).thenReturn(Optional.of(tenant));
+
+        assertThat(authService.resolveTenant("user@test.com")).isEqualTo(tenant);
+    }
+
+    @Test
+    @DisplayName("resolveTenant — échec si aucun établissement associé")
+    void resolveTenant_notFound() {
+        when(identityProvider.findTenantIdByEmail("user@test.com")).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> authService.resolveTenant("user@test.com"))
+                .isInstanceOf(AuthService.AuthException.class)
+                .hasFieldOrPropertyWithValue("code", "AUTH_TENANT_NOT_FOUND");
     }
 
     @Test

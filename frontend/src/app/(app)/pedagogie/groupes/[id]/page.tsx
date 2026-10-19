@@ -8,20 +8,23 @@ import { ArrowLeft, UserMinus, UserPlus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PageHeader, LoadingView, ErrorState, EmptyState } from "@/components/common/async-state";
+import { EntitySelect } from "@/components/common/entity-select";
 import { formatDate, humanize } from "@/components/pedagogie/format";
+import { eleveLabel, lookupLabel } from "@/components/pedagogie/labels";
 import { useApi } from "@/hooks/use-api";
+import { useElevesMap } from "@/hooks/use-lookup";
 import { useAuth } from "@/components/providers/auth-provider";
 import { useTenant } from "@/components/providers/tenant-provider";
-import { enrollmentApi } from "@/services/api";
+import { enrollmentApi, peopleApi } from "@/services/api";
 
 export default function GroupeDetailPage() {
   const params = useParams<{ id: string }>();
   const id = params.id;
   const { isAdmin } = useAuth();
   const { tenantId } = useTenant();
+  const eleves = useElevesMap([tenantId]);
 
   const groupe = useApi(() => enrollmentApi.groupes.get(id), [id, tenantId]);
   const [eleveId, setEleveId] = useState("");
@@ -136,7 +139,7 @@ export default function GroupeDetailPage() {
               <tbody>
                 {data.membres.map((membre) => (
                   <tr key={membre.idMembre} className="border-b border-border last:border-0">
-                    <td className="px-3 py-2 font-mono text-xs">{membre.eleveId?.slice(0, 8)}…</td>
+                    <td className="px-3 py-2 text-xs">{lookupLabel(eleves, membre.eleveId)}</td>
                     <td className="px-3 py-2">{membre.rang ?? "—"}</td>
                     <td className="px-3 py-2">{formatDate(membre.dateAffectation)}</td>
                     <td className="px-3 py-2 font-mono text-xs">{membre.affectePar?.slice(0, 8) ?? "—"}</td>
@@ -173,8 +176,16 @@ export default function GroupeDetailPage() {
               }}
             >
               <div className="flex-1">
-                <Label className="mb-1 block">Élève (UUID)</Label>
-                <Input value={eleveId} onChange={(event) => setEleveId(event.target.value)} placeholder="121f5678-…" />
+                <Label className="mb-1 block">Élève</Label>
+                <EntitySelect
+                  fetcher={() => peopleApi.eleves.list()}
+                  keyOf={(eleve) => eleve.idEleve}
+                  labelOf={eleveLabel}
+                  value={eleveId}
+                  onChange={setEleveId}
+                  deps={[tenantId]}
+                  placeholder="Sélectionner un élève…"
+                />
               </div>
               <Button type="submit" disabled={busy || !eleveId}>
                 <UserPlus className="h-4 w-4" />

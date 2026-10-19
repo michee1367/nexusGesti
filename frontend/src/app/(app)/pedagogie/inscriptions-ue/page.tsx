@@ -7,25 +7,27 @@ import { humanize } from "@/components/pedagogie/format";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/components/providers/auth-provider";
+import { useTenant } from "@/components/providers/tenant-provider";
+import { useElevesMap, useUesMap, useAnneesMap } from "@/hooks/use-lookup";
 import { enrollmentApi } from "@/services/api";
 import type { InscriptionUE } from "@/types";
 
 const fields: FieldDef[] = [
-  { name: "eleveId", label: "Élève (UUID)", colSpan: 2 },
-  { name: "ueId", label: "UE (UUID)", colSpan: 2 },
-  { name: "anneeId", label: "Année (UUID)", colSpan: 2 },
+  { name: "eleveId", label: "Élève", type: "select", entityKey: "eleves", colSpan: 2 },
+  { name: "ueId", label: "UE", type: "select", entityKey: "ues", colSpan: 2 },
+  { name: "anneeId", label: "Année", type: "select", entityKey: "annees", colSpan: 2 },
 ];
 
 const columns: ColumnDef<InscriptionUE>[] = [
   {
     key: "eleveId",
     label: "Élève",
-    render: (row) => <span className="font-mono text-xs">{row.eleveId?.slice(0, 8) ?? "—"}…</span>,
+    lookupKey: "eleves",
   },
   {
     key: "ueId",
     label: "UE",
-    render: (row) => <span className="font-mono text-xs">{row.ueId?.slice(0, 8) ?? "—"}…</span>,
+    lookupKey: "ues",
   },
   {
     key: "statut",
@@ -47,6 +49,10 @@ const columns: ColumnDef<InscriptionUE>[] = [
 
 export default function InscriptionsUEPage() {
   const { isAdmin } = useAuth();
+  const { tenantId } = useTenant();
+  const eleves = useElevesMap([tenantId]);
+  const ues = useUesMap([tenantId]);
+  const annees = useAnneesMap([tenantId]);
 
   const actions = (row: InscriptionUE, reload: () => void) => (
     <>
@@ -119,6 +125,7 @@ export default function InscriptionsUEPage() {
       update={enrollmentApi.inscriptions.update}
       fields={fields}
       columns={columns}
+      entities={{ eleves, ues, annees }}
       searchKeys={["eleveId", "ueId", "statut", "motifRefus"]}
       canWrite={isAdmin}
       rowActions={actions}

@@ -97,13 +97,13 @@ class AuthIntegrationTest {
     @DisplayName("POST /api/v1/auth/register → 201 Created")
     void register_returns201() throws Exception {
         when(identityProvider.registerUser(any())).thenReturn(USER_ID);
-        doNothing().when(identityProvider).assignRealmRole(USER_ID, "CUSTOMER");
+        doNothing().when(identityProvider).assignRealmRole(USER_ID, "ADMIN");
         doNothing().when(identityProvider).setUserAttribute(eq(USER_ID), anyString(), anyString());
         doNothing().when(eventPublisher).publishUserRegistered(any(), any());
 
         RegisterRequest request = new RegisterRequest(
                 "integ@test.com", "+33612345678", "P@ssword1234!",
-                "Jean", "Dupont", "FR", true);
+                "Jean", "Dupont", "FR", true, null);
 
         mockMvc.perform(post("/api/v1/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)

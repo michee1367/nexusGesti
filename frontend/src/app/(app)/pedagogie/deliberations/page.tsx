@@ -8,12 +8,14 @@ import { humanize, formatDate } from "@/components/pedagogie/format";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/components/providers/auth-provider";
+import { useTenant } from "@/components/providers/tenant-provider";
+import { useSessionsMap } from "@/hooks/use-lookup";
 import { examApi } from "@/services/api";
 import type { Deliberation } from "@/types";
 
 const fields: FieldDef[] = [
   { name: "reference", label: "Référence", required: true },
-  { name: "sessionId", label: "Session (UUID)", colSpan: 2 },
+  { name: "sessionId", label: "Session", type: "select", entityKey: "sessions", colSpan: 2 },
   { name: "date", label: "Date", type: "date" },
   { name: "president", label: "Président" },
   { name: "grilleVersion", label: "Version de grille", type: "number" },
@@ -59,6 +61,8 @@ const columns: ColumnDef<Deliberation>[] = [
 
 export default function DeliberationsPage() {
   const { isAdmin } = useAuth();
+  const { tenantId } = useTenant();
+  const sessions = useSessionsMap([tenantId]);
 
   const actions = (row: Deliberation, reload: () => void) => (
     <>
@@ -115,6 +119,7 @@ export default function DeliberationsPage() {
       create={examApi.deliberations.create}
       fields={fields}
       columns={columns}
+      entities={{ sessions }}
       searchKeys={["reference", "president", "statut"]}
       canWrite={isAdmin}
       rowActions={actions}

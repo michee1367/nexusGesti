@@ -9,15 +9,17 @@ import { formatDate, humanize } from "@/components/pedagogie/format";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/components/providers/auth-provider";
+import { useTenant } from "@/components/providers/tenant-provider";
+import { useAnneesMap, useClassesMap, usePeriodesMap } from "@/hooks/use-lookup";
 import { examApi } from "@/services/api";
 import type { SessionExamen } from "@/types";
 
 const fields: FieldDef[] = [
   { name: "libelle", label: "Libellé", colSpan: 2 },
   { name: "type", label: "Type", type: "select", options: enumOptions(TYPE_SESSION) },
-  { name: "anneeId", label: "Année (UUID)", colSpan: 2 },
-  { name: "periodeId", label: "Période (UUID)" },
-  { name: "classeId", label: "Classe (UUID)" },
+  { name: "anneeId", label: "Année", type: "select", entityKey: "annees", colSpan: 2 },
+  { name: "periodeId", label: "Période", type: "select", entityKey: "periodes" },
+  { name: "classeId", label: "Classe", type: "select", entityKey: "classes" },
   { name: "dateOuverture", label: "Ouverture", type: "date" },
   { name: "dateCloture", label: "Clôture", type: "date" },
   { name: "grilleDeliberation", label: "Grille de délibération" },
@@ -66,6 +68,10 @@ const columns: ColumnDef<SessionExamen>[] = [
 
 export default function SessionsPage() {
   const { isAdmin } = useAuth();
+  const { tenantId } = useTenant();
+  const annees = useAnneesMap([tenantId]);
+  const periodes = usePeriodesMap([tenantId]);
+  const classes = useClassesMap([tenantId]);
 
   const actions = (row: SessionExamen, reload: () => void) => (
     <>
@@ -160,6 +166,7 @@ export default function SessionsPage() {
       create={examApi.sessions.create}
       fields={fields}
       columns={columns}
+      entities={{ annees, periodes, classes }}
       searchKeys={["reference", "libelle", "statut", "type"]}
       canWrite={isAdmin}
       rowActions={actions}

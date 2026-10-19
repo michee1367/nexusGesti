@@ -34,7 +34,8 @@ public class AuthController {
     public ResponseEntity<RegisterResponse> register(@Valid @RequestBody RegisterRequest request) {
         RegisteredUser user = authUseCase.register(new AuthUseCase.RegisterCommand(
                 request.email(), request.phone(), request.password(),
-                request.firstName(), request.lastName(), request.countryCode(), request.acceptedTerms()));
+                request.firstName(), request.lastName(), request.countryCode(), request.acceptedTerms(),
+                request.etablissement() == null ? null : request.etablissement().toInfo()));
         return ResponseEntity.status(HttpStatus.CREATED).body(RegisterResponse.from(user));
     }
 
@@ -49,6 +50,13 @@ public class AuthController {
                 clientIp(httpRequest),
                 httpRequest.getHeader("User-Agent")));
         return ResponseEntity.ok(LoginResponse.from(result));
+    }
+
+    @PostMapping("/resolve-tenant")
+    @Operation(summary = "Résoudre l'établissement d'un compte à partir de l'email")
+    public ResponseEntity<ResolveTenantResponse> resolveTenant(@Valid @RequestBody ResolveTenantRequest request) {
+        UUID tenantId = authUseCase.resolveTenant(request.email());
+        return ResponseEntity.ok(new ResolveTenantResponse(tenantId));
     }
 
     @PostMapping("/refresh")
@@ -90,14 +98,29 @@ public class AuthController {
             @NotBlank @Size(max = 100) String firstName,
             @NotBlank @Size(max = 100) String lastName,
             @NotBlank @Size(min = 2, max = 2) String countryCode,
-            @AssertTrue(message = "acceptedTerms must be true") boolean acceptedTerms
+            @AssertTrue(message = "acceptedTerms must be true") boolean acceptedTerms,
+            @Valid EtablissementRequest etablissement
     ) {}
+
+    public record EtablissementRequest(
+            @NotBlank @Size(max = 150) String denomination,
+            @NotBlank @Size(max = 30) String code,
+            @NotBlank @Pattern(regexp = "PRIMAIRE|SECONDAIRE|UNIVERSITAIRE|BOULANGERIE") String profil
+    ) {
+        AuthUseCase.EtablissementInfo toInfo() {
+            return new AuthUseCase.EtablissementInfo(denomination, code, profil);
+        }
+    }
 
     public record LoginRequest(
             @NotBlank @Email String email,
             @NotBlank String password,
             String deviceFingerprint
     ) {}
+
+    public record ResolveTenantRequest(@NotBlank @Email String email) {}
+
+    public record ResolveTenantResponse(UUID tenantId) {}
 
     public record RefreshRequest(@NotBlank String refreshToken) {}
 

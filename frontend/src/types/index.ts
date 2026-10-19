@@ -1,4 +1,4 @@
-export type ProfilEtablissement = "PRIMAIRE" | "SECONDAIRE" | "UNIVERSITAIRE";
+export type ProfilEtablissement = "PRIMAIRE" | "SECONDAIRE" | "UNIVERSITAIRE" | "BOULANGERIE";
 export type StatutEtablissement = "PREPARATION" | "ACTIF" | "SUSPENDU" | "ARCHIVE";
 
 export interface Adresse {
@@ -1955,4 +1955,201 @@ export interface RemiseRequest {
 
 export interface DestinataireRequest {
   destinataire?: string | null;
+}
+
+// =====================================================================
+// BOULANGERIE — lot 1 (produit-service)
+// =====================================================================
+
+export type UniteVente = "PIECE" | "LOT" | "KG" | "GRAMME" | "TRANCHE" | "SACHET" | "PLATEAU";
+
+export type Allergene =
+  | "GLUTEN"
+  | "LACTOSE"
+  | "OEUF"
+  | "ARACHIDE"
+  | "SOJA"
+  | "NOIX"
+  | "POISSON"
+  | "CRUSTACE"
+  | "SESAME"
+  | "SULFITE";
+
+export type NatureCout =
+  | "MATIERE"
+  | "MAIN_OEUVRE"
+  | "ENERGIE"
+  | "EMBALLAGE"
+  | "AMORTISSEMENT"
+  | "AUTRE";
+
+export interface Gamme {
+  id?: string | null;
+  code: string;
+  libelle?: string | null;
+  ordre?: number | null;
+  actif?: boolean;
+}
+
+export interface CategorieProduit {
+  id?: string | null;
+  code: string;
+  libelle?: string | null;
+  ordre?: number | null;
+  actif?: boolean;
+}
+
+export interface Produit {
+  idProduit?: string | null;
+  code: string;
+  designation: string;
+  gammeCode?: string | null;
+  categorieCode?: string | null;
+  articleCode?: string | null;
+  uniteVente?: UniteVente | null;
+  poidsUnitaireGrammes?: number | null;
+  prixVenteHT?: number | null;
+  tauxTva?: number | null;
+  codeBarre?: string | null;
+  dlcHeures?: number | null;
+  allergenes?: Allergene[] | null;
+  fabricable?: boolean;
+  vendableAuDetail?: boolean;
+  actif?: boolean;
+  prixTTC?: number | null;
+}
+
+export interface IngredientRecette {
+  id?: string | null;
+  recetteId?: string | null;
+  articleCode: string;
+  libelle?: string | null;
+  quantite?: number | null;
+  unite?: string | null;
+  tauxPerte?: number | null;
+  ordre?: number | null;
+  comptabiliseCout?: boolean;
+  quantiteNette?: number | null;
+  quantiteBrute?: number | null;
+}
+
+export interface LigneCout {
+  id?: string | null;
+  recetteId?: string | null;
+  nature?: NatureCout | null;
+  libelle?: string | null;
+  montant?: number | null;
+}
+
+export interface FicheRecette {
+  idRecette?: string | null;
+  code: string;
+  produitCode: string;
+  libelle?: string | null;
+  version?: number;
+  rendementQuantite?: number | null;
+  rendementUnite?: UniteVente | null;
+  tempsPreparationMin?: number | null;
+  tempsCuissonMin?: number | null;
+  temperatureCuissonC?: number | null;
+  instructions?: string | null;
+  active?: boolean;
+  modifiable?: boolean;
+  ingredients?: IngredientRecette[] | null;
+  lignesCout?: LigneCout[] | null;
+}
+
+export interface BesoinMatiere {
+  articleCode: string;
+  libelle?: string | null;
+  quantiteNette: number;
+  quantiteBrute: number;
+  unite?: string | null;
+}
+
+export interface CoutRecette {
+  coutMatiere: number;
+  coutRevient: number;
+  coutMatiereDisponible: boolean;
+}
+
+// =====================================================================
+// BOULANGERIE — lot 2 (production-service)
+// =====================================================================
+
+export type StatutPlan = "BROUILLON" | "VALIDE" | "LANCE" | "CLOTURE";
+
+export type StatutFournee =
+  | "PLANIFIEE"
+  | "EN_COURS"
+  | "CUITE"
+  | "VALIDEE"
+  | "ANNULEE";
+
+export type TypePerte =
+  | "PATE_PERDUE"
+  | "CUISSON_RATEE"
+  | "CASSE"
+  | "INVENDU_DESTRUCTION"
+  | "DEMARQUE"
+  | "ECHANTILLON";
+
+export interface LignePlan {
+  id?: string | null;
+  planId?: string | null;
+  recetteCode: string;
+  versionRecette?: number | null;
+  quantitePrevue: number;
+  produitCode?: string | null;
+  fourCode?: string | null;
+}
+
+export interface PlanProduction {
+  idPlan?: string | null;
+  date?: string | null;
+  atelierCode?: string | null;
+  statut?: StatutPlan;
+  lignes?: LignePlan[] | null;
+  besoinsMatiere?: BesoinMatiere[] | null;
+}
+
+export interface LigneConsommation {
+  id?: string | null;
+  fourneeId?: string | null;
+  articleCode: string;
+  lotNumero?: string | null;
+  quantiteTheorique?: number | null;
+  quantiteReelle?: number | null;
+  prixMoyen?: number | null;
+  ecart?: number | null;
+}
+
+export interface PerteProduction {
+  idPerte?: string | null;
+  fourneeId?: string | null;
+  articleCode?: string | null;
+  quantite?: number | null;
+  typePerte?: TypePerte | null;
+  motif?: string | null;
+  valorisation?: number | null;
+}
+
+export interface Fournee {
+  idFournee?: string | null;
+  numero?: string | null;
+  recetteCode: string;
+  versionRecette?: number | null;
+  produitCode?: string | null;
+  fourCode?: string | null;
+  operateurId?: string | null;
+  dateDebut?: string | null;
+  dateFin?: string | null;
+  quantitePrevue?: number | null;
+  quantiteRealisee?: number | null;
+  statut?: StatutFournee;
+  motifAnnulation?: string | null;
+  consommations?: LigneConsommation[] | null;
+  pertes?: PerteProduction[] | null;
+  rendement?: number | null;
+  ecartMatiere?: number | null;
 }

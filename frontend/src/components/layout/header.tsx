@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { LogOut, ChevronDown, Menu, Building2 } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/components/providers/auth-provider";
 import { useTenant } from "@/components/providers/tenant-provider";
+import { tenantApi } from "@/services/api";
 
 interface HeaderProps {
   onMenuToggle?: () => void;
@@ -22,6 +23,26 @@ export function Header({ onMenuToggle }: HeaderProps) {
   const { tenantId } = useTenant();
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [denomination, setDenomination] = useState<string | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    if (!tenantId) {
+      setDenomination(null);
+      return;
+    }
+    tenantApi
+      .identite(tenantId)
+      .then((identite) => {
+        if (active) setDenomination(identite.denomination);
+      })
+      .catch(() => {
+        if (active) setDenomination(null);
+      });
+    return () => {
+      active = false;
+    };
+  }, [tenantId]);
 
   const handleLogout = async () => {
     await logout();
@@ -47,7 +68,11 @@ export function Header({ onMenuToggle }: HeaderProps) {
 
         <span className="hidden items-center gap-2 rounded-lg border border-border bg-background px-3 py-1.5 text-xs text-slate-600 sm:flex">
           <Building2 className="h-3.5 w-3.5 text-blue-600" />
-          Tenant <span className="font-mono font-medium text-slate-900">{shortId(tenantId)}</span>
+          {denomination ?? (
+            <>
+              Tenant <span className="font-mono font-medium text-slate-900">{shortId(tenantId)}</span>
+            </>
+          )}
         </span>
       </div>
 

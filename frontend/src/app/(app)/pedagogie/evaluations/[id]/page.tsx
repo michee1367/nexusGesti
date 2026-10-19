@@ -11,17 +11,21 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PageHeader, LoadingView, ErrorState, EmptyState } from "@/components/common/async-state";
+import { EntitySelect } from "@/components/common/entity-select";
 import { formatDate, formatInstant, formatTime, humanize } from "@/components/pedagogie/format";
+import { eleveLabel, lookupLabel } from "@/components/pedagogie/labels";
 import { useApi } from "@/hooks/use-api";
+import { useElevesMap } from "@/hooks/use-lookup";
 import { useAuth } from "@/components/providers/auth-provider";
 import { useTenant } from "@/components/providers/tenant-provider";
-import { assessmentApi } from "@/services/api";
+import { assessmentApi, peopleApi } from "@/services/api";
 
 export default function EvaluationDetailPage() {
   const params = useParams<{ id: string }>();
   const id = params.id;
   const { isAdmin } = useAuth();
   const { tenantId } = useTenant();
+  const eleves = useElevesMap([tenantId]);
 
   const evaluation = useApi(() => assessmentApi.evaluations.get(id), [id, tenantId]);
   const notes = useApi(() => assessmentApi.evaluations.notes(id), [id, tenantId]);
@@ -181,7 +185,7 @@ export default function EvaluationDetailPage() {
               <tbody>
                 {notes.data.map((note) => (
                   <tr key={note.id ?? note.eleveId} className="border-b border-border last:border-0">
-                    <td className="px-3 py-2 font-mono text-xs">{note.eleveId?.slice(0, 8)}…</td>
+                    <td className="px-3 py-2 text-xs">{lookupLabel(eleves, note.eleveId)}</td>
                     <td className="px-3 py-2 font-semibold">{note.valeurEffective ?? note.valeur ?? "—"}</td>
                     <td className="px-3 py-2">
                       <Badge variant={note.statut === "DEFINITIVE" ? "success" : note.statut === "CONTESTEE" ? "warning" : "outline"}>
@@ -213,8 +217,16 @@ export default function EvaluationDetailPage() {
             </CardHeader>
             <CardContent className="space-y-3 p-4 pt-2">
               <div>
-                <Label className="mb-1 block">Élève (UUID)</Label>
-                <Input value={noteForm.eleveId} onChange={(event) => setNoteForm({ ...noteForm, eleveId: event.target.value })} placeholder="121f5678-…" />
+                <Label className="mb-1 block">Élève</Label>
+                <EntitySelect
+                  fetcher={() => peopleApi.eleves.list()}
+                  keyOf={(eleve) => eleve.idEleve}
+                  labelOf={eleveLabel}
+                  value={noteForm.eleveId}
+                  onChange={(value) => setNoteForm({ ...noteForm, eleveId: value })}
+                  deps={[tenantId]}
+                  placeholder="Sélectionner un élève…"
+                />
               </div>
               <div>
                 <Label className="mb-1 block">Valeur</Label>
@@ -225,8 +237,16 @@ export default function EvaluationDetailPage() {
               </Button>
               <div className="flex items-end gap-2 border-t pt-3">
                 <div className="flex-1">
-                  <Label className="mb-1 block">Élève absent (UUID)</Label>
-                  <Input value={noteForm.eleveAbsent} onChange={(event) => setNoteForm({ ...noteForm, eleveAbsent: event.target.value })} placeholder="121f5678-…" />
+                  <Label className="mb-1 block">Élève absent</Label>
+                  <EntitySelect
+                    fetcher={() => peopleApi.eleves.list()}
+                    keyOf={(eleve) => eleve.idEleve}
+                    labelOf={eleveLabel}
+                    value={noteForm.eleveAbsent}
+                    onChange={(value) => setNoteForm({ ...noteForm, eleveAbsent: value })}
+                    deps={[tenantId]}
+                    placeholder="Sélectionner un élève…"
+                  />
                 </div>
                 <Button variant="outline" disabled={busy || !noteForm.eleveAbsent} onClick={marquerAbsent}>
                   <FileX2 className="h-4 w-4" />
@@ -244,9 +264,18 @@ export default function EvaluationDetailPage() {
             </CardHeader>
             <CardContent className="space-y-4 p-4 pt-2">
               <div>
-                <Label className="mb-1 block">Exclure — élève (UUID)</Label>
+                <Label className="mb-1 block">Exclure — élève</Label>
                 <div className="flex gap-2">
-                  <Input value={exclusion.eleveId} onChange={(event) => setExclusion({ ...exclusion, eleveId: event.target.value })} className="flex-1" />
+                  <EntitySelect
+                    fetcher={() => peopleApi.eleves.list()}
+                    keyOf={(eleve) => eleve.idEleve}
+                    labelOf={eleveLabel}
+                    value={exclusion.eleveId}
+                    onChange={(value) => setExclusion({ ...exclusion, eleveId: value })}
+                    deps={[tenantId]}
+                    placeholder="Sélectionner un élève…"
+                    className="flex-1"
+                  />
                 </div>
                 <Input
                   value={exclusion.motif}
@@ -259,8 +288,16 @@ export default function EvaluationDetailPage() {
                 </Button>
               </div>
               <div className="border-t pt-3">
-                <Label className="mb-1 block">Contester — élève (UUID)</Label>
-                <Input value={contestation.eleveId} onChange={(event) => setContestation({ ...contestation, eleveId: event.target.value })} />
+                <Label className="mb-1 block">Contester — élève</Label>
+                <EntitySelect
+                  fetcher={() => peopleApi.eleves.list()}
+                  keyOf={(eleve) => eleve.idEleve}
+                  labelOf={eleveLabel}
+                  value={contestation.eleveId}
+                  onChange={(value) => setContestation({ ...contestation, eleveId: value })}
+                  deps={[tenantId]}
+                  placeholder="Sélectionner un élève…"
+                />
                 <Input
                   value={contestation.motif}
                   onChange={(event) => setContestation({ ...contestation, motif: event.target.value })}

@@ -9,6 +9,8 @@ import { humanize } from "@/components/pedagogie/format";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/components/providers/auth-provider";
+import { useTenant } from "@/components/providers/tenant-provider";
+import { useClassesMap, useCoursMap, useCreneauxMap, useEnseignantsMap, useSallesMap, useUesMap } from "@/hooks/use-lookup";
 import { enrollmentApi } from "@/services/api";
 import type { Groupe } from "@/types";
 
@@ -17,12 +19,12 @@ const fields: FieldDef[] = [
   { name: "libelle", label: "Libellé", required: true },
   { name: "type", label: "Type", type: "select", options: enumOptions(TYPE_GROUPE) },
   { name: "capacite", label: "Capacité", type: "number", defaultValue: 30 },
-  { name: "coursId", label: "Cours (UUID)" },
-  { name: "ueId", label: "UE (UUID)" },
-  { name: "classeId", label: "Classe (UUID)" },
-  { name: "enseignantId", label: "Enseignant (UUID)" },
-  { name: "salleId", label: "Salle (UUID)" },
-  { name: "creneauId", label: "Créneau (UUID)" },
+  { name: "coursId", label: "Cours", type: "select", entityKey: "cours" },
+  { name: "ueId", label: "UE", type: "select", entityKey: "ues" },
+  { name: "classeId", label: "Classe", type: "select", entityKey: "classes" },
+  { name: "enseignantId", label: "Enseignant", type: "select", entityKey: "enseignants" },
+  { name: "salleId", label: "Salle", type: "select", entityKey: "salles" },
+  { name: "creneauId", label: "Créneau", type: "select", entityKey: "creneaux" },
   { name: "jour", label: "Jour", type: "select", options: enumOptions(["LUNDI", "MARDI", "MERCREDI", "JEUDI", "VENDREDI", "SAMEDI", "DIMANCHE"]) },
 ];
 
@@ -62,6 +64,13 @@ const columns: ColumnDef<Groupe>[] = [
 
 export default function GroupesPage() {
   const { isAdmin } = useAuth();
+  const { tenantId } = useTenant();
+  const cours = useCoursMap([tenantId]);
+  const ues = useUesMap([tenantId]);
+  const classes = useClassesMap([tenantId]);
+  const enseignants = useEnseignantsMap([tenantId]);
+  const salles = useSallesMap([tenantId]);
+  const creneaux = useCreneauxMap([tenantId]);
 
   const actions = (row: Groupe, reload: () => void) => (
     <>
@@ -119,6 +128,7 @@ export default function GroupesPage() {
       update={enrollmentApi.groupes.update}
       fields={fields}
       columns={columns}
+      entities={{ cours, ues, classes, enseignants, salles, creneaux }}
       searchKeys={["code", "libelle", "type", "statut"]}
       canWrite={isAdmin}
       rowActions={actions}

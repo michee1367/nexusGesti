@@ -7,18 +7,20 @@ import { formatDate } from "@/components/pedagogie/format";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/components/providers/auth-provider";
+import { useTenant } from "@/components/providers/tenant-provider";
+import { useSitesMap } from "@/hooks/use-lookup";
 import { feesApi } from "@/services/api";
 import type { Journalier } from "@/types";
 
 const fields: FieldDef[] = [
   { name: "date", label: "Date", type: "date" },
-  { name: "site", label: "Site (UUID)" },
+  { name: "site", label: "Site", type: "select", entityKey: "sites" },
   { name: "fond", label: "Fond de caisse", type: "number" },
 ];
 
 const columns: ColumnDef<Journalier>[] = [
   { key: "date", label: "Date", render: (row) => formatDate(row.date) },
-  { key: "site", label: "Site", render: (row) => (row.site ? <span className="font-mono text-xs">{row.site.slice(0, 8)}…</span> : "—") },
+  { key: "site", label: "Site", lookupKey: "sites" },
   { key: "fond", label: "Fond", render: (row) => (row.fond != null ? row.fond : "—") },
   {
     key: "statut",
@@ -29,6 +31,8 @@ const columns: ColumnDef<Journalier>[] = [
 
 export default function JournaliersPage() {
   const { isAdmin } = useAuth();
+  const { tenantId } = useTenant();
+  const sites = useSitesMap([tenantId]);
 
   const actions = (row: Journalier, reload: () => void) => (
     <>
@@ -62,7 +66,8 @@ export default function JournaliersPage() {
       create={feesApi.journaliers.ouvrir}
       fields={fields}
       columns={columns}
-      searchKeys={["site", "statut"]}
+      entities={{ sites }}
+      searchKeys={["statut"]}
       canWrite={isAdmin}
       createLabel="Ouvrir"
       rowActions={actions}

@@ -267,8 +267,8 @@ export default function EleveDetailPage() {
                   <tbody>
                     {inscriptions.data.map((item) => (
                       <tr key={item.idInscription} className="border-b border-border last:border-0">
-                        <td className="px-4 py-3 font-mono text-xs">{item.anneeId.slice(0, 8)}…</td>
-                        <td className="px-4 py-3 font-mono text-xs">{item.classeId.slice(0, 8)}…</td>
+                        <td className="px-4 py-3">{annees.data?.find((a) => a.idAnnee === item.anneeId)?.libelle ?? "—"}</td>
+                        <td className="px-4 py-3">{classes.data?.find((c) => c.idClasse === item.classeId)?.libelle ?? "—"}</td>
                         <td className="px-4 py-3">{formatDate(item.dateInscription)}</td>
                         <td className="px-4 py-3">
                           <Badge variant={item.statut === "VALIDE" ? "success" : item.statut === "ANNULEE" ? "danger" : "secondary"}>

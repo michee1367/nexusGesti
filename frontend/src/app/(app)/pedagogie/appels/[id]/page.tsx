@@ -12,12 +12,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { PageHeader, LoadingView, ErrorState, EmptyState } from "@/components/common/async-state";
+import { EntitySelect } from "@/components/common/entity-select";
 import { enumOptions, STATUT_PRESENCE, TYPE_ABSENCE } from "@/components/pedagogie/constants";
 import { formatDate, humanize } from "@/components/pedagogie/format";
+import { eleveLabel, lookupLabel } from "@/components/pedagogie/labels";
 import { useApi } from "@/hooks/use-api";
+import { useElevesMap } from "@/hooks/use-lookup";
 import { useAuth } from "@/components/providers/auth-provider";
 import { useTenant } from "@/components/providers/tenant-provider";
-import { attendanceApi } from "@/services/api";
+import { attendanceApi, peopleApi } from "@/services/api";
 import type { FeuillePresence, PresenceEleve } from "@/types";
 
 function presenceBadge(statut: string | null | undefined) {
@@ -39,6 +42,7 @@ export default function AppelDetailPage() {
   const id = params.id;
   const { isAdmin } = useAuth();
   const { tenantId } = useTenant();
+  const eleves = useElevesMap([tenantId]);
 
   const feuille = useApi(() => attendanceApi.appels.get(id), [id, tenantId]);
   const [busy, setBusy] = useState(false);
@@ -175,7 +179,7 @@ export default function AppelDetailPage() {
               <tbody>
                 {data.presences.map((presence) => (
                   <tr key={presence.idPresence} className="border-b border-border last:border-0">
-                    <td className="px-3 py-2 font-mono text-xs">{presence.eleveId?.slice(0, 8)}…</td>
+                    <td className="px-3 py-2 text-xs">{lookupLabel(eleves, presence.eleveId)}</td>
                     <td className="px-3 py-2">
                       <Badge variant={presenceBadge(presence.statut)}>{humanize(presence.statut ?? "—")}</Badge>
                     </td>
@@ -204,8 +208,16 @@ export default function AppelDetailPage() {
             </CardHeader>
             <CardContent className="space-y-3 p-4 pt-2">
               <div>
-                <Label className="mb-1 block">Élève (UUID)</Label>
-                <Input value={pointerEleveId} onChange={(event) => setPointerEleveId(event.target.value)} placeholder="121f5678-…" />
+                <Label className="mb-1 block">Élève</Label>
+                <EntitySelect
+                  fetcher={() => peopleApi.eleves.list()}
+                  keyOf={(eleve) => eleve.idEleve}
+                  labelOf={eleveLabel}
+                  value={pointerEleveId}
+                  onChange={setPointerEleveId}
+                  deps={[tenantId]}
+                  placeholder="Sélectionner un élève…"
+                />
               </div>
               <div>
                 <Label className="mb-1 block">Statut</Label>
@@ -232,8 +244,16 @@ export default function AppelDetailPage() {
             </CardHeader>
             <CardContent className="space-y-3 p-4 pt-2">
               <div>
-                <Label className="mb-1 block">Élève (UUID)</Label>
-                <Input value={absenceEleveId} onChange={(event) => setAbsenceEleveId(event.target.value)} placeholder="121f5678-…" />
+                <Label className="mb-1 block">Élève</Label>
+                <EntitySelect
+                  fetcher={() => peopleApi.eleves.list()}
+                  keyOf={(eleve) => eleve.idEleve}
+                  labelOf={eleveLabel}
+                  value={absenceEleveId}
+                  onChange={setAbsenceEleveId}
+                  deps={[tenantId]}
+                  placeholder="Sélectionner un élève…"
+                />
               </div>
               <div>
                 <Label className="mb-1 block">Type d&apos;absence</Label>
@@ -260,8 +280,16 @@ export default function AppelDetailPage() {
             </CardHeader>
             <CardContent className="space-y-3 p-4 pt-2">
               <div>
-                <Label className="mb-1 block">Élève (UUID)</Label>
-                <Input value={retardEleveId} onChange={(event) => setRetardEleveId(event.target.value)} placeholder="121f5678-…" />
+                <Label className="mb-1 block">Élève</Label>
+                <EntitySelect
+                  fetcher={() => peopleApi.eleves.list()}
+                  keyOf={(eleve) => eleve.idEleve}
+                  labelOf={eleveLabel}
+                  value={retardEleveId}
+                  onChange={setRetardEleveId}
+                  deps={[tenantId]}
+                  placeholder="Sélectionner un élève…"
+                />
               </div>
               <div>
                 <Label className="mb-1 block">Minutes de retard</Label>

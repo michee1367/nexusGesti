@@ -19,6 +19,7 @@ import {
 } from "@/components/common/async-state";
 import { useApi } from "@/hooks/use-api";
 import { useTenant } from "@/components/providers/tenant-provider";
+import { lookupLabel } from "@/components/pedagogie/labels";
 import { toDateInput, toTimeInput } from "@/components/pedagogie/format";
 
 export type FieldType =
@@ -36,6 +37,7 @@ export interface FieldDef {
   label: string;
   type?: FieldType;
   options?: { value: string; label: string }[];
+  entityKey?: string;
   required?: boolean;
   placeholder?: string;
   defaultValue?: string | number | boolean;
@@ -47,6 +49,7 @@ export interface ColumnDef<T> {
   key: string;
   label: string;
   render?: (row: T) => ReactNode;
+  lookupKey?: string;
   className?: string;
 }
 
@@ -60,6 +63,7 @@ interface ResourceCrudProps<T> {
   remove?: (id: string) => Promise<void>;
   fields: FieldDef[];
   columns: ColumnDef<T>[];
+  entities?: Record<string, Map<string, string>>;
   searchKeys?: string[];
   initialSearch?: string;
   canWrite?: boolean;
@@ -104,6 +108,7 @@ export function ResourceCrud<T extends object>({
   remove,
   fields,
   columns,
+  entities = {},
   searchKeys = [],
   initialSearch = "",
   canWrite = false,
@@ -277,7 +282,7 @@ export function ResourceCrud<T extends object>({
                             setValues((prev) => ({ ...prev, [field.name]: event.target.value }))
                           }
                         />
-                      ) : field.type === "select" ? (
+                      ) : field.type === "select" || field.entityKey ? (
                         <Select
                           value={String(values[field.name] ?? "")}
                           onChange={(event) =>
@@ -285,7 +290,10 @@ export function ResourceCrud<T extends object>({
                           }
                         >
                           <option value="">—</option>
-                          {field.options?.map((option) => (
+                          {(field.entityKey && entities[field.entityKey]
+                            ? Array.from(entities[field.entityKey], ([value, label]) => ({ value, label }))
+                            : (field.options ?? [])
+                          ).map((option) => (
                             <option key={option.value} value={option.value}>
                               {option.label}
                             </option>
@@ -364,9 +372,14 @@ export function ResourceCrud<T extends object>({
                         <td key={column.key} className={`px-4 py-3 ${column.className ?? ""}`}>
                           {column.render
                             ? column.render(row)
-                            : value == null
-                              ? <span className="text-slate-400">—</span>
-                              : String(value)}
+                            : column.lookupKey && entities[column.lookupKey]
+                              ? lookupLabel(
+                                  entities[column.lookupKey],
+                                  value == null ? null : String(value),
+                                )
+                              : value == null
+                                ? <span className="text-slate-400">—</span>
+                                : String(value)}
                         </td>
                       );
                     })}

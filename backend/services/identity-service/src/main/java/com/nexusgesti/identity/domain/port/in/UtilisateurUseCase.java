@@ -14,6 +14,8 @@ public interface UtilisateurUseCase {
 
     Utilisateur inviter(InviterUtilisateurCommand command);
 
+    Utilisateur enregistrerDepuisEvenement(EnregistrerUtilisateurCommand command);
+
     Utilisateur get(UUID id);
 
     List<Utilisateur> rechercher(String query);
@@ -53,6 +55,13 @@ public interface UtilisateurUseCase {
             String nom,
             String prenom,
             List<String> roles
+    ) {}
+
+    record EnregistrerUtilisateurCommand(
+            UUID keycloakUserId,
+            String email,
+            String nom,
+            String prenom
     ) {}
 
     record ModifierUtilisateurCommand(

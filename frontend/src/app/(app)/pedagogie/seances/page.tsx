@@ -9,16 +9,18 @@ import { formatDate, formatTime, humanize } from "@/components/pedagogie/format"
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/components/providers/auth-provider";
+import { useTenant } from "@/components/providers/tenant-provider";
+import { useAnneesMap, useClassesMap, useCoursMap, useEnseignantsMap, usePeriodesMap, useSallesMap } from "@/hooks/use-lookup";
 import { attendanceApi } from "@/services/api";
 import type { Seance } from "@/types";
 
 const fields: FieldDef[] = [
-  { name: "classeId", label: "Classe (UUID)", colSpan: 2 },
-  { name: "coursId", label: "Cours (UUID)", colSpan: 2 },
-  { name: "enseignantId", label: "Enseignant (UUID)" },
-  { name: "salleId", label: "Salle (UUID)" },
-  { name: "anneeId", label: "Année (UUID)" },
-  { name: "periodeId", label: "Période (UUID)" },
+  { name: "classeId", label: "Classe", type: "select", entityKey: "classes", colSpan: 2 },
+  { name: "coursId", label: "Cours", type: "select", entityKey: "cours", colSpan: 2 },
+  { name: "enseignantId", label: "Enseignant", type: "select", entityKey: "enseignants" },
+  { name: "salleId", label: "Salle", type: "select", entityKey: "salles" },
+  { name: "anneeId", label: "Année", type: "select", entityKey: "annees" },
+  { name: "periodeId", label: "Période", type: "select", entityKey: "periodes" },
   { name: "type", label: "Type", type: "select", options: enumOptions(TYPE_SEANCE) },
   { name: "date", label: "Date", type: "date" },
   { name: "heureDebut", label: "Heure de début", type: "time" },
@@ -39,7 +41,7 @@ const columns: ColumnDef<Seance>[] = [
   {
     key: "classeId",
     label: "Classe",
-    render: (row) => (row.classeId ? <span className="font-mono text-xs">{row.classeId.slice(0, 8)}…</span> : "—"),
+    lookupKey: "classes",
   },
   { key: "heureDebut", label: "Début", render: (row) => formatTime(row.heureDebut) },
   { key: "heureFin", label: "Fin", render: (row) => formatTime(row.heureFin) },
@@ -65,6 +67,13 @@ const columns: ColumnDef<Seance>[] = [
 
 export default function SeancesPage() {
   const { isAdmin } = useAuth();
+  const { tenantId } = useTenant();
+  const classes = useClassesMap([tenantId]);
+  const cours = useCoursMap([tenantId]);
+  const enseignants = useEnseignantsMap([tenantId]);
+  const salles = useSallesMap([tenantId]);
+  const annees = useAnneesMap([tenantId]);
+  const periodes = usePeriodesMap([tenantId]);
 
   const actions = (row: Seance, reload: () => void) => (
     <>
@@ -158,7 +167,8 @@ export default function SeancesPage() {
       update={attendanceApi.seances.update}
       fields={fields}
       columns={columns}
-      searchKeys={["classeId", "coursId", "type", "statut"]}
+      entities={{ classes, cours, enseignants, salles, annees, periodes }}
+      searchKeys={["type", "statut"]}
       canWrite={isAdmin}
       rowActions={actions}
     />

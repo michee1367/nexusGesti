@@ -11,17 +11,23 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PageHeader, LoadingView, ErrorState, EmptyState } from "@/components/common/async-state";
+import { EntitySelect } from "@/components/common/entity-select";
 import { humanize } from "@/components/pedagogie/format";
+import { classeLabel, eleveLabel, lookupLabel, ueLabel } from "@/components/pedagogie/labels";
 import { useApi } from "@/hooks/use-api";
+import { useClassesMap, useElevesMap, useUesMap } from "@/hooks/use-lookup";
 import { useAuth } from "@/components/providers/auth-provider";
 import { useTenant } from "@/components/providers/tenant-provider";
-import { examApi } from "@/services/api";
+import { examApi, peopleApi, structureApi } from "@/services/api";
 
 export default function DeliberationDetailPage() {
   const params = useParams<{ id: string }>();
   const id = params.id;
   const { isAdmin } = useAuth();
   const { tenantId } = useTenant();
+  const eleves = useElevesMap([tenantId]);
+  const classes = useClassesMap([tenantId]);
+  const ues = useUesMap([tenantId]);
 
   const deliberation = useApi(() => examApi.deliberations.get(id), [id, tenantId]);
   const [busy, setBusy] = useState(false);
@@ -107,8 +113,8 @@ export default function DeliberationDetailPage() {
               <tbody>
                 {data.decisions.map((decision, index) => (
                   <tr key={decision.id ?? index} className="border-b border-border last:border-0">
-                    <td className="px-3 py-2 font-mono text-xs">{decision.eleveId?.slice(0, 8)}…</td>
-                    <td className="px-3 py-2 font-mono text-xs">{decision.classeId?.slice(0, 8) ?? "—"}</td>
+                    <td className="px-3 py-2 text-xs">{lookupLabel(eleves, decision.eleveId)}</td>
+                    <td className="px-3 py-2 text-xs">{lookupLabel(classes, decision.classeId)}</td>
                     <td className="px-3 py-2">{decision.moyenneGenerale ?? "—"}</td>
                     <td className="px-3 py-2">
                       {decision.decision ? (
@@ -157,12 +163,28 @@ export default function DeliberationDetailPage() {
               }}
             >
               <div className="w-64">
-                <Label className="mb-1 block">Classe (UUID)</Label>
-                <Input value={decider.classeId} onChange={(event) => setDecider({ ...decider, classeId: event.target.value })} />
+                <Label className="mb-1 block">Classe</Label>
+                <EntitySelect
+                  fetcher={() => structureApi.classes.list()}
+                  keyOf={(classe) => classe.idClasse}
+                  labelOf={classeLabel}
+                  value={decider.classeId}
+                  onChange={(value) => setDecider({ ...decider, classeId: value })}
+                  deps={[tenantId]}
+                  placeholder="Sélectionner une classe…"
+                />
               </div>
               <div className="w-64">
-                <Label className="mb-1 block">Élève (UUID)</Label>
-                <Input value={decider.eleveId} onChange={(event) => setDecider({ ...decider, eleveId: event.target.value })} />
+                <Label className="mb-1 block">Élève</Label>
+                <EntitySelect
+                  fetcher={() => peopleApi.eleves.list()}
+                  keyOf={(eleve) => eleve.idEleve}
+                  labelOf={eleveLabel}
+                  value={decider.eleveId}
+                  onChange={(value) => setDecider({ ...decider, eleveId: value })}
+                  deps={[tenantId]}
+                  placeholder="Sélectionner un élève…"
+                />
               </div>
               <Button type="submit" disabled={busy || !decider.eleveId}>
                 Décider
@@ -191,8 +213,8 @@ export default function DeliberationDetailPage() {
               <tbody>
                 {data.decisionsUE.map((du, index) => (
                   <tr key={du.id ?? index} className="border-b border-border last:border-0">
-                    <td className="px-3 py-2 font-mono text-xs">{du.eleveId?.slice(0, 8)}…</td>
-                    <td className="px-3 py-2 font-mono text-xs">{du.ueId?.slice(0, 8)}…</td>
+                    <td className="px-3 py-2 text-xs">{lookupLabel(eleves, du.eleveId)}</td>
+                    <td className="px-3 py-2 text-xs">{lookupLabel(ues, du.ueId)}</td>
                     <td className="px-3 py-2">{du.moyenneUE ?? "—"}</td>
                     <td className="px-3 py-2">{du.creditsAcquis}</td>
                     <td className="px-3 py-2">{du.decision ? humanize(du.decision) : "—"}</td>
@@ -224,12 +246,28 @@ export default function DeliberationDetailPage() {
               }}
             >
               <div>
-                <Label className="mb-1 block">Élève (UUID)</Label>
-                <Input value={decisionUe.eleveId} onChange={(event) => setDecisionUe({ ...decisionUe, eleveId: event.target.value })} />
+                <Label className="mb-1 block">Élève</Label>
+                <EntitySelect
+                  fetcher={() => peopleApi.eleves.list()}
+                  keyOf={(eleve) => eleve.idEleve}
+                  labelOf={eleveLabel}
+                  value={decisionUe.eleveId}
+                  onChange={(value) => setDecisionUe({ ...decisionUe, eleveId: value })}
+                  deps={[tenantId]}
+                  placeholder="Sélectionner un élève…"
+                />
               </div>
               <div>
-                <Label className="mb-1 block">UE (UUID)</Label>
-                <Input value={decisionUe.ueId} onChange={(event) => setDecisionUe({ ...decisionUe, ueId: event.target.value })} />
+                <Label className="mb-1 block">UE</Label>
+                <EntitySelect
+                  fetcher={() => structureApi.ues.list()}
+                  keyOf={(ue) => ue.idUE}
+                  labelOf={ueLabel}
+                  value={decisionUe.ueId}
+                  onChange={(value) => setDecisionUe({ ...decisionUe, ueId: value })}
+                  deps={[tenantId]}
+                  placeholder="Sélectionner une UE…"
+                />
               </div>
               <div>
                 <Label className="mb-1 block">Crédits</Label>

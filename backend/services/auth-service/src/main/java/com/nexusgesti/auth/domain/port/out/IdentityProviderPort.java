@@ -4,6 +4,7 @@ import com.nexusgesti.auth.domain.model.AuthTokens;
 import com.nexusgesti.auth.domain.port.in.AuthUseCase;
 
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 public interface IdentityProviderPort {
@@ -21,4 +22,6 @@ public interface IdentityProviderPort {
     void assignRealmRole(UUID userId, String roleName);
 
     UUID findUserIdByEmail(String email);
+
+    Optional<UUID> findTenantIdByEmail(String email);
 }

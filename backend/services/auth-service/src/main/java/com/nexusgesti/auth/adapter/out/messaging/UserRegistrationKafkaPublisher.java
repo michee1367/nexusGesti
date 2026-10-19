@@ -43,6 +43,13 @@ public class UserRegistrationKafkaPublisher implements UserRegistrationEventPubl
             payload.put("status", user.status());
             payload.put("timestamp", Instant.now().toString());
             TenantContext.get().ifPresent(tenant -> payload.put("tenantId", tenant.toString()));
+            if (command.etablissement() != null) {
+                Map<String, Object> etablissement = new HashMap<>();
+                etablissement.put("denomination", command.etablissement().denomination());
+                etablissement.put("code", command.etablissement().code());
+                etablissement.put("profil", command.etablissement().profil());
+                payload.put("etablissement", etablissement);
+            }
 
             String message = objectMapper.writeValueAsString(Map.of(
                     "eventType", "user.created",

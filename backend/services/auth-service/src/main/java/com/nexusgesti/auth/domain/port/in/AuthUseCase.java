@@ -16,6 +16,8 @@ public interface AuthUseCase {
 
     void logout(LogoutCommand command);
 
+    UUID resolveTenant(String email);
+
     record RegisterCommand(
             String email,
             String phone,
@@ -23,7 +25,14 @@ public interface AuthUseCase {
             String firstName,
             String lastName,
             String countryCode,
-            boolean acceptedTerms
+            boolean acceptedTerms,
+            EtablissementInfo etablissement
+    ) {}
+
+    record EtablissementInfo(
+            String denomination,
+            String code,
+            String profil
     ) {}
 
     record LoginCommand(

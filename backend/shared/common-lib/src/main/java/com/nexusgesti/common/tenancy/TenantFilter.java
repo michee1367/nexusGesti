@@ -18,6 +18,7 @@ public class TenantFilter extends OncePerRequestFilter {
         return path.startsWith("/actuator")
                 || path.startsWith("/v3/api-docs")
                 || path.startsWith("/swagger-ui")
+                || path.equals("/api/v1/auth/resolve-tenant")
                 || path.equals("/api-docs");
     }
 

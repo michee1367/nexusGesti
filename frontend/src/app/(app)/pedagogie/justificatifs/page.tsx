@@ -8,11 +8,13 @@ import { formatDate, humanize } from "@/components/pedagogie/format";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/components/providers/auth-provider";
+import { useTenant } from "@/components/providers/tenant-provider";
+import { useElevesMap } from "@/hooks/use-lookup";
 import { attendanceApi } from "@/services/api";
 import type { Justificatif } from "@/types";
 
 const fields: FieldDef[] = [
-  { name: "eleveId", label: "Élève (UUID)", colSpan: 2 },
+  { name: "eleveId", label: "Élève", type: "select", entityKey: "eleves", colSpan: 2 },
   { name: "type", label: "Type", type: "select", options: enumOptions(TYPE_ABSENCE) },
   { name: "dateReference", label: "Date de référence", type: "date" },
   { name: "motif", label: "Motif", type: "textarea", colSpan: 2 },
@@ -23,7 +25,7 @@ const columns: ColumnDef<Justificatif>[] = [
   {
     key: "eleveId",
     label: "Élève",
-    render: (row) => (row.eleveId ? <span className="font-mono text-xs">{row.eleveId.slice(0, 8)}…</span> : "—"),
+    lookupKey: "eleves",
   },
   { key: "type", label: "Type", render: (row) => (row.type ? humanize(row.type) : "—") },
   { key: "dateReference", label: "Référence", render: (row) => formatDate(row.dateReference) },
@@ -46,6 +48,8 @@ const columns: ColumnDef<Justificatif>[] = [
 
 export default function JustificatifsPage() {
   const { isAdmin } = useAuth();
+  const { tenantId } = useTenant();
+  const eleves = useElevesMap([tenantId]);
 
   const actions = (row: Justificatif, reload: () => void) => (
     <>
@@ -99,6 +103,7 @@ export default function JustificatifsPage() {
       create={attendanceApi.justificatifs.create}
       fields={fields}
       columns={columns}
+      entities={{ eleves }}
       searchKeys={["eleveId", "type", "motif", "statut"]}
       canWrite={isAdmin}
       createLabel="Déposer un justificatif"

@@ -17,7 +17,7 @@ export default function TenantsPage() {
   const { setTenantId } = useTenant();
   const [denomination, setDenomination] = useState("");
   const [code, setCode] = useState("");
-  const [profil, setProfil] = useState<"PRIMAIRE" | "SECONDAIRE" | "UNIVERSITAIRE">("PRIMAIRE");
+  const [profil, setProfil] = useState<"PRIMAIRE" | "SECONDAIRE" | "UNIVERSITAIRE" | "BOULANGERIE">("PRIMAIRE");
   const [created, setCreated] = useState<Etablissement | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -29,13 +29,13 @@ export default function TenantsPage() {
     setBusy(true);
     try {
       const id = crypto.randomUUID();
+      setTenantId(id);
       const etablissement = await tenantApi.create({
         code,
         denomination,
         profil,
         statut: "PREPARATION",
       });
-      setTenantId(id);
       setCreated(etablissement);
       toast.success("Tenant créé — le tenant courant a été basculé sur lui (D8)");
     } catch (error) {
@@ -114,6 +114,7 @@ export default function TenantsPage() {
                 <option value="PRIMAIRE">Primaire</option>
                 <option value="SECONDAIRE">Secondaire</option>
                 <option value="UNIVERSITAIRE">Universitaire</option>
+                <option value="BOULANGERIE">Boulangerie</option>
               </Select>
             </div>
             <Button

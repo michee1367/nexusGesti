@@ -12,17 +12,22 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PageHeader, LoadingView, ErrorState, EmptyState } from "@/components/common/async-state";
+import { EntitySelect } from "@/components/common/entity-select";
 import { humanize, formatDate } from "@/components/pedagogie/format";
+import { lookupLabel, reductionLabel } from "@/components/pedagogie/labels";
 import { useApi } from "@/hooks/use-api";
+import { useElevesMap } from "@/hooks/use-lookup";
 import { useAuth } from "@/components/providers/auth-provider";
 import { useTenant } from "@/components/providers/tenant-provider";
 import { feesApi } from "@/services/api";
+import type { Reduction } from "@/types";
 
 export default function AvisPaiementDetailPage() {
   const params = useParams<{ id: string }>();
   const id = params.id;
   const { isAdmin } = useAuth();
   const { tenantId } = useTenant();
+  const eleves = useElevesMap([tenantId]);
 
   const avis = useApi(() => feesApi.avis.get(id), [id, tenantId]);
   const [busy, setBusy] = useState(false);
@@ -50,7 +55,7 @@ export default function AvisPaiementDetailPage() {
 
   return (
     <div>
-      <PageHeader title={`Avis ${data?.reference ?? ""}`} description={data?.eleve ? `Élève ${data.eleve.slice(0, 8)}…` : "—"}>
+      <PageHeader title={`Avis ${data?.reference ?? ""}`} description={data?.eleve ? `Élève ${lookupLabel(eleves, data.eleve)}` : "—"}>
         <Link href="/pedagogie/avis-paiements">
           <Button variant="outline" size="sm">
             <ArrowLeft className="h-4 w-4" />
@@ -149,8 +154,16 @@ export default function AvisPaiementDetailPage() {
               }}
             >
               <div className="sm:col-span-2">
-                <Label className="mb-1 block">Réduction (UUID)</Label>
-                <Input value={remiseForm.reductionId} onChange={(event) => setRemiseForm({ ...remiseForm, reductionId: event.target.value })} />
+                <Label className="mb-1 block">Réduction</Label>
+                <EntitySelect<Reduction>
+                  fetcher={async () => (data?.grilleId ? (await feesApi.grilles.get(data.grilleId)).reductions ?? [] : [])}
+                  keyOf={(reduction) => reduction.id ?? ""}
+                  labelOf={reductionLabel}
+                  value={remiseForm.reductionId}
+                  onChange={(value) => setRemiseForm({ ...remiseForm, reductionId: value })}
+                  deps={[id, data?.grilleId]}
+                  placeholder="Sélectionner une réduction…"
+                />
               </div>
               <div>
                 <Label className="mb-1 block">Enfants scolarisés</Label>

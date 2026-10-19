@@ -49,6 +49,7 @@ public class TenantHeaderFilter implements GlobalFilter, Ordered {
                 || path.startsWith("/v3/api-docs")
                 || path.startsWith("/swagger-ui")
                 || path.equals("/api-docs")
+                || path.equals("/api/v1/socle/auth/resolve-tenant")
                 || path.equals("/fallback");
     }
 

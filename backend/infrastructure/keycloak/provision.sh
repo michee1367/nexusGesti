@@ -24,6 +24,8 @@ SERVER="${KEYCLOAK_SERVER:-http://localhost:8080}"
 REALM="nexusgesti"
 ADMIN_USER="${KEYCLOAK_ADMIN_USER:-admin}"
 ADMIN_PASSWORD="${KEYCLOAK_ADMIN_PASSWORD:-admin_secret}"
+# Etablissement de demonstration (id = X-Tenant-Id par defaut de la console).
+DEMO_TENANT_ID="${NEXUSGESTI_DEMO_TENANT:-11111111-2222-3333-4444-555555555570}"
 
 KCADM=(docker exec -i "${CONTAINER}" /opt/keycloak/bin/kcadm.sh)
 
@@ -40,8 +42,9 @@ create_user() {
   # $1 = email, $2 = mot de passe, $3+ = noms de roles realm
   local email="$1" pass="$2"; shift 2
   local username="${email}"
-  if ! "${KCADM[@]}" get users -r "${REALM}" -q "email=${email}" --fields id | grep -q '"id"'; then
-    local uid
+  local uid
+  uid=$("${KCADM[@]}" get users -r "${REALM}" -q "email=${email}" --fields id --format csv --noquotes | tail -n 1)
+  if [ -z "${uid}" ]; then
     uid=$("${KCADM[@]}" create users -r "${REALM}" \
       -s "username=${username}" -s "email=${email}" -s "emailVerified=true" -s "enabled=true" -i)
     "${KCADM[@]}" set-password -r "${REALM}" --userid "${uid}" --password "${pass}"
@@ -54,6 +57,10 @@ create_user() {
   for role in "$@"; do
     "${KCADM[@]}" add-roles -r "${REALM}" --uusername "${username}" --rolename "${role}" || true
   done
+  # attribut tenant_id : permet a POST /socle/auth/resolve-tenant de retrouver
+  # l'etablissement a partir de l'email (meme mecanisme que /signup).
+  "${KCADM[@]}" update "users/${uid}" -r "${REALM}" \
+    -s "attributes.tenant_id=[\"${DEMO_TENANT_ID}\"]" || true
 }
 
 echo "2. Utilisateurs de test..."

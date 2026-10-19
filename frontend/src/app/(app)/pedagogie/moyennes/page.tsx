@@ -5,16 +5,19 @@ import { BarChart3, GraduationCap, Trophy } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PageHeader, LoadingView, ErrorState, EmptyState } from "@/components/common/async-state";
+import { EntitySelect } from "@/components/common/entity-select";
+import { classeLabel, eleveLabel, evaluationLabel, lookupLabel, periodeLabel } from "@/components/pedagogie/labels";
 import { useApi } from "@/hooks/use-api";
+import { useElevesMap } from "@/hooks/use-lookup";
 import { useTenant } from "@/components/providers/tenant-provider";
-import { assessmentApi } from "@/services/api";
-import type { Classement, ResultatMoyenne } from "@/types";
+import { anneeApi, assessmentApi, peopleApi, structureApi } from "@/services/api";
+import type { Classement, Periode, ResultatMoyenne } from "@/types";
 
 export default function MoyennesPage() {
   const { tenantId } = useTenant();
+  const eleves = useElevesMap([tenantId]);
 
   const [evaluationId, setEvaluationId] = useState("");
   const [evalResultat, setEvalResultat] = useState<ResultatMoyenne | null>(null);
@@ -66,8 +69,16 @@ export default function MoyennesPage() {
               }}
             >
               <div className="flex-1">
-                <Label className="mb-1 block">Évaluation (UUID)</Label>
-                <Input value={evaluationId} onChange={(event) => setEvaluationId(event.target.value)} />
+                <Label className="mb-1 block">Évaluation</Label>
+                <EntitySelect
+                  fetcher={() => assessmentApi.evaluations.list()}
+                  keyOf={(evaluation) => evaluation.idEvaluation}
+                  labelOf={evaluationLabel}
+                  value={evaluationId}
+                  onChange={setEvaluationId}
+                  deps={[tenantId]}
+                  placeholder="Sélectionner une évaluation…"
+                />
               </div>
               <Button type="submit" disabled={!evaluationId || evalLoading}>
                 Calculer
@@ -105,12 +116,28 @@ export default function MoyennesPage() {
               }}
             >
               <div className="w-40 flex-1">
-                <Label className="mb-1 block">Élève (UUID)</Label>
-                <Input value={eleveId} onChange={(event) => setEleveId(event.target.value)} />
+                <Label className="mb-1 block">Élève</Label>
+                <EntitySelect
+                  fetcher={() => peopleApi.eleves.list()}
+                  keyOf={(eleve) => eleve.idEleve}
+                  labelOf={eleveLabel}
+                  value={eleveId}
+                  onChange={setEleveId}
+                  deps={[tenantId]}
+                  placeholder="Sélectionner un élève…"
+                />
               </div>
               <div className="w-40">
                 <Label className="mb-1 block">Période</Label>
-                <Input value={periodeId} onChange={(event) => setPeriodeId(event.target.value)} />
+                <EntitySelect<Periode>
+                  fetcher={async () => (await anneeApi.list()).flatMap((annee) => annee.periodes ?? [])}
+                  keyOf={(periode) => periode.idPeriode}
+                  labelOf={periodeLabel}
+                  value={periodeId}
+                  onChange={setPeriodeId}
+                  deps={[tenantId]}
+                  placeholder="Sélectionner…"
+                />
               </div>
               <Button type="submit" disabled={!eleveId}>
                 Calculer
@@ -150,8 +177,16 @@ export default function MoyennesPage() {
               }}
             >
               <div className="flex-1">
-                <Label className="mb-1 block">Classe (UUID)</Label>
-                <Input value={classeId} onChange={(event) => setClasseId(event.target.value)} />
+                <Label className="mb-1 block">Classe</Label>
+                <EntitySelect
+                  fetcher={() => structureApi.classes.list()}
+                  keyOf={(classe) => classe.idClasse}
+                  labelOf={classeLabel}
+                  value={classeId}
+                  onChange={setClasseId}
+                  deps={[tenantId]}
+                  placeholder="Sélectionner une classe…"
+                />
               </div>
               <Button type="submit" disabled={!classeId}>
                 Calculer
@@ -174,7 +209,7 @@ export default function MoyennesPage() {
                   {classement.data.map((item) => (
                     <tr key={item.eleveId} className="border-b border-border last:border-0">
                       <td className="px-2 py-1 font-semibold">#{item.rang}</td>
-                      <td className="px-2 py-1 font-mono text-xs">{item.eleveId.slice(0, 8)}…</td>
+                      <td className="px-2 py-1 text-xs">{lookupLabel(eleves, item.eleveId)}</td>
                       <td className="px-2 py-1">{item.moyenne}</td>
                     </tr>
                   ))}

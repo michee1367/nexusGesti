@@ -9,14 +9,16 @@ import { humanize } from "@/components/pedagogie/format";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/components/providers/auth-provider";
+import { useTenant } from "@/components/providers/tenant-provider";
+import { useAnneesMap, useClassesMap, useElevesMap, usePeriodesMap } from "@/hooks/use-lookup";
 import { assessmentApi } from "@/services/api";
 import type { Bulletin } from "@/types";
 
 const fields: FieldDef[] = [
-  { name: "eleveId", label: "Élève (UUID)", colSpan: 2 },
-  { name: "anneeId", label: "Année (UUID)", colSpan: 2 },
-  { name: "periodeId", label: "Période (UUID)" },
-  { name: "classeId", label: "Classe (UUID)" },
+  { name: "eleveId", label: "Élève", type: "select", entityKey: "eleves", colSpan: 2 },
+  { name: "anneeId", label: "Année", type: "select", entityKey: "annees", colSpan: 2 },
+  { name: "periodeId", label: "Période", type: "select", entityKey: "periodes" },
+  { name: "classeId", label: "Classe", type: "select", entityKey: "classes" },
   { name: "type", label: "Type", type: "select", options: enumOptions(TYPE_BULLETIN) },
 ];
 
@@ -33,7 +35,7 @@ const columns: ColumnDef<Bulletin>[] = [
   {
     key: "eleveId",
     label: "Élève",
-    render: (row) => (row.eleveId ? <span className="font-mono text-xs">{row.eleveId.slice(0, 8)}…</span> : "—"),
+    lookupKey: "eleves",
   },
   { key: "type", label: "Type", render: (row) => (row.type ? humanize(row.type) : "—") },
   {
@@ -60,6 +62,11 @@ const columns: ColumnDef<Bulletin>[] = [
 
 export default function BulletinsPage() {
   const { isAdmin } = useAuth();
+  const { tenantId } = useTenant();
+  const eleves = useElevesMap([tenantId]);
+  const annees = useAnneesMap([tenantId]);
+  const periodes = usePeriodesMap([tenantId]);
+  const classes = useClassesMap([tenantId]);
 
   const actions = (row: Bulletin, reload: () => void) => (
     <>
@@ -134,6 +141,7 @@ export default function BulletinsPage() {
       create={assessmentApi.bulletins.create}
       fields={fields}
       columns={columns}
+      entities={{ eleves, annees, periodes, classes }}
       searchKeys={["reference", "eleveId", "type", "statut"]}
       canWrite={isAdmin}
       rowActions={actions}

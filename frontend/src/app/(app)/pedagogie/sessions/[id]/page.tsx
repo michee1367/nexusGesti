@@ -12,18 +12,22 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { PageHeader, LoadingView, ErrorState, EmptyState } from "@/components/common/async-state";
+import { EntitySelect } from "@/components/common/entity-select";
 import { enumOptions, TYPE_CRENEAU_EXAM, TYPE_EPREUVE } from "@/components/pedagogie/constants";
 import { formatDate, formatTime, humanize } from "@/components/pedagogie/format";
+import { eleveLabel, enseignantLabel, epreuveLabel, lookupLabel } from "@/components/pedagogie/labels";
 import { useApi } from "@/hooks/use-api";
+import { useElevesMap } from "@/hooks/use-lookup";
 import { useAuth } from "@/components/providers/auth-provider";
 import { useTenant } from "@/components/providers/tenant-provider";
-import { examApi } from "@/services/api";
+import { examApi, peopleApi } from "@/services/api";
 
 export default function SessionDetailPage() {
   const params = useParams<{ id: string }>();
   const id = params.id;
   const { isAdmin } = useAuth();
   const { tenantId } = useTenant();
+  const eleves = useElevesMap([tenantId]);
 
   const session = useApi(() => examApi.sessions.get(id), [id, tenantId]);
   const [busy, setBusy] = useState(false);
@@ -306,7 +310,7 @@ export default function SessionDetailPage() {
                   {data.convocations.map((convocation, index) => (
                     <tr key={convocation.id ?? index} className="border-b border-border last:border-0">
                       <td className="px-3 py-2 font-mono text-xs">{convocation.numero ?? "—"}</td>
-                      <td className="px-3 py-2 font-mono text-xs">{convocation.eleveId?.slice(0, 8)}…</td>
+                      <td className="px-3 py-2 text-xs">{lookupLabel(eleves, convocation.eleveId)}</td>
                       <td className="px-3 py-2">
                         <Badge variant={convocation.statut === "NOTIFIEE" ? "success" : "outline"}>{humanize(convocation.statut)}</Badge>
                       </td>
@@ -345,8 +349,16 @@ export default function SessionDetailPage() {
                 }}
               >
                 <div className="flex-1">
-                  <Label className="mb-1 block">Élève (UUID)</Label>
-                  <Input value={convocationEleve} onChange={(event) => setConvocationEleve(event.target.value)} placeholder="121f5678-…" />
+                  <Label className="mb-1 block">Élève</Label>
+                  <EntitySelect
+                    fetcher={() => peopleApi.eleves.list()}
+                    keyOf={(eleve) => eleve.idEleve}
+                    labelOf={eleveLabel}
+                    value={convocationEleve}
+                    onChange={setConvocationEleve}
+                    deps={[tenantId]}
+                    placeholder="Sélectionner un élève…"
+                  />
                 </div>
                 <Button type="submit" disabled={busy || !convocationEleve}>
                   Convoquer
@@ -370,8 +382,16 @@ export default function SessionDetailPage() {
             }}
           >
             <div className="flex-1">
-              <Label className="mb-1 block">Épreuve (UUID)</Label>
-              <Input value={notesEpreuve} onChange={(event) => setNotesEpreuve(event.target.value)} />
+              <Label className="mb-1 block">Épreuve</Label>
+              <EntitySelect
+                fetcher={async () => data?.epreuves ?? []}
+                keyOf={(epreuve) => epreuve.idEpreuve}
+                labelOf={epreuveLabel}
+                value={notesEpreuve}
+                onChange={setNotesEpreuve}
+                deps={[id, data?.epreuves?.length]}
+                placeholder="Sélectionner une épreuve…"
+              />
             </div>
             <Button type="submit" disabled={!notesEpreuve}>
               Charger
@@ -395,7 +415,7 @@ export default function SessionDetailPage() {
               <tbody>
                 {notes.data.map((note) => (
                   <tr key={note.id ?? note.eleveId} className="border-b border-border last:border-0">
-                    <td className="px-3 py-2 font-mono text-xs">{note.eleveId?.slice(0, 8)}…</td>
+                    <td className="px-3 py-2 text-xs">{lookupLabel(eleves, note.eleveId)}</td>
                     <td className="px-3 py-2 font-semibold">{note.valeurNormalisee ?? note.valeur ?? "—"}</td>
                     <td className="px-3 py-2">{humanize(note.statut)}</td>
                     <td className="px-3 py-2">{note.absent ? "Oui" : "Non"}</td>
@@ -437,16 +457,32 @@ export default function SessionDetailPage() {
               }}
             >
               <div>
-                <Label className="mb-1 block">Élève (UUID)</Label>
-                <Input value={noteForm.eleveId} onChange={(event) => setNoteForm({ ...noteForm, eleveId: event.target.value })} />
+                <Label className="mb-1 block">Élève</Label>
+                <EntitySelect
+                  fetcher={() => peopleApi.eleves.list()}
+                  keyOf={(eleve) => eleve.idEleve}
+                  labelOf={eleveLabel}
+                  value={noteForm.eleveId}
+                  onChange={(value) => setNoteForm({ ...noteForm, eleveId: value })}
+                  deps={[tenantId]}
+                  placeholder="Sélectionner un élève…"
+                />
               </div>
               <div>
                 <Label className="mb-1 block">Valeur</Label>
                 <Input type="number" step="0.25" value={noteForm.valeur} onChange={(event) => setNoteForm({ ...noteForm, valeur: event.target.value })} />
               </div>
               <div>
-                <Label className="mb-1 block">Correcteur (UUID)</Label>
-                <Input value={noteForm.correcteur} onChange={(event) => setNoteForm({ ...noteForm, correcteur: event.target.value })} />
+                <Label className="mb-1 block">Correcteur</Label>
+                <EntitySelect
+                  fetcher={() => peopleApi.enseignants.list()}
+                  keyOf={(enseignant) => enseignant.id}
+                  labelOf={enseignantLabel}
+                  value={noteForm.correcteur}
+                  onChange={(value) => setNoteForm({ ...noteForm, correcteur: value })}
+                  deps={[tenantId]}
+                  placeholder="Sélectionner un correcteur…"
+                />
               </div>
               <div className="flex items-end">
                 <Button type="submit" disabled={busy || !noteForm.eleveId}>

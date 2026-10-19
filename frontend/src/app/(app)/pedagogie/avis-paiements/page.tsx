@@ -9,14 +9,16 @@ import { humanize, formatDate } from "@/components/pedagogie/format";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/components/providers/auth-provider";
+import { useTenant } from "@/components/providers/tenant-provider";
+import { useElevesMap, useGrillesTarifairesMap } from "@/hooks/use-lookup";
 import { feesApi } from "@/services/api";
 import type { AvisPaiement } from "@/types";
 
 const fields: FieldDef[] = [
-  { name: "eleve", label: "Élève (UUID)", colSpan: 2, required: true },
+  { name: "eleve", label: "Élève", type: "select", entityKey: "eleves", colSpan: 2, required: true },
   { name: "annee", label: "Année" },
   { name: "classe", label: "Classe" },
-  { name: "grilleId", label: "Grille tarifaire (UUID)", colSpan: 2 },
+  { name: "grilleId", label: "Grille tarifaire", type: "select", entityKey: "grilles", colSpan: 2 },
   { name: "typeFrais", label: "Frais initial", type: "select", options: enumOptions(TYPE_FRAIS) },
   { name: "libelle", label: "Libellé du frais" },
   { name: "montant", label: "Montant", type: "number" },
@@ -33,7 +35,7 @@ const columns: ColumnDef<AvisPaiement>[] = [
       </Link>
     ),
   },
-  { key: "eleve", label: "Élève", render: (row) => (row.eleve ? <span className="font-mono text-xs">{row.eleve.slice(0, 8)}…</span> : "—") },
+  { key: "eleve", label: "Élève", lookupKey: "eleves" },
   { key: "annee", label: "Année", render: (row) => row.annee ?? "—" },
   { key: "montantNet", label: "Net", render: (row) => row.montantNet ?? "—" },
   { key: "montantRegle", label: "Réglé", render: (row) => row.montantRegle ?? "—" },
@@ -62,6 +64,9 @@ const columns: ColumnDef<AvisPaiement>[] = [
 
 export default function AvisPaiementsPage() {
   const { isAdmin } = useAuth();
+  const { tenantId } = useTenant();
+  const eleves = useElevesMap([tenantId]);
+  const grilles = useGrillesTarifairesMap([tenantId]);
 
   const create = async (body: Partial<AvisPaiement>) => {
     const b = body as Record<string, unknown>;
@@ -139,6 +144,7 @@ export default function AvisPaiementsPage() {
       create={create}
       fields={fields}
       columns={columns}
+      entities={{ eleves, grilles }}
       searchKeys={["reference", "eleve", "annee", "statut"]}
       canWrite={isAdmin}
       rowActions={actions}

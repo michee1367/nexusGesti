@@ -4,6 +4,7 @@ import com.nexusgesti.auth.config.AuthProperties;
 import com.nexusgesti.auth.domain.model.*;
 import com.nexusgesti.auth.domain.port.in.AuthUseCase;
 import com.nexusgesti.auth.domain.port.out.*;
+import com.nexusgesti.common.tenancy.TenantContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -58,8 +59,10 @@ public class AuthService implements AuthUseCase {
         }
 
         UUID userId = identityProvider.registerUser(command);
-        identityProvider.assignRealmRole(userId, "CUSTOMER");
+        identityProvider.assignRealmRole(userId, "ADMIN");
         identityProvider.setUserAttribute(userId, "mfa_verified", "false");
+        TenantContext.get().ifPresent(
+                tenant -> identityProvider.setUserAttribute(userId, "tenant_id", tenant.toString()));
 
         RegisteredUser user = new RegisteredUser(
                 userId, command.email(), "PENDING_VERIFICATION", true);
@@ -142,6 +145,13 @@ public class AuthService implements AuthUseCase {
         if (command.userId() != null) {
             identityProvider.setUserAttribute(command.userId(), "mfa_verified", "false");
         }
+    }
+
+    @Override
+    public UUID resolveTenant(String email) {
+        return identityProvider.findTenantIdByEmail(email)
+                .orElseThrow(() -> new AuthException("AUTH_TENANT_NOT_FOUND",
+                        "Aucun établissement associé à ce compte"));
     }
 
     private AuthSession persistSession(UUID userId, String refreshToken, LoginCommand command, boolean mfaEnabled) {

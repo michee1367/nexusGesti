@@ -31,6 +31,7 @@ public class SecurityConfig {
                 .authorizeExchange(exchanges -> exchanges
                         .pathMatchers("/actuator/health", "/actuator/info", "/actuator/prometheus").permitAll()
                         .pathMatchers("/api/v1/auth/**", "/api/v1/*/auth/**").permitAll()
+                        .pathMatchers("/api/v1/socle/tenants/*/identite").permitAll()
                         .pathMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .pathMatchers("/internal/**").denyAll()
                         .anyExchange().authenticated()

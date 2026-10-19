@@ -7,13 +7,15 @@ import { humanize, formatDate } from "@/components/pedagogie/format";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/components/providers/auth-provider";
+import { useTenant } from "@/components/providers/tenant-provider";
+import { useElevesMap } from "@/hooks/use-lookup";
 import { feesApi } from "@/services/api";
 import type { CouponPaiement } from "@/types";
 
 const columns: ColumnDef<CouponPaiement>[] = [
   { key: "numero", label: "Numéro", render: (row) => <span className="font-mono font-medium text-slate-900">{row.numero}</span> },
   { key: "libelle", label: "Libellé", render: (row) => row.libelle ?? "—" },
-  { key: "eleve", label: "Élève", render: (row) => (row.eleve ? <span className="font-mono text-xs">{row.eleve.slice(0, 8)}…</span> : "—") },
+  { key: "eleve", label: "Élève", lookupKey: "eleves" },
   { key: "montant", label: "Montant", render: (row) => row.montant ?? "—" },
   { key: "moyen", label: "Moyen", render: (row) => (row.moyen ? humanize(row.moyen) : "—") },
   { key: "dateEdition", label: "Édition", render: (row) => formatDate(row.dateEdition) },
@@ -39,12 +41,14 @@ const columns: ColumnDef<CouponPaiement>[] = [
   {
     key: "remisA",
     label: "Remis à",
-    render: (row) => (row.remisA ? <span className="font-mono text-xs">{row.remisA.slice(0, 8)}…</span> : "—"),
+    lookupKey: "eleves",
   },
 ];
 
 export default function CouponsPaiementPage() {
   const { isAdmin } = useAuth();
+  const { tenantId } = useTenant();
+  const eleves = useElevesMap([tenantId]);
 
   const actions = (row: CouponPaiement, reload: () => void) => {
     const id = row.id as string;
@@ -119,7 +123,8 @@ export default function CouponsPaiementPage() {
       list={feesApi.coupons.list}
       fields={[]}
       columns={columns}
-      searchKeys={["numero", "libelle", "eleve", "statut"]}
+      entities={{ eleves }}
+      searchKeys={["numero", "libelle", "statut"]}
       canWrite={isAdmin}
       rowActions={actions}
     />

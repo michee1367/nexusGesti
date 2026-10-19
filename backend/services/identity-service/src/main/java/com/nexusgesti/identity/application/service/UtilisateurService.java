@@ -110,6 +110,31 @@ public class UtilisateurService implements UtilisateurUseCase {
     }
 
     @Override
+    @Transactional
+    public Utilisateur enregistrerDepuisEvenement(EnregistrerUtilisateurCommand command) {
+        if (command.keycloakUserId() != null) {
+            var existing = utilisateurRepository.findByKeycloakUserId(command.keycloakUserId());
+            if (existing.isPresent()) {
+                return existing.get();
+            }
+        }
+        if (command.email() != null && utilisateurRepository.existsByEmail(command.email())) {
+            return null;
+        }
+        Utilisateur u = new Utilisateur();
+        u.setIdUtilisateur(UUID.randomUUID());
+        u.setKeycloakUserId(command.keycloakUserId());
+        u.setIdentifiant(command.email());
+        u.setEmail(command.email());
+        u.setNom(command.nom());
+        u.setPrenom(command.prenom());
+        u.setStatut(StatutUtilisateur.ACTIF);
+        u.setTypeCompte(TypeCompte.KEYCLOAK);
+        u.setLanguePreferee("fr");
+        return utilisateurRepository.save(u);
+    }
+
+    @Override
     public Utilisateur get(UUID id) {
         return enrich(require(id));
     }

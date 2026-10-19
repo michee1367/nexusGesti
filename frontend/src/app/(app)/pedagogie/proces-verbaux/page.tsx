@@ -7,14 +7,16 @@ import { humanize, formatDate } from "@/components/pedagogie/format";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/components/providers/auth-provider";
+import { useTenant } from "@/components/providers/tenant-provider";
+import { useEnseignantsMap, useSessionsMap } from "@/hooks/use-lookup";
 import { examApi } from "@/services/api";
 import type { ProcesVerbal } from "@/types";
 
 const fields: FieldDef[] = [
   { name: "reference", label: "Référence", required: true },
-  { name: "sessionId", label: "Session (UUID)", colSpan: 2 },
+  { name: "sessionId", label: "Session", type: "select", entityKey: "sessions", colSpan: 2 },
   { name: "dateRedaction", label: "Date de rédaction", type: "date" },
-  { name: "redigePar", label: "Rédigé par (UUID)" },
+  { name: "redigePar", label: "Rédigé par", type: "select", entityKey: "enseignants" },
   { name: "presenceDirecteur", label: "Présence du directeur", type: "checkbox" },
   { name: "observations", label: "Observations", type: "textarea", colSpan: 2 },
 ];
@@ -22,7 +24,7 @@ const fields: FieldDef[] = [
 const columns: ColumnDef<ProcesVerbal>[] = [
   { key: "reference", label: "Référence", render: (row) => <span className="font-mono font-medium text-slate-900">{row.reference}</span> },
   { key: "dateRedaction", label: "Rédaction", render: (row) => formatDate(row.dateRedaction) },
-  { key: "redigePar", label: "Rédigé par", render: (row) => (row.redigePar ? <span className="font-mono text-xs">{row.redigePar.slice(0, 8)}…</span> : "—") },
+  { key: "redigePar", label: "Rédigé par", lookupKey: "enseignants" },
   { key: "observations", label: "Observations", render: (row) => row.observations ?? "—" },
   {
     key: "signatures",
@@ -52,6 +54,9 @@ const columns: ColumnDef<ProcesVerbal>[] = [
 
 export default function ProcesVerbauxPage() {
   const { isAdmin } = useAuth();
+  const { tenantId } = useTenant();
+  const sessions = useSessionsMap([tenantId]);
+  const enseignants = useEnseignantsMap([tenantId]);
 
   const actions = (row: ProcesVerbal, reload: () => void) => {
     const id = row.id as string;
@@ -113,6 +118,7 @@ export default function ProcesVerbauxPage() {
       create={examApi.procesVerbaux.create}
       fields={fields}
       columns={columns}
+      entities={{ sessions, enseignants }}
       searchKeys={["reference", "observations", "statut"]}
       canWrite={isAdmin}
       rowActions={actions}

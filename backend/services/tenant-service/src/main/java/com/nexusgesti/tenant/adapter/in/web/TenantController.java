@@ -35,6 +35,20 @@ public class TenantController {
         return etablissementUseCase.get(id);
     }
 
+    @GetMapping("/{id}/identite")
+    public IdentiteResponse identite(@PathVariable UUID id) {
+        Etablissement e = etablissementUseCase.get(id);
+        return new IdentiteResponse(
+                e.getId(),
+                e.getDenomination(),
+                e.getCode(),
+                e.getProfil() == null ? null : e.getProfil().name(),
+                e.getStatut() == null ? null : e.getStatut().name());
+    }
+
+    public record IdentiteResponse(
+            UUID id, String denomination, String code, String profil, String statut) {}
+
     @PatchMapping("/{id}/statut")
     @PreAuthorize("hasRole('ADMIN')")
     public Etablissement changerStatut(@PathVariable UUID id,

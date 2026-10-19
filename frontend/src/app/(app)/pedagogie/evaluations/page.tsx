@@ -9,25 +9,27 @@ import { formatDate, formatTime, humanize } from "@/components/pedagogie/format"
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/components/providers/auth-provider";
+import { useTenant } from "@/components/providers/tenant-provider";
+import { useAnneesMap, useClassesMap, useCoursMap, useEnseignantsMap, useMatieresMap, usePeriodesMap, useSallesMap, useUesMap } from "@/hooks/use-lookup";
 import { assessmentApi } from "@/services/api";
 import type { Evaluation } from "@/types";
 
 const fields: FieldDef[] = [
   { name: "libelle", label: "Libellé", required: true },
   { name: "type", label: "Type", type: "select", options: enumOptions(TYPE_EVALUATION_ELARGI) },
-  { name: "classeId", label: "Classe (UUID)", colSpan: 2 },
-  { name: "coursId", label: "Cours (UUID)" },
-  { name: "ueId", label: "UE (UUID)" },
-  { name: "matiereId", label: "Matière (UUID)" },
-  { name: "enseignantId", label: "Enseignant (UUID)" },
-  { name: "anneeId", label: "Année (UUID)" },
-  { name: "periodeId", label: "Période (UUID)" },
+  { name: "classeId", label: "Classe", type: "select", entityKey: "classes", colSpan: 2 },
+  { name: "coursId", label: "Cours", type: "select", entityKey: "cours" },
+  { name: "ueId", label: "UE", type: "select", entityKey: "ues" },
+  { name: "matiereId", label: "Matière", type: "select", entityKey: "matieres" },
+  { name: "enseignantId", label: "Enseignant", type: "select", entityKey: "enseignants" },
+  { name: "anneeId", label: "Année", type: "select", entityKey: "annees" },
+  { name: "periodeId", label: "Période", type: "select", entityKey: "periodes" },
   { name: "date", label: "Date", type: "date" },
   { name: "heureDebut", label: "Heure de début", type: "time" },
   { name: "duree", label: "Durée (min)", type: "number" },
   { name: "noteMax", label: "Note max", type: "number", defaultValue: 20 },
   { name: "coefficientDeclare", label: "Coefficient", type: "number", defaultValue: 1 },
-  { name: "salleId", label: "Salle (UUID)" },
+  { name: "salleId", label: "Salle", type: "select", entityKey: "salles" },
   { name: "consignes", label: "Consignes", type: "textarea", colSpan: 2 },
 ];
 
@@ -68,6 +70,15 @@ const columns: ColumnDef<Evaluation>[] = [
 
 export default function EvaluationsPage() {
   const { isAdmin } = useAuth();
+  const { tenantId } = useTenant();
+  const classes = useClassesMap([tenantId]);
+  const cours = useCoursMap([tenantId]);
+  const ues = useUesMap([tenantId]);
+  const matieres = useMatieresMap([tenantId]);
+  const enseignants = useEnseignantsMap([tenantId]);
+  const annees = useAnneesMap([tenantId]);
+  const periodes = usePeriodesMap([tenantId]);
+  const salles = useSallesMap([tenantId]);
 
   const actions = (row: Evaluation, reload: () => void) => (
     <>
@@ -163,6 +174,7 @@ export default function EvaluationsPage() {
       update={assessmentApi.evaluations.update}
       fields={fields}
       columns={columns}
+      entities={{ classes, cours, ues, matieres, enseignants, annees, periodes, salles }}
       searchKeys={["reference", "libelle", "statut", "type"]}
       canWrite={isAdmin}
       rowActions={actions}

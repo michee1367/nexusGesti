@@ -12,7 +12,7 @@ export function toOptions<T>(
   }));
 }
 
-export const PROFILS = ["PRIMAIRE", "SECONDAIRE", "UNIVERSITAIRE"] as const;
+export const PROFILS = ["PRIMAIRE", "SECONDAIRE", "UNIVERSITAIRE", "BOULANGERIE"] as const;
 
 export const TYPE_CYCLE = ["PRIMAIRE", "SECONDAIRE", "SUPERIEUR", "LICENCE", "MASTER"] as const;
 export const TYPE_MATIERE = ["OBLIGATOIRE", "OPTION", "CHOIX", "LIBRE"] as const;
@@ -252,3 +252,44 @@ export const TYPE_FRAIS = [
 export const CATEGORIE_FRAIS = ["OBLIGATOIRE", "OPTIONNEL", "FACULTATIF", "SANCTION"] as const;
 export const TYPE_BENEFICIAIRE = ["ELEVE", "TIERS_PAYEUR", "EMPLOYEUR", "ANCIENNE", "AUTRE"] as const;
 export const PERIODICITE = ["PONCTUELLE", "MENSUELLE", "TRIMESTRIELLE", "SEMESTRIELLE", "ANNUELLE"] as const;
+
+// ---- boulangerie lot 1 (produit) ----
+export const UNITE_VENTE = ["PIECE", "LOT", "KG", "GRAMME", "TRANCHE", "SACHET", "PLATEAU"] as const;
+export const ALLERGENE = [
+  "GLUTEN",
+  "LACTOSE",
+  "OEUF",
+  "ARACHIDE",
+  "SOJA",
+  "NOIX",
+  "POISSON",
+  "CRUSTACE",
+  "SESAME",
+  "SULFITE",
+] as const;
+export const NATURE_COUT = [
+  "MATIERE",
+  "MAIN_OEUVRE",
+  "ENERGIE",
+  "EMBALLAGE",
+  "AMORTISSEMENT",
+  "AUTRE",
+] as const;
+
+// ---- boulangerie lot 2 (production) ----
+export const STATUT_PLAN = ["BROUILLON", "VALIDE", "LANCE", "CLOTURE"] as const;
+export const STATUT_FOURNEE = [
+  "PLANIFIEE",
+  "EN_COURS",
+  "CUITE",
+  "VALIDEE",
+  "ANNULEE",
+] as const;
+export const TYPE_PERTE = [
+  "PATE_PERDUE",
+  "CUISSON_RATEE",
+  "CASSE",
+  "INVENDU_DESTRUCTION",
+  "DEMARQUE",
+  "ECHANTILLON",
+] as const;
