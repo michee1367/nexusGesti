@@ -48,6 +48,11 @@ import {
   CreditCard,
   Ticket,
   Coins,
+  Croissant,
+  ChefHat,
+  LayoutGrid,
+  Tags,
+  Flame,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -133,6 +138,18 @@ const feesItems: NavItem[] = [
   { href: "/pedagogie/journaliers", label: "Journaliers", icon: Coins },
 ];
 
+const boulangerieItems: NavItem[] = [
+  { href: "/boulangerie/produits", label: "Produits", icon: Croissant },
+  { href: "/boulangerie/recettes", label: "Fiches recette", icon: ChefHat },
+  { href: "/boulangerie/gammes", label: "Gammes", icon: LayoutGrid },
+  { href: "/boulangerie/categories", label: "Catégories", icon: Tags },
+];
+
+const boulangerieProductionItems: NavItem[] = [
+  { href: "/boulangerie/plans", label: "Plans de production", icon: CalendarDays },
+  { href: "/boulangerie/fournees", label: "Fournées", icon: Flame },
+];
+
 const adminItems: NavItem[] = [
   { href: "/tenants", label: "Tenants", icon: Users },
   { href: "/utilisateurs", label: "Utilisateurs", icon: UserCog },
@@ -155,6 +172,8 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
     { title: "Pédagogie · Évaluations", items: assessmentItems },
     { title: "Pédagogie · Examens", items: examItems },
     { title: "Pédagogie · Frais", items: feesItems },
+    { title: "Boulangerie · Produits", items: boulangerieItems },
+    { title: "Boulangerie · Production", items: boulangerieProductionItems },
   ];
 
   const renderItem = ({ href, label, icon: Icon }: NavItem) => {
