@@ -1,0 +1,175 @@
+@startuml modele-boulangerie-approvisionnement-service
+hide empty members
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+
+title Modele de classes - boulangerie-approvisionnement-service (Achats, Receptions et Fournisseurs)
+
+package "boulangerie-approvisionnement-service" {
+
+  ' ================= ENUMS =================
+  enum StatutCommandeAchat {
+    BROUILLON
+    VALIDEE
+    ENVOYEE
+    PARTIELLE
+    RECEPTIONNEE
+    FACTUREE
+    ANNULEE
+  }
+
+  enum StatutReception {
+    ATTENDUE
+    EN_CONTROLE
+    ACCEPTEE
+    REFUSEE
+    PARTIELLE
+  }
+
+  ' ================= FOURNISSEUR =================
+  class FournisseurBoulangerie <<aggregate root>> {
+    + code : String
+    + tiersCode : String
+    + raisonSociale : String
+    + delaiLivraisonJours : Integer
+    + conditionsReglement : String
+    + categorieProduits : String
+    + montantMiniCommande : Decimal?
+    + actif : Boolean
+    --
+    + estFiable() : Boolean
+    + getDelai() : Integer
+  }
+
+  ' ================= BESOIN =================
+  class BesoinApprovisionnement {
+    + articleCode : String
+    + libelle : String
+    + quantiteDisponible : Decimal
+    + seuil : Decimal
+    + quantiteSuggeree : Decimal
+    + delaiReapproJours : Integer?
+    + urgence : String
+  }
+
+  ' ================= ACHAT =================
+  class CommandeAchat <<aggregate root>> {
+    + idCommande : UUID
+    + numero : String
+    + fournisseurTiersCode : String
+    + date : Date
+    + dateLivraisonPrevue : Date?
+    + statut : StatutCommandeAchat
+    + montantHT : Decimal
+    + montantTVA : Decimal
+    + montantTTC : Decimal
+    + devise : String
+    --
+    + valider() : CommandeAchat
+    + envoyer() : CommandeAchat
+    + marquerPartielle() : CommandeAchat
+    + marquerReceptionnee() : CommandeAchat
+    + annuler(motif : String) : CommandeAchat
+    + getResteARecevoir() : Decimal
+  }
+
+  class LigneCommandeAchat {
+    + articleCode : String
+    + designation : String
+    + quantiteCommandee : Decimal
+    + quantiteRecue : Decimal
+    + prixUnitaire : Decimal
+    + tauxTva : Decimal
+    + montantHT : Decimal
+  }
+
+  class Reception <<aggregate root>> {
+    + idReception : UUID
+    + numero : String
+    + commandeNumero : String
+    + date : Date
+    + recuPar : UUID
+    + bonLivraison : String
+    + statut : StatutReception
+    --
+    + controler() : Reception
+    + accepter() : Reception
+    + refuser(motif : String) : Reception
+    + estConforme() : Boolean
+  }
+
+  class LigneReception {
+    + articleCode : String
+    + quantiteCommandee : Decimal
+    + quantiteRecue : Decimal
+    + prixAchat : Decimal
+    + lotNumero : String?
+    + datePeremption : Date?
+    + conforme : Boolean
+    + motifNonConformite : String?
+  }
+
+  ' ================= RELATIONS =================
+  CommandeAchat "1" *-- "1..*" LigneCommandeAchat : composee de >
+  Reception "1" *-- "1..*" LigneReception : composee de >
+  CommandeAchat "1" o-- "0..*" Reception : honoree par >
+  FournisseurBoulangerie "1" o-- "0..*" CommandeAchat : fournit >
+  FournisseurBoulangerie ..> BesoinApprovisionnement : couvre >
+
+  ' ---- References inter-services ----
+  class Article <<fin-stock>> #transparent
+  class Lot <<fin-stock>> #transparent
+  class MouvementStock <<fin-stock>> #transparent
+  class GrilleStock <<tenant-service>> #transparent
+  class Tiers <<fin-facturation>> #transparent
+  class Facture <<fin-facturation>> #transparent
+  class Reglement <<fin-facturation>> #transparent
+  class PlanProduction <<boulangerie-production>> #transparent
+
+  FournisseurBoulangerie "0..*" --> "0..1" Tiers : correspond a >
+  LigneCommandeAchat "0..*" --> "1" Article : commande >
+  LigneReception "0..*" --> "1" Article : receptionne >
+  LigneReception "0..*" --> "0..1" Lot : cree >
+  Reception ..> MouvementStock : entree achat >
+  BesoinApprovisionnement ..> PlanProduction : anticipe >
+  CommandeAchat ..> Facture : facture par >
+  Facture ..> Reglement : regle par >
+}
+
+note bottom of Reception
+  <b>CONTROLE DE RECEPTION BLOQUANT</b>
+  Quand GrilleStock.exigerControleReception
+  est vrai, aucune quantite n entre en
+  stock avant le controle. Un lot non
+  conforme ne cree ni Lot ni
+  MouvementStock : il est refuse, jamais
+  integre puis corrige.
+end note
+
+note bottom of Reception
+  <b>RAPPROCHEMENT TROIS VOIES</b>
+  Une facture fournisseur n est reglee
+  qu apres concordance :
+    commande = reception = facture
+  Un ecart de prix genere un litige, pas
+  un paiement partiel silencieux.
+end note
+
+note bottom of BesoinApprovisionnement
+  <b>BESOIN CALCULE, PAS SAISI</b>
+  Le besoin vient des seuils de
+  GrilleStock et du PlanProduction :
+  quantiteSuggeree = seuil + consommation
+  prevue - quantiteDisponible. Aucune
+  valeur de seuil n est en dur ici.
+end note
+
+note bottom of LigneReception
+  <b>LOT ET PEREMPTION</b>
+  Chaque ligne conforme donne un Lot
+  (fin-stock) avec sa date de peremption.
+  La rotation (FEFO) reste appliquee par
+  le proprietaire du stock, pas ici.
+end note
+
+@enduml

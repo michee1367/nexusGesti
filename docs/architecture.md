@@ -40,6 +40,15 @@ flowchart TB
     PLT[plateau-technique]
   end
 
+  subgraph BOU[Boulangerie]
+    BPR[produit]
+    BPD[production]
+    BVE[vente]
+    BCL[clients]
+    BAP[approvisionnement]
+    BPE[personnel]
+  end
+
   subgraph FIN[Finance OHADA]
     CORE[compta-core]
     FACT[facturation]
@@ -55,7 +64,9 @@ flowchart TB
   GW --> SOCLE
   GW --> PED
   GW --> HOP
+  GW --> BOU
   GW --> FIN
+  BOU -.réutilise.-> FIN
 ```
 
 ## Flux : publication d'une session d'examen
@@ -167,6 +178,53 @@ Deux garde-fous structurants :
 - **Rien ne sort avant validation.** Un résultat saisi mais non validé biologiquement n'est pas lisible du prescripteur, ne figure sur aucun compte rendu et ne déclenche aucune facture.
 - **Pas d'examen sans équipement calibré.** Un scanner dont la date de calibration est dépassée ne produit aucun acte facturable.
 
+## Flux : de la vente comptoir à l'écriture comptable
+
+```mermaid
+sequenceDiagram
+  participant CLI as Client
+  participant CAI as Caissier
+  participant VTE as boulangerie-vente
+  participant STK as fin-stock
+  participant CLT as boulangerie-clients
+  participant CPT as fin-compta-core
+
+  CLI->>CAI: produits au comptoir
+  CAI->>VTE: enregistrer vente (Idempotency-Key)
+  VTE->>STK: MouvementStock SORTIE_VENTE
+  STK-->>VTE: disponible décrémenté
+  opt Client identifié
+    VTE->>CLT: créditer points fidélité
+  end
+  VTE-->>CAI: ticket numéroté (jour)
+  VTE->>CPT: événement vente.encaissee
+  Note over VTE,CPT: espèces D 571 / C 701<br/>crédit D 411 / C 701
+```
+
+**Le module de vente n'encaisse rien en comptabilité.** La caisse encaisse au comptoir, puis émet un événement ; `fin-compta-core` produit l'écriture. La clé d'idempotence dérivée de `sourceId` et du numéro de ticket garantit qu'un rejeu ne crée pas de double écriture.
+
+## Flux : de la fournée au produit fini
+
+```mermaid
+flowchart LR
+  A[PlanProduction] --> B[Besoin matiere]
+  B --> C[Lancer fournee]
+  C --> D[MouvementStock SORTIE_CONSOMMATION<br/>par lot]
+  D --> E[Cuisson + rendu]
+  E --> F{Rendement sous tolerance ?}
+  F -->|oui| G[PerteProduction valorisee<br/>SORTIE_PERTE]
+  F -->|non| H[Validation fournee]
+  G --> H
+  H -->|non validee| I[Aucun produit fini en stock]
+  H -->|validee| J[MouvementStock ENTREE_PRODUCTION]
+```
+
+Trois garde-fous structurants :
+
+- **Rien n'entre avant validation.** Une fournée non validée ne crée aucun `MouvementStock ENTREE_PRODUCTION` : le produit fini n'est pas vendable.
+- **Toute consommation est tracée par lot.** Un ingrédient prélevé n'est plus re-livrable ; la quantité consommée est opposable en cas d'écart.
+- **Toute perte est valorisée.** Pâte perdue, cuisson ratée, casse et invendu détruit créent un mouvement `SORTIE_PERTE` valorisé au prix moyen.
+
 ## Multi-tenancy
 
 Deux modes cohabitent :
@@ -176,7 +234,7 @@ Deux modes cohabitent :
 | **SaaS mutualisé** | `etablissement_id` sur chaque table, RLS PostgreSQL | petits établissements |
 | **On-premise dédié** | base dédiée par instance | grands groupes, données sensibles |
 
-Le `tenant-service` porte le `Etablissement`, son `ProfilEtablissement` et ses référentiels. Un profil **PRIMAIRE**, **SECONDAIRE** ou **UNIVERSITAIRE** active des règles du cœur pédagogique sans le dupliquer.
+Le `tenant-service` porte le `Etablissement`, son `ProfilEtablissement` et ses référentiels. Un profil **PRIMAIRE**, **SECONDAIRE** ou **UNIVERSITAIRE** active des règles du cœur pédagogique sans le dupliquer ; un profil **HOSPITAL** active le domaine hospitalier ; un profil **BOULANGERIE** active le domaine boulangerie adossé à la finance.
 
 ## Versionnement des règles métier
 

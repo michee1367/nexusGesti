@@ -1,0 +1,124 @@
+@startuml sq-boulangerie-vente-encaissement
+title Sequence - De la vente comptoir a l ecriture comptable
+autonumber
+skinparam sequenceMessageAlign center
+
+actor "Client" as CLI
+actor "Caissier" as CAIS
+participant "boulangerie-vente-service" as VTE
+participant "boulangerie-produit-service" as PROD
+participant "fin-stock" as STK
+participant "boulangerie-clients-service" as CLT
+participant "fin-compta-core" as CPTE
+participant "fin-facturation-service" as FACT
+participant "audit-service" as AUD
+
+== Etape 1 : Preparation de la vente ==
+
+CLI -> CAIS : presente ses produits
+CAIS -> VTE : ouvrir session de caisse\n(fond initial)
+VTE -> VTE : SessionCaisse.ouvrir()
+
+CAIS -> VTE : enregistrer une vente\n(cleIdempotence)
+activate VTE
+
+VTE -> VTE : dedoublonnage sur la cle
+alt Cle deja traitee
+  VTE --> CAIS : meme ticket, pas de doublon
+  note right of VTE
+    Un rejeu de la meme vente ne cree
+    qu un seul ticket et un seul
+    mouvement de stock.
+  end note
+else Nouvelle vente
+  CAIS -> VTE : ajouter des lignes\n(scanner ou saisir)
+  VTE -> PROD : resoudre produit\n(prix de vente, TVA)
+  PROD --> VTE : prix, tauxTva, allergenes
+
+  opt Remise
+    CAIS -> VTE : appliquer une remise
+    VTE -> VTE : recalcul des montants HT/TVA/TTC
+  end
+end
+
+== Etape 2 : Encaissement ==
+
+CAIS -> VTE : encaisser(mode, montantRecu)
+VTE -> VTE : PaiementVente\nrendu = recu - montantTTC
+VTE -> VTE : Vente EN_COURS -> VALIDEE
+
+alt Especes
+  VTE -> VTE : MouvementStock SORTIE_VENTE
+else Credit client
+  VTE -> CLT : verifier l encours du client
+  CLT -> FACT : controle d encours sur le tiers
+  FACT --> CLT : encours autorise ou refuse
+  CLT --> VTE : decision
+end
+
+VTE -> STK : MouvementStock\nSORTIE_VENTE\nserviceOrigine = BOULANGERIE
+STK -> STK : decrement disponible
+STK --> VTE : mouvement enregistre
+
+VTE -> CAIS : numeroTicket (sequentiel/jour)
+VTE --> CLI : ticket imprime
+
+deactivate VTE
+
+== Etape 3 : Fidelite ==
+
+opt Client identifie
+  VTE -> CLT : crediter des points\n(montant, venteOrigine)
+  CLT -> CLT : ProgrammeFidelite\ncalculer points selon regle versionnee
+  CLT -> CLT : MouvementFidelite GAIN
+  CLT --> VTE : points credites
+  note right of CLT
+    Les points ne sont credites que sur
+    une vente VALIDEE et non remboursee.
+    Un retour genere un mouvement ANNULATION.
+  end note
+end
+
+== Etape 4 : Contrat inter-services ==
+
+VTE ->> CPTE : evenement vente.encaissee\n(topic boulangerie.events)\ncleIdempotence = f(sourceId, numeroTicket)
+
+note over VTE, CPTE
+  <b>LE MODULE N ENCAISSE PAS EN COMPTA</b>
+  La vente encaisse au comptoir, puis
+  la comptabilite enregistre :
+    especes : D 571 / C 701
+    credit  : D 411 / C 701
+  La cle derive de sourceId et
+  numeroTicket : deux emissions du meme
+  ticket ne creent qu une ecriture.
+end note
+
+activate CPTE
+CPTE -> CPTE : dedoublonnage sur la cle
+alt Vente deja comptabilisee
+  CPTE --> VTE : ignore
+else Nouvelle vente
+  CPTE -> CPTE : ecriture\nD 571 / C 701\nou D 411 / C 701
+  CPTE -> FACT : facture et reglement\n(rapprochement)
+end
+deactivate CPTE
+
+== Etape 5 : Cloture de caisse ==
+
+CAIS -> VTE : cloturer(montant compte)
+VTE -> VTE : ecart =\ncompte - totalEncaisse
+VTE -> AUD : evenement caisse.cloturee\n{ecart, session}
+AUD --> VTE : trace
+
+note over VTE
+  <b>CLOTURE DE CAISSE</b>
+  Une session non cloturee bloque
+  l ouverture de la suivante :
+  la caisse reste reproductible
+  et auditable.
+end note
+
+VTE --> CAIS : ecart de caisse
+
+@enduml

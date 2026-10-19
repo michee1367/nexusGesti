@@ -8,7 +8,7 @@ BACKEND="$ROOT/backend"
 LOGDIR="$BACKEND/logs"
 MVN="${MVN:-mvn}"
 
-SERVICES=(tenant-service identity-service auth-service notification-service audit-service reporting-service academic-structure-service academic-people-service academic-enrollment-service academic-attendance-service academic-assessment-service academic-exam-service academic-fees-service api-gateway)
+SERVICES=(tenant-service identity-service auth-service notification-service audit-service reporting-service academic-structure-service academic-people-service academic-enrollment-service academic-attendance-service academic-assessment-service academic-exam-service academic-fees-service boulangerie-produit-service boulangerie-production-service api-gateway)
 declare -A PORTS=(
   [tenant-service]=8101
   [identity-service]=8102
@@ -23,6 +23,8 @@ declare -A PORTS=(
   [academic-assessment-service]=8115
   [academic-exam-service]=8116
   [academic-fees-service]=8117
+  [boulangerie-produit-service]=8141
+  [boulangerie-production-service]=8142
   [api-gateway]=8080
 )
 
@@ -62,6 +64,12 @@ wait_healthy() {
 wait_healthy postgres 30 || fail "postgres non healthy"
 wait_healthy redis    15 || fail "redis non healthy"
 wait_healthy kafka    40 || fail "kafka non healthy"
+
+# kafka-init ne s'execute qu'a la creation du conteneur : sur une infra deja
+# lancee, un nouveau topic (ex. boulangerie.events) n'existe jamais et le
+# producteur bloque sur UNKNOWN_TOPIC_OR_PARTITION. On le rejoue (idempotent).
+info "==> Kafka : creation idempotente des topics"
+( cd "$BACKEND" && docker compose run --rm kafka-init ) || info "    kafka-init a echoue (topics a verifier manuellement)"
 
 info "==> Attente Keycloak 8180"
 KC_OK=0

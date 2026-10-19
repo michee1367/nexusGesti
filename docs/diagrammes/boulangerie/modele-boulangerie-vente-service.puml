@@ -1,0 +1,206 @@
+@startuml modele-boulangerie-vente-service
+hide empty members
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+
+title Modele de classes - boulangerie-vente-service (Point de vente, Caisse et Commandes)
+
+package "boulangerie-vente-service" {
+
+  ' ================= ENUMS =================
+  enum CanalVente {
+    COMPTOIR
+    COMMANDE
+    LIVRAISON
+  }
+
+  enum StatutVente {
+    EN_COURS
+    VALIDEE
+    ANNULEE
+    REMBOURSEE
+  }
+
+  enum ModePaiementCaisse {
+    ESPECES
+    CARTE
+    MOBILE_MONEY
+    MIXTE
+  }
+
+  enum StatutCommandeClient {
+    BROUILLON
+    CONFIRMEE
+    EN_PRODUCTION
+    PRETE
+    LIVREE
+    ANNULEE
+  }
+
+  ' ================= CAISSE =================
+  class SessionCaisse <<aggregate root>> {
+    + idSession : UUID
+    + date : Date
+    + fondInitial : Decimal
+    + totalEncaisse : Decimal
+    + ecart : Decimal
+    + ouvertePar : UUID
+    + cloturee : Boolean
+    + dateCloture : DateTime?
+    --
+    + ouvrir() : SessionCaisse
+    + cloturer(montantCompte : Decimal) : SessionCaisse
+    + getEcart() : Decimal
+    + estOuverte() : Boolean
+  }
+
+  ' ================= VENTE =================
+  class Vente <<aggregate root>> {
+    + idVente : UUID
+    + numeroTicket : String
+    + date : DateTime
+    + sessionId : UUID
+    + canal : CanalVente
+    + clientCode : String?
+    + montantHT : Decimal
+    + montantTVA : Decimal
+    + montantTTC : Decimal
+    + modePaiement : ModePaiementCaisse
+    + pointsFideliteGagnes : Integer
+    + cleIdempotence : String
+    + statut : StatutVente
+    --
+    + valider() : Vente
+    + annuler(motif : String) : Vente
+    + rembourser() : Vente
+    + getMontantNet() : Decimal
+  }
+
+  class LigneVente {
+    + produitCode : String
+    + designation : String
+    + quantite : Decimal
+    + prixUnitaireHT : Decimal
+    + tauxTva : Decimal
+    + remisePct : Decimal
+    + montantHT : Decimal
+    + montantTVA : Decimal
+    + lotNumero : String?
+  }
+
+  class PaiementVente {
+    + mode : ModePaiementCaisse
+    + montant : Decimal
+    + devise : String
+    + montantRecu : Decimal
+    + rendu : Decimal
+    + referenceExterne : String?
+  }
+
+  ' ================= COMMANDES =================
+  class CommandeClient <<aggregate root>> {
+    + idCommande : UUID
+    + numero : String
+    + clientCode : String
+    + dateCommande : Date
+    + dateRetrait : Date
+    + montantHT : Decimal
+    + montantTTC : Decimal
+    + acompte : Decimal
+    + statut : StatutCommandeClient
+    --
+    + confirmer() : CommandeClient
+    + encaisserAcompte(montant : Decimal) : CommandeClient
+    + demarrerProduction() : CommandeClient
+    + marquerPrete() : CommandeClient
+    + retirer() : CommandeClient
+    + annuler(motif : String) : CommandeClient
+    + getSoldeDu() : Decimal
+  }
+
+  class LigneCommandeClient {
+    + produitCode : String
+    + designation : String
+    + quantite : Decimal
+    + prixUnitaire : Decimal
+    + personnalisation : String?
+  }
+
+  class Acompte {
+    + montant : Decimal
+    + date : Date
+    + mode : ModePaiementCaisse
+    + reference : String?
+  }
+
+  ' ================= RELATIONS =================
+  SessionCaisse "1" o-- "0..*" Vente : encaisse >
+  Vente "1" *-- "1..*" LigneVente : composee de >
+  Vente "1" o-- "1..*" PaiementVente : reglee par >
+  CommandeClient "1" *-- "1..*" LigneCommandeClient : composee de >
+  CommandeClient "1" o-- "0..*" Acompte : garantie par >
+
+  ' ---- References inter-services ----
+  class Produit <<boulangerie-produit>> #transparent
+  class ClientBoulangerie <<boulangerie-clients>> #transparent
+  class CarteFidelite <<boulangerie-clients>> #transparent
+  class MouvementFidelite <<boulangerie-clients>> #transparent
+  class Article <<fin-stock>> #transparent
+  class MouvementStock <<fin-stock>> #transparent
+  class Tiers <<fin-facturation>> #transparent
+  class Facture <<fin-facturation>> #transparent
+  class Reglement <<fin-facturation>> #transparent
+  class Ecriture <<fin-compta-core>> #transparent
+
+  LigneVente "0..*" --> "1" Produit : vend >
+  Vente "0..*" --> "0..1" ClientBoulangerie : identifie >
+  Vente ..> CarteFidelite : credite >
+  Vente ..> MouvementFidelite : genere >
+  Vente ..> MouvementStock : sortie vente >
+  Vente ..> Ecriture : comptabilise via evenement >
+  CommandeClient "0..*" --> "1" ClientBoulangerie : commande par >
+  CommandeClient ..> Facture : facture >
+  PaiementVente ..> Reglement : rapproche >
+}
+
+note bottom of Vente
+  <b>ENCAISSEMENT IDEMPOTENT</b>
+  Toute vente porte une cleIdempotence.
+  Un rejeu de la meme vente ne cree
+  qu un seul ticket et un seul mouvement
+  de stock. Le numero de ticket est
+  sequentiel par jour et par session.
+end note
+
+note bottom of Vente
+  <b>LE MODULE N ENCAISSE PAS EN COMPTA</b>
+  La vente encaisse au comptoir, puis
+  emet vente.encaissee vers
+  fin-compta-core, qui produit
+  l ecriture :
+    especes : D 571 / C 701
+    credit  : D 411 / C 701
+  La cle derive de sourceId et
+  numeroTicket : deux emissions du
+  meme ticket ne creent qu une ecriture.
+end note
+
+note bottom of CommandeClient
+  <b>ACOMPTE ET SOLDE</b>
+  Une commande avec acompte ne se retire
+  que si le solde est nul. Un acompte
+  non rembourse suit une commande
+  annulee : il devient un avoir sur le
+  tiers, jamais une modification
+  retroactive de la vente.
+end note
+
+note bottom of SessionCaisse
+  <b>CLOTURE DE CAISSE</b>
+  ecart = montantCompte - totalEncaisse.
+  Une session non cloturee bloque
+  l ouverture de la suivante : la
+  caisse est reproductible et auditable.
+end note
+
+@enduml

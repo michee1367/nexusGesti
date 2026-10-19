@@ -1,0 +1,108 @@
+@startuml uc-boulangerie-clients-service
+skinparam packageStyle rectangle
+skinparam actorStyle stickman
+left to right direction
+
+title Diagramme des Cas d'Utilisation - boulangerie-clients-service (Clients et Fidelite)
+
+actor "Vendeur" as VEN
+actor "Caissier" as CAIS
+actor "Client" as CLI
+actor "Gerant" as GER
+actor "Systeme Facturation" as FACT
+actor "Systeme Vente" as VTE
+actor "Systeme Notifications" as NOT
+
+rectangle "Plateforme NexusGesti" {
+  rectangle "boulangerie-clients-service" {
+
+    ' ---- Clients ----
+    usecase "Creer un client" as UC_CreerClient
+    usecase "Rechercher un client" as UC_Rechercher
+    usecase "Modifier un client" as UC_ModifierClient
+    usecase "Desactiver un client" as UC_Desactiver
+    usecase "Gerer le consentement marketing" as UC_Consentement
+
+    ' ---- Fidelite ----
+    usecase "Definir un programme de fidelite" as UC_Programme
+    usecase "Definir une regle de gain" as UC_Regle
+    usecase "Activer un programme" as UC_ActiverProgramme
+    usecase "Figer un programme" as UC_FigerProgramme
+    usecase "Emettre une carte" as UC_EmettreCarte
+    usecase "Crediter des points" as UC_Crediter
+    usecase "Utiliser des points" as UC_Utiliser
+    usecase "Consulter le solde de points" as UC_Solde
+    usecase "Expirer des points" as UC_Expirer
+
+    ' ---- Relations ----
+    UC_CreerClient .> UC_Consentement : <<include>>
+    UC_ModifierClient .> UC_Rechercher : <<include>>
+    UC_EmettreCarte .> UC_Rechercher : <<include>>
+    UC_Crediter .> UC_Regle : <<include>>
+    UC_Crediter .> UC_Solde : <<include>>
+    UC_Utiliser .> UC_Solde : <<include>>
+    UC_Utiliser .> UC_Rechercher : <<include>>
+    UC_ActiverProgramme .> UC_FigerProgramme : <<require>>
+    UC_Programme .> UC_Regle : <<include>>
+    UC_Expirer .> UC_FigerProgramme : <<require>>
+  }
+}
+
+VEN --> UC_CreerClient
+VEN --> UC_Rechercher
+VEN --> UC_EmettreCarte
+VEN --> UC_Solde
+CAIS --> UC_Crediter
+CAIS --> UC_Utiliser
+CAIS --> UC_Solde
+CLI --> UC_Solde
+CLI --> UC_Consentement
+GER --> UC_Programme
+GER --> UC_Regle
+GER --> UC_ActiverProgramme
+GER --> UC_FigerProgramme
+GER --> UC_Desactiver
+GER --> UC_ModifierClient
+FACT --> UC_CreerClient
+VTE --> UC_Crediter
+VTE --> UC_Utiliser
+NOT --> UC_Expirer
+
+note bottom of UC_CreerClient
+  <b>UN CLIENT, UN TIERS</b>
+  Le client boulangerie porte la
+  relation commerciale et la fidelite.
+  Le Tiers, propriete de
+  fin-facturation, porte l identite
+  comptable et le credit. La creation
+  du tiers reste au service de
+  facturation, jamais dupliquee ici.
+end note
+
+note bottom of UC_Crediter
+  <b>POINTS SUR VENTE ENCAISSEE</b>
+  Les points ne sont credites que sur
+  une vente VALIDEE et non remboursee.
+  Un retour genere un mouvement
+  d annulation : le solde n est jamais
+  fausse par un gain annule.
+end note
+
+note bottom of UC_FigerProgramme
+  <b>AUCUNE VALEUR EN DUR</b>
+  Taux de gain, montant minimum,
+  plafonds et duree de validite sont
+  versionnes. Une correction cree une
+  nouvelle version : les points deja
+  attribues gardent les regles du
+  programme dont ils sont issus.
+end note
+
+note bottom of UC_Expirer
+  <b>EXPIRATION TRACEE</b>
+  L expiration emet un mouvement
+  EXPIRATION : un solde n est jamais
+  diminue sans trace opposable.
+end note
+
+@enduml

@@ -1,0 +1,186 @@
+@startuml modele-boulangerie-produit-service
+hide empty members
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+
+title Modele de classes - boulangerie-produit-service (Catalogue, Gammes et Recettes)
+
+package "boulangerie-produit-service" {
+
+  ' ================= CATALOGUE =================
+  package "catalogue" {
+
+    enum UniteVente {
+      PIECE
+      LOT
+      KG
+      GRAMME
+      TRANCHE
+      SACHET
+      PLATEAU
+    }
+
+    enum Allergene {
+      GLUTEN
+      LACTOSE
+      OEUF
+      ARACHIDE
+      SOJA
+      NOIX
+      POISSON
+      CRUSTACE
+      SESAME
+      SULFITE
+    }
+
+    class Gamme {
+      + code : String
+      + libelle : String
+      + ordre : Integer
+      + actif : Boolean
+    }
+
+    class CategorieProduit {
+      + code : String
+      + libelle : String
+      + ordre : Integer
+      + actif : Boolean
+    }
+
+    class Produit <<aggregate root>> {
+      + code : String
+      + designation : String
+      + gammeCode : String
+      + categorieCode : String
+      + articleCode : String
+      + uniteVente : UniteVente
+      + poidsUnitaireGrammes : Integer?
+      + prixVenteHT : Decimal
+      + tauxTva : Decimal
+      + codeBarre : String?
+      + dlcHeures : Integer?
+      + allergenes : List<Allergene>
+      + vendableAuDetail : Boolean
+      + actif : Boolean
+      --
+      + estFabricable() : Boolean
+      + contientAllergene(a : Allergene) : Boolean
+      + getPrixTTC() : Decimal
+    }
+  }
+
+  ' ================= RECETTES =================
+  package "recettes" {
+
+    enum NatureCout {
+      MATIERE
+      MAIN_OEUVRE
+      ENERGIE
+      EMBALLAGE
+      AMORTISSEMENT
+      AUTRE
+    }
+
+    class FicheRecette <<aggregate root>> {
+      + idRecette : UUID
+      + code : String
+      + produitCode : String
+      + libelle : String
+      + version : Integer
+      + rendementQuantite : Decimal
+      + rendementUnite : UniteVente
+      + tempsPreparationMin : Integer
+      + tempsCuissonMin : Integer
+      + temperatureCuissonC : Integer?
+      + instructions : String
+      + active : Boolean
+      --
+      + activer() : FicheRecette
+      + figer() : FicheRecette
+      + estFigee() : Boolean
+      + ajouterIngredient(i : IngredientRecette) : FicheRecette
+      + getCoutMatiere() : Decimal
+      + getCoutRevient() : Decimal
+      + getBesoinsMatiere(quantite : Decimal) : List<BesoinMatiere>
+    }
+
+    class IngredientRecette {
+      + articleCode : String
+      + libelle : String
+      + quantite : Decimal
+      + unite : UniteStock
+      + tauxPerte : Decimal
+      + ordre : Integer
+      + comptabiliseCout : Boolean
+    }
+
+    class BesoinMatiere {
+      + articleCode : String
+      + libelle : String
+      + quantiteNette : Decimal
+      + quantiteBrute : Decimal
+      + unite : UniteStock
+    }
+
+    class LigneCout {
+      + nature : NatureCout
+      + libelle : String
+      + montant : Decimal
+    }
+  }
+
+  ' ================= RELATIONS =================
+  Gamme "1" o-- "0..*" Produit : regroupe >
+  CategorieProduit "1" o-- "0..*" Produit : classe >
+  Produit "1" o-- "0..*" FicheRecette : est fabrique selon >
+  FicheRecette "1" *-- "1..*" IngredientRecette : composee de >
+  FicheRecette "1" o-- "0..*" LigneCout : valorise >
+  FicheRecette ..> BesoinMatiere : calcule >
+  IngredientRecette ..> BesoinMatiere : contribue >
+
+  ' ---- References inter-services ----
+  class Article <<fin-stock>> #transparent
+  class UniteStock <<fin-stock>> #transparent
+  class TarifArticle <<fin-facturation>> #transparent
+  class GrilleStock <<tenant-service>> #transparent
+
+  Produit "0..*" --> "0..1" Article : reflete >
+  Produit "0..*" -- "0..*" TarifArticle : tarife par >
+  IngredientRecette "0..*" --> "1" Article : consomme >
+  FicheRecette ..> GrilleStock : seuils et rotation >
+  IngredientRecette ..> UniteStock : mesure en >
+}
+
+note bottom of FicheRecette
+  <b>AUCUNE VALEUR EN DUR</b>
+  Rendement, temps de preparation et de
+  cuisson, temperature et taux de perte
+  sont des donnees versionnees. Une
+  correction de recette cree une
+  nouvelle version : les fournees deja
+  lancees gardent leur version d origine.
+end note
+
+note bottom of FicheRecette
+  <b>COUT DE REVIENT</b>
+  cout matiere = somme sur les
+  ingredients de :
+    quantite x prix moyen du depot
+  Le prix moyen vient de fin-stock :
+  il n est jamais stocke ici. Le cout
+  de revient ajoute la main d oeuvre,
+  l energie et l emballage.
+end note
+
+note bottom of Produit
+  <b>PRODUIT vs ARTICLE</b>
+  Le Produit porte le metier (gamme,
+  categories, allergenes, DLC, prix de
+  vente, code-barre). L Article,
+  propriete de fin-stock, porte le
+  stock et la valorisation. Les deux
+  sont lies par articleCode : aucun des
+  deux ne duplique l autre.
+end note
+
+@enduml

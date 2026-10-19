@@ -1,0 +1,186 @@
+@startuml modele-boulangerie-personnel-service
+hide empty members
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+
+title Modele de classes - boulangerie-personnel-service (Employes, Plannings et Paie)
+
+package "boulangerie-personnel-service" {
+
+  ' ================= ENUMS =================
+  enum PosteBoulangerie {
+    BOULANGER
+    PATISSIER
+    CONFISEUR
+    VENDEUR
+    CAISSIER
+    LIVREUR
+    MAGASINIER
+    CHEF_ATELIER
+    GERANT
+  }
+
+  enum TypeContrat {
+    CDI
+    CDD
+    JOURNALIER
+    INTERIM
+    APPRENTI
+  }
+
+  enum StatutEmploye {
+    ACTIF
+    CONGE
+    SUSPENDU
+    SORTI
+  }
+
+  enum StatutPlanning {
+    BROUILLON
+    PUBLIE
+    CLOTURE
+  }
+
+  enum StatutPaie {
+    BROUILLON
+    VALIDEE
+    PAYEE
+  }
+
+  ' ================= EMPLOYE =================
+  class Employe <<aggregate root>> {
+    + matricule : String
+    + nom : String
+    + prenom : String
+    + telephone : String
+    + poste : PosteBoulangerie
+    + statut : StatutEmploye
+    + dateEmbauche : Date
+    + competences : List<String>
+    + tauxHoraire : Decimal
+    --
+    + activer() : Employe
+    + mettreEnConge() : Employe
+    + suspendre(motif : String) : Employe
+    + sortir(motif : String) : Employe
+    + getAnciennete() : Integer
+  }
+
+  class Contrat {
+    + type : TypeContrat
+    + dateDebut : Date
+    + dateFin : Date?
+    + salaireMensuel : Decimal
+    + tauxHoraire : Decimal
+    + heuresHebdomadaires : Integer
+    + actif : Boolean
+  }
+
+  ' ================= PLANNING =================
+  class Planning <<aggregate root>> {
+    + idPlanning : UUID
+    + semaine : Integer
+    + annee : Integer
+    + atelierCode : String
+    + statut : StatutPlanning
+    --
+    + publier() : Planning
+    + cloturer() : Planning
+    + getHeuresPrevues(employeId : UUID) : Decimal
+    + getCouverture(chargeProduction : Decimal) : Decimal
+  }
+
+  class PlageTravail {
+    + employeId : UUID
+    + jour : String
+    + heureDebut : String
+    + heureFin : String
+    + posteCode : String
+    + pauseMin : Integer
+  }
+
+  ' ================= PRESENCE =================
+  class PresenceEmploye {
+    + employeId : UUID
+    + date : Date
+    + heureEntree : DateTime?
+    + heureSortie : DateTime?
+    + heuresTravaillees : Decimal
+    + heuresSup : Decimal
+    + justifie : Boolean
+  }
+
+  ' ================= PAIE =================
+  class PeriodePaie <<aggregate root>> {
+    + idPeriode : UUID
+    + annee : Integer
+    + mois : Integer
+    + dateDebut : Date
+    + dateFin : Date
+    + statut : StatutPaie
+    --
+    + valider() : PeriodePaie
+    + payer() : PeriodePaie
+    + estFigee() : Boolean
+  }
+
+  class FichePaie {
+    + employeId : UUID
+    + periodeId : UUID
+    + heuresNormales : Decimal
+    + heuresSup : Decimal
+    + montantBrut : Decimal
+    + primes : Decimal
+    + retenues : Decimal
+    + netAPayer : Decimal
+  }
+
+  ' ================= RELATIONS =================
+  Employe "1" o-- "0..*" Contrat : lie par >
+  Employe "0..*" o-- "0..*" PlageTravail : planifie >
+  Planning "1" *-- "1..*" PlageTravail : contient >
+  Employe "1" o-- "0..*" PresenceEmploye : pointe >
+  PeriodePaie "1" *-- "1..*" FichePaie : calcule >
+  Employe "1" o-- "0..*" FichePaie : est paye par >
+
+  ' ---- References inter-services ----
+  class PlanProduction <<boulangerie-production>> #transparent
+  class Vente <<boulangerie-vente>> #transparent
+
+  Planning ..> PlanProduction : couvre la charge >
+  FichePaie ..> Vente : primes sur activite >
+}
+
+note bottom of Planning
+  <b>CHARGE DE PRODUCTION</b>
+  Le planning confronte les heures
+  planifiees au PlanProduction : une
+  fournee sans personnel planifie est
+  signalee, jamais silencieusement
+  acceptee.
+end note
+
+note bottom of PresenceEmploye
+  <b>PAS DE POINTAGE SANS PLAGE</b>
+  Un employe sans plage planifiee ne
+  peut pas etre pointe. La presence est
+  rattachee a une plage : elle ne
+  cree pas d heures hors planning.
+end note
+
+note bottom of PeriodePaie
+  <b>PAIE FIGEE</b>
+  valider() fige la periode : une
+  correction posterieure cree une
+  regularisation, jamais une reecriture
+  du bulletin deja paye.
+end note
+
+note bottom of Employe
+  <b>DONNEES PERSONNELLES</b>
+  La paie et les pointages sont des
+  donnees sensibles : toute lecture
+  emet un acces vers audit-service.
+end note
+
+@enduml

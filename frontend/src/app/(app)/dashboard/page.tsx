@@ -23,6 +23,7 @@ const profiles: Record<string, string> = {
   PRIMAIRE: "Primaire",
   SECONDAIRE: "Secondaire",
   UNIVERSITAIRE: "Universitaire",
+  BOULANGERIE: "Boulangerie",
 };
 
 function CardLink({ href, icon: Icon, title, value, hint }: { href: string; icon: typeof Building2; title: string; value: string; hint?: string }) {

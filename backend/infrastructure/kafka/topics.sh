@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
-# Cree les 5 topics d'evenements NexusGesti.
+# Cree les 6 topics d'evenements NexusGesti.
 # Un domaine = un topic. hopital.events porte notamment hopital.acte.facturable,
 # consomme par fin-compta-core pour produire l'ecriture D 411 / C 706.
+# boulangerie.events porte les evenements du domaine boulangerie (vente.encaissee,
+# fournee.validee, mouvement.stock, reception.acceptee...).
 #
 # Bootstrap : kafka:29092 (listener INTERNAL). Depuis un conteneur,
 # "localhost" y resoudrait le conteneur lui-meme, pas le broker.
@@ -17,6 +19,7 @@ TOPICS=(
   "ped.events"
   "hopital.events"
   "fin.events"
+  "boulangerie.events"
   "audit.events"
 )
 

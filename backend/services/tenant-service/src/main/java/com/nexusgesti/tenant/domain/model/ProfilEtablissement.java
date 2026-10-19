@@ -5,5 +5,6 @@ public enum ProfilEtablissement {
     SECONDAIRE,
     SUPERIEUR,
     UNIVERSITAIRE,
-    HOSPITAL
+    HOSPITAL,
+    BOULANGERIE
 }

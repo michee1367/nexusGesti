@@ -13,6 +13,7 @@ enum ProfilEtablissement {
   SUPERIEUR
   UNIVERSITAIRE
   HOSPITAL
+  BOULANGERIE
 }
 
 enum StatutEtablissement {
@@ -112,6 +113,12 @@ enum NatureReferentiel {
   TYPE_ACTE_HOSPITALIER
   TYPE_CHAMBRE
   DELAI_VALIDATION
+  GAMME_PRODUIT
+  CATEGORIE_PRODUIT
+  ALLERGENE
+  TYPE_PERTE
+  MODE_PAIEMENT_CAISSE
+  POSTE_BOULANGERIE
 }
 
 ' ============================================================

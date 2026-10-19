@@ -1,0 +1,9 @@
+package com.nexusgesti.boulangerie.production.adapter.out.persistence;
+
+import com.nexusgesti.boulangerie.production.adapter.out.persistence.entity.PlanProductionEntity;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.util.UUID;
+
+public interface PlanProductionJpaRepository extends JpaRepository<PlanProductionEntity, UUID> {
+}

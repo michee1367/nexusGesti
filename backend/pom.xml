@@ -13,13 +13,14 @@
 
     <!--
       Chaque module est ajoute a la creation de sa brique : la liste ci-dessous
-      reflete l'etat reel du disque, pas le perimetre cible. Cible = 25 services.
+      reflete l'etat reel du disque, pas le perimetre cible. Cible = 31 services.
 
         SOCLE       tenant identity auth notification audit reporting        (8101-8106)
         PEDAGOGIE   structure people enrollment attendance assessment exam fees (8111-8117)
         HOPITAL     patient rdv consultation pharmacie hospitalisation plateau (8121-8126)
         FINANCE     compta-core facturation stock inventaire immobilisation etats (8131-8136)
-    -->
+        BOULANGERIE produit production approvisionnement vente clients personnel (8141-8146)
+      -->
     <modules>
         <module>shared/common-domain</module>
         <module>shared/common-lib</module>
@@ -42,6 +43,9 @@
         <module>services/academic-assessment-service</module>
         <module>services/academic-exam-service</module>
         <module>services/academic-fees-service</module>
+        <!-- BOULANGERIE -->
+        <module>services/boulangerie-produit-service</module>
+        <module>services/boulangerie-production-service</module>
     </modules>
 
     <properties>

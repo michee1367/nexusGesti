@@ -1,0 +1,117 @@
+@startuml sq-boulangerie-approvisionnement-reception
+title Sequence - Du besoin a la reception et au rapprochement facture
+autonumber
+skinparam sequenceMessageAlign center
+
+actor "Magasinier" as MAG
+actor "Gerant" as GER
+participant "boulangerie-production-service" as FOND
+participant "boulangerie-approvisionnement-service" as APPR
+participant "fin-stock" as STK
+participant "tenant-service" as TEN
+participant "fin-facturation-service" as FACT
+participant "audit-service" as AUD
+
+== Etape 1 : Calcul du besoin ==
+
+FOND -> APPR : plan de production\na venir
+APPR -> STK : quantite disponible\net seuil par article
+STK --> APPR : disponible + seuil
+
+APPR -> TEN : regles GrilleStock\n(seuil, delai, reappro)
+TEN --> APPR : seuils versionnes
+
+APPR -> APPR : besoin =\nseuil + consommation prevue\n      - disponible
+
+note over APPR, TEN
+  <b>BESOIN CALCULE, PAS SAISI</b>
+  Le besoin vient des seuils de
+  GrilleStock et du PlanProduction.
+  Aucun seuil n est code en dur :
+  il est versionne dans tenant-service.
+end note
+
+alt Article sous seuil
+  APPR -> GER : alerte de reappro
+end
+
+== Etape 2 : Commande d achat ==
+
+GER -> APPR : creer une commande d achat\n(fournisseur, lignes)
+activate APPR
+
+APPR -> APPR : statut BROUILLON
+APPR -> APPR : calcul montants HT/TVA/TTC
+
+alt Commande non validee
+  APPR -> GER : envoi impossible
+  note right of APPR
+    Une commande non validee ne peut pas
+    etre envoyee au fournisseur :
+    l envoi engage l etablissement.
+  end note
+else Commande validee
+  GER -> APPR : valider() puis envoyer()
+  APPR -> APPR : statut ENVOYEE
+end
+
+deactivate APPR
+
+== Etape 3 : Reception et controle ==
+
+MAG -> APPR : receptionner\n(numero commande, bon de livraison)
+activate APPR
+APPR -> APPR : Reception EN_CONTROLE
+
+MAG -> APPR : saisir les lignes recues\n(article, quantite, lot, peremption)
+
+APPR -> TEN : GrilleStock\nexiger un controle de reception
+TEN --> APPR : oui ou non
+
+alt Controle exige et lot non conforme
+  MAG -> APPR : refuser(motif)
+  APPR -> APPR : statut REFUSEE
+  APPR -> MAG : lot non integre
+  note right of APPR
+    Un lot non conforme ne cree ni Lot
+    ni MouvementStock. Il est refuse,
+    jamais integre puis corrige.
+  end note
+else Controle conforme ou non exige
+  APPR -> STK : MouvementStock\nENTREE_ACHAT\n(article, lot, peremption, prix)
+  STK -> STK : cree le Lot\n+ incremente disponible
+  STK --> APPR : mouvement enregistre
+  APPR -> APPR : statut ACCEPTEE
+end
+
+APPR -> AUD : evenement reception.acceptee\n{commande, lots}
+AUD --> APPR : trace
+deactivate APPR
+
+== Etape 4 : Rapprochement trois voies ==
+
+FACT -> APPR : facture fournisseur recue\n(numero, montant)
+APPR -> FACT : rapprocher commande,\nreception et facture
+FACT -> FACT : concordance quantite et prix
+
+alt Ecart detecte
+  FACT -> GER : litige signale\n(ecart de prix ou de quantite)
+  note right of FACT
+    Un ecart de prix genere un litige,
+    pas un paiement partiel silencieux.
+  end note
+else Concordance
+  FACT -> FACT : facture VALIDEE\nautorisee au reglement
+  FACT -> APPR : commande FACTUREE
+end
+
+note over APPR, FACT
+  <b>RAPPROCHEMENT TROIS VOIES</b>
+  Une facture fournisseur n est reglee
+  qu apres concordance :
+    commande = reception = facture
+  Le tiers fournisseur et le reglement
+  restent propriete de fin-facturation.
+end note
+
+@enduml

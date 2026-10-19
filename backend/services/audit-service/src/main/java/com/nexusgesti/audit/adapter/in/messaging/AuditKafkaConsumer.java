@@ -31,7 +31,7 @@ public class AuditKafkaConsumer {
         this.objectMapper = objectMapper;
     }
 
-    @KafkaListener(topics = {"tenant.events", "ped.events", "hopital.events", "fin.events"},
+    @KafkaListener(topics = {"tenant.events", "ped.events", "hopital.events", "fin.events", "boulangerie.events"},
                    groupId = "audit-service")
     public void consume(@Payload String message,
                         @Header(KafkaHeaders.RECEIVED_TOPIC) String topic) {

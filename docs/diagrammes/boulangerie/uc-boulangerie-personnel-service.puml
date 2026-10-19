@@ -1,0 +1,120 @@
+@startuml uc-boulangerie-personnel-service
+skinparam packageStyle rectangle
+skinparam actorStyle stickman
+left to right direction
+
+title Diagramme des Cas d'Utilisation - boulangerie-personnel-service (Employes et Plannings)
+
+actor "Gerant" as GER
+actor "Chef d atelier" as CHEF
+actor "Employe" as EMP
+actor "Comptable" as COM
+actor "Systeme Production" as PROD
+actor "Systeme Audit" as AUD
+actor "Systeme Notifications" as NOT
+
+rectangle "Plateforme NexusGesti" {
+  rectangle "boulangerie-personnel-service" {
+
+    ' ---- Employes ----
+    usecase "Creer un employe" as UC_CreerEmploye
+    usecase "Gerer un contrat" as UC_Contrat
+    usecase "Modifier un employe" as UC_ModifierEmploye
+    usecase "Suspendre un employe" as UC_Suspendre
+    usecase "Sortir un employe" as UC_Sortir
+    usecase "Consulter une fiche employe" as UC_Fiche
+
+    ' ---- Planning ----
+    usecase "Planifier une semaine" as UC_Planifier
+    usecase "Affecter un poste" as UC_AffecterPoste
+    usecase "Publier un planning" as UC_Publier
+    usecase "Cloturer un planning" as UC_CloturerPlanning
+    usecase "Verifier la couverture de production" as UC_Couverture
+
+    ' ---- Presence ----
+    usecase "Pointer une entree" as UC_Entree
+    usecase "Pointer une sortie" as UC_Sortie
+    usecase "Justifier une absence" as UC_Justifier
+    usecase "Consulter les heures travaillees" as UC_Heures
+
+    ' ---- Paie ----
+    usecase "Ouvrir une periode de paie" as UC_OuvrirPaie
+    usecase "Calculer les fiches de paie" as UC_CalcPaie
+    usecase "Valider une periode de paie" as UC_ValiderPaie
+    usecase "Payer une periode de paie" as UC_Payer
+    usecase "Consulter un bulletin" as UC_Bulletin
+
+    ' ---- Relations ----
+    UC_CreerEmploye .> UC_Contrat : <<include>>
+    UC_Planifier .> UC_Couverture : <<include>>
+    UC_AffecterPoste .> UC_Fiche : <<include>>
+    UC_Sortie .> UC_Entree : <<require>>
+    UC_Heures .> UC_Justifier : <<extend>>
+    UC_CalcPaie .> UC_Heures : <<include>>
+    UC_ValiderPaie .> UC_CalcPaie : <<require>>
+    UC_Payer .> UC_ValiderPaie : <<require>>
+    UC_Publier .> UC_Couverture : <<require>>
+    UC_CloturerPlanning .> UC_Publier : <<require>>
+  }
+}
+
+GER --> UC_CreerEmploye
+GER --> UC_Contrat
+GER --> UC_ModifierEmploye
+GER --> UC_Suspendre
+GER --> UC_Sortir
+GER --> UC_Planifier
+GER --> UC_Publier
+GER --> UC_CloturerPlanning
+GER --> UC_OuvrirPaie
+GER --> UC_ValiderPaie
+GER --> UC_Payer
+CHEF --> UC_Planifier
+CHEF --> UC_AffecterPoste
+CHEF --> UC_Publier
+CHEF --> UC_Couverture
+CHEF --> UC_Heures
+EMP --> UC_Entree
+EMP --> UC_Sortie
+EMP --> UC_Justifier
+EMP --> UC_Heures
+EMP --> UC_Fiche
+COM --> UC_CalcPaie
+COM --> UC_Bulletin
+PROD --> UC_Couverture
+AUD --> UC_Fiche
+NOT --> UC_Publier
+
+note bottom of UC_Couverture
+  <b>CHARGE DE PRODUCTION</b>
+  Le planning confronte les heures
+  planifiees au PlanProduction : une
+  fournee sans personnel planifie est
+  signalee, jamais silencieusement
+  acceptee.
+end note
+
+note bottom of UC_Sortie
+  <b>PAS DE POINTAGE SANS PLAGE</b>
+  Un employe sans plage planifiee ne
+  peut pas etre pointe. La presence est
+  rattachee a une plage : elle ne cree
+  pas d heures hors planning.
+end note
+
+note bottom of UC_ValiderPaie
+  <b>PAIE FIGEE</b>
+  valider() fige la periode : une
+  correction posterieure cree une
+  regularisation, jamais une reecriture
+  du bulletin deja paye.
+end note
+
+note bottom of UC_Bulletin
+  <b>DONNEES SENSIBLES</b>
+  La paie et les pointages sont des
+  donnees sensibles : toute lecture emet
+  un acces vers audit-service.
+end note
+
+@enduml

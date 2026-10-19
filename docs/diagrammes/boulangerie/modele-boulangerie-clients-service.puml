@@ -1,0 +1,151 @@
+@startuml modele-boulangerie-clients-service
+hide empty members
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+
+title Modele de classes - boulangerie-clients-service (Clients et Fidelite)
+
+package "boulangerie-clients-service" {
+
+  ' ================= ENUMS =================
+  enum StatutCarte {
+    ACTIVE
+    SUSPENDUE
+    EXPIREE
+    PERDUE
+    CLOTUREE
+  }
+
+  enum SensPoints {
+    GAIN
+    UTILISATION
+    EXPIRATION
+    AJUSTEMENT
+    ANNULATION
+  }
+
+  ' ================= CLIENT =================
+  class ClientBoulangerie <<aggregate root>> {
+    + code : String
+    + tiersCode : String
+    + nom : String
+    + prenom : String?
+    + telephone : String
+    + email : String?
+    + dateNaissance : Date?
+    + preferences : String?
+    + consentementMarketing : Boolean
+    + actif : Boolean
+    --
+    + activer() : ClientBoulangerie
+    + desactiver(motif : String) : ClientBoulangerie
+    + accepterMarketing() : ClientBoulangerie
+    + retirerMarketing() : ClientBoulangerie
+  }
+
+  ' ================= FIDELITE =================
+  class ProgrammeFidelite <<aggregate root>> {
+    + idProgramme : UUID
+    + code : String
+    + libelle : String
+    + version : Integer
+    + dateActivation : Date
+    + active : Boolean
+    + figee : Boolean
+    + dureeValiditeJours : Integer
+    + plafondPoints : Integer?
+    --
+    + activer() : ProgrammeFidelite
+    + figer() : ProgrammeFidelite
+    + estFigee() : Boolean
+    + calculerPoints(montant : Decimal) : Integer
+  }
+
+  class RegleFidelite {
+    + libelle : String
+    + categorieCode : String?
+    + produitCode : String?
+    + tauxGain : Decimal
+    + montantMin : Decimal
+    + plafond : Integer?
+    + priorite : Integer
+    + active : Boolean
+    + sApplique(client : String, categorie : String) : Boolean
+  }
+
+  class CarteFidelite {
+    + numero : String
+    + clientCode : String
+    + programmeCode : String
+    + soldePoints : Integer
+    + dateEmission : Date
+    + dateExpiration : Date?
+    + statut : StatutCarte
+    --
+    + estValide(date : Date) : Boolean
+    + getPointsUtilisables() : Integer
+  }
+
+  class MouvementFidelite {
+    + idMouvement : UUID
+    + carteNumero : String
+    + sens : SensPoints
+    + points : Integer
+    + date : DateTime
+    + venteOrigineId : UUID?
+    + motif : String
+  }
+
+  ' ================= RELATIONS =================
+  ClientBoulangerie "1" o-- "0..*" CarteFidelite : detient >
+  ProgrammeFidelite "1" o-- "0..*" RegleFidelite : compose de >
+  ProgrammeFidelite "1" o-- "0..*" CarteFidelite : emet >
+  CarteFidelite "1" *-- "0..*" MouvementFidelite : enregistre >
+
+  ' ---- References inter-services ----
+  class Tiers <<fin-facturation>> #transparent
+  class Vente <<boulangerie-vente>> #transparent
+
+  ClientBoulangerie "0..*" --> "0..1" Tiers : correspond a >
+  MouvementFidelite ..> Vente : origine >
+}
+
+note bottom of ProgrammeFidelite
+  <b>AUCUNE VALEUR EN DUR</b>
+  Taux de gain, montant minimum,
+  plafonds et duree de validite sont
+  des donnees versionnees. Une
+  correction du programme cree une
+  nouvelle version : les points deja
+  attribues gardent les regles du
+  programme dont ils sont issus.
+end note
+
+note bottom of MouvementFidelite
+  <b>POINTS GAGNES SEULEMENT SI ENCAISSE</b>
+  Les points ne sont attribues que sur
+  une vente VALIDEE et non remboursee.
+  Un retour genere un mouvement ANNULATION
+  inverse : le solde ne peut pas devenir
+  negatif sur un gain annule.
+end note
+
+note bottom of CarteFidelite
+  <b>EXPIRATION</b>
+  Le solde de points expire selon le
+  programme versionne. L expiration emet
+  un mouvement EXPIRATION : le solde
+  n est jamais decroisse sans trace.
+end note
+
+note bottom of ClientBoulangerie
+  <b>UN CLIENT, UN TIERS</b>
+  Le client boulangerie porte la relation
+  commerciale et la fidelite. Le Tiers,
+  propriete de fin-facturation, porte
+  l identite comptable et le credit.
+  La creation du tiers reste au service
+  de facturation, jamais dupliquee ici.
+end note
+
+@enduml

@@ -1,0 +1,187 @@
+@startuml modele-boulangerie-production-service
+hide empty members
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+
+title Modele de classes - boulangerie-production-service (Plans, Fournees et Pertes)
+
+package "boulangerie-production-service" {
+
+  ' ================= ENUMS =================
+  enum StatutPlan {
+    BROUILLON
+    VALIDE
+    LANCE
+    CLOTURE
+  }
+
+  enum StatutFournee {
+    PLANIFIEE
+    EN_COURS
+    CUITE
+    VALIDEE
+    ANNULEE
+  }
+
+  enum TypePerte {
+    PATE_PERDUE
+    CUISSON_RATEE
+    CASSE
+    INVENDU_DESTRUCTION
+    DEMARQUE
+    ECHANTILLON
+  }
+
+  enum StatutFour {
+    DISPONIBLE
+    EN_PRODUCTION
+    MAINTENANCE
+    HORS_SERVICE
+  }
+
+  ' ================= PLANIFICATION =================
+  class PlanProduction <<aggregate root>> {
+    + idPlan : UUID
+    + date : Date
+    + atelierCode : String
+    + statut : StatutPlan
+    + besoinsMatiere : List<BesoinMatiere>
+    --
+    + planifier() : PlanProduction
+    + calculerBesoins() : List<BesoinMatiere>
+    + valider() : PlanProduction
+    + lancer() : PlanProduction
+    + cloturer() : PlanProduction
+    + estEquilibre(disponibles : Map) : Boolean
+  }
+
+  class LignePlan {
+    + recetteCode : String
+    + versionRecette : Integer
+    + quantitePrevue : Decimal
+    + produitCode : String
+    + fourCode : String?
+  }
+
+  ' ================= FABRICATION =================
+  class Fournee <<aggregate root>> {
+    + idFournee : UUID
+    + numero : String
+    + recetteCode : String
+    + versionRecette : Integer
+    + produitCode : String
+    + fourCode : String
+    + operateurId : UUID
+    + dateDebut : DateTime
+    + dateFin : DateTime?
+    + quantitePrevue : Decimal
+    + quantiteRealisee : Decimal
+    + statut : StatutFournee
+    --
+    + lancer() : Fournee
+    + enregistrerRendu(quantite : Decimal) : Fournee
+    + cuire() : Fournee
+    + valider() : Fournee
+    + annuler(motif : String) : Fournee
+    + getRendement() : Decimal
+    + getEcartMatiere() : Decimal
+  }
+
+  class LigneConsommation {
+    + articleCode : String
+    + lotNumero : String?
+    + quantiteTheorique : Decimal
+    + quantiteReelle : Decimal
+    + prixMoyen : Decimal
+  }
+
+  class PerteProduction {
+    + idPerte : UUID
+    + fourneeId : UUID
+    + articleCode : String
+    + quantite : Decimal
+    + typePerte : TypePerte
+    + motif : String
+    + valorisation : Decimal
+  }
+
+  ' ================= MOYENS =================
+  class Atelier {
+    + code : String
+    + libelle : String
+    + responsableId : UUID
+    + actif : Boolean
+  }
+
+  class Four {
+    + code : String
+    + libelle : String
+    + atelierCode : String
+    + capacitePlateaux : Integer
+    + statut : StatutFour
+    --
+    + estDisponible() : Boolean
+  }
+
+  ' ================= RELATIONS =================
+  PlanProduction "1" *-- "1..*" LignePlan : planifie >
+  PlanProduction "1" o-- "0..*" Fournee : donne lieu a >
+  Fournee "1" *-- "1..*" LigneConsommation : consomme >
+  Fournee "1" o-- "0..*" PerteProduction : constate >
+  Atelier "1" o-- "0..*" Four : dispose de >
+  Atelier "1" o-- "0..*" PlanProduction : heberge >
+  Four "1" o-- "0..*" Fournee : cuit >
+  LignePlan ..> FicheRecette : reprend >
+  Fournee ..> BesoinMatiere : evalue les ecarts >
+
+  ' ---- References inter-services ----
+  class FicheRecette <<boulangerie-produit>> #transparent
+  class BesoinMatiere <<boulangerie-produit>> #transparent
+  class Produit <<boulangerie-produit>> #transparent
+  class Article <<fin-stock>> #transparent
+  class Lot <<fin-stock>> #transparent
+  class MouvementStock <<fin-stock>> #transparent
+  class GrilleStock <<tenant-service>> #transparent
+
+  LigneConsommation "0..*" --> "1" Article : porte sur >
+  LigneConsommation "0..*" --> "0..1" Lot : preleve >
+  Fournee ..> MouvementStock : entree production et sortie consommation >
+  PerteProduction ..> MouvementStock : sortie perte >
+  Fournee ..> Produit : produit >
+  PlanProduction ..> GrilleStock : seuils et reappro >
+}
+
+note bottom of Fournee
+  <b>BESOIN MATIERE</b>
+  besoin = somme sur les ingredients de :
+    quantite x (1 + tauxPerte)
+              x quantitePrevue
+
+  Le besoin est calcule depuis la
+  version de recette figee au lancement.
+  Une fournee non validee ne sort rien
+  du stock : un produit non valide n est
+  pas vendable.
+end note
+
+note bottom of Fournee
+  <b>RENDEMENT ET ECARTS</b>
+  rendement = quantiteRealisee
+              / quantitePrevue
+  ecart matiere = quantiteTheorique
+                  - quantiteReelle
+  Un ecart au-dela de la tolerance de
+  GrilleStock declare une perte : il
+  n est jamais efface silencieusement.
+end note
+
+note bottom of PerteProduction
+  <b>TOUTE PERTE EST VALORISEE</b>
+  Une perte porte sa valorisation au
+  prix moyen du depot. Casse, cuisson
+  ratee et invendu detruit ne partagent
+  pas le meme compte : la nature prime
+  sur le montant.
+end note
+
+@enduml

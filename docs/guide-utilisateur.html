@@ -91,7 +91,7 @@
     <p>De l'ouverture de session aux écrans de gestion scolaire — un mode d'emploi pas-à-pas, avec toutes les définitions.</p>
     <div class="meta">
       Domaine couvert : Socle + Pédagogie (Structure, Personnes, Inscriptions, Assiduité, Évaluations, Examens, Frais)<br>
-      Console : <strong>http://localhost:3001</strong> &nbsp;·&nbsp; Version du guide : 1.1
+      Console : <strong>http://localhost:3001</strong> &nbsp;·&nbsp; Version du guide : 1.2
     </div>
   </section>
 
@@ -104,12 +104,13 @@
       <li><a href="#s3">Accès et identifiants</a></li>
       <li><a href="#s4">Glossaire</a></li>
       <li><a href="#s5">Se connecter</a></li>
-      <li><a href="#s6">Le multi-établissement</a></li>
-      <li><a href="#s7">Les écrans, pas-à-pas</a></li>
-      <li><a href="#s8">Ce que fait chaque profil</a></li>
-      <li><a href="#s9">Messages d'erreur fréquents</a></li>
-      <li><a href="#s10">Dépannage express</a></li>
-      <li><a href="#s11">Parcours de découverte conseillé</a></li>
+      <li><a href="#s6">Créer son établissement en libre-service</a></li>
+      <li><a href="#s7">Le multi-établissement</a></li>
+      <li><a href="#s8">Les écrans, pas-à-pas</a></li>
+      <li><a href="#s9">Ce que fait chaque profil</a></li>
+      <li><a href="#s10">Messages d'erreur fréquents</a></li>
+      <li><a href="#s11">Dépannage express</a></li>
+      <li><a href="#s12">Parcours de découverte conseillé</a></li>
     </ol>
   </nav>
 
@@ -131,6 +132,7 @@
     <li><span class="badge admin">ADMIN</span> &nbsp; peut tout voir <strong>et</strong> tout modifier.</li>
     <li><span class="badge customer">CUSTOMER</span> &nbsp; peut <strong>consulter</strong> les données (lecture seule).</li>
   </ul>
+  <p>Depuis votre navigateur, la plateforme s'ouvre sur une <strong>page d'accueil publique</strong> qui présente les trois domaines. Elle propose deux points d'entrée : <strong>Connexion</strong> (compte existant, §5) et <strong>Créer mon établissement</strong> (inscription en libre-service, §6).</p>
 
   <!-- ================= 2 ================= -->
   <h1 id="s2">2. Démarrage</h1>
@@ -142,7 +144,7 @@
       <code>./scripts/front-up.sh</code> &nbsp;ou&nbsp; <code>./scripts/front-up.ps1</code></li>
   </ol>
   <div class="callout">
-    Au premier lancement, le backend compile puis démarre <strong>9 services</strong> et l'infrastructure
+    Au premier lancement, le backend compile puis démarre <strong>14 services</strong> et l'infrastructure
     (base PostgreSQL, Redis, Kafka, Keycloak, Prometheus, Grafana, Vault). Comptez quelques minutes.
     Quand les scripts affichent « UP », ouvrez le navigateur.
   </div>
@@ -179,7 +181,7 @@
       <tr><td><strong>Profil d'établissement</strong></td><td>Type d'école : <code>PRIMAIRE</code>, <code>SECONDAIRE</code> ou <code>UNIVERSITAIRE</code>. Il active ou non certains modules (ECTS, délibération par UE…).</td></tr>
       <tr><td><strong>Année scolaire</strong></td><td>Période de référence (ex. 2025-2026). Contient des <em>périodes</em> (trimestres, semestres). Peut être <em>prévue</em>, <em>ouverte</em> puis <em>clôturée</em>.</td></tr>
       <tr><td><strong>Grille</strong></td><td>Jeu de règles versionnées (notes, stock, conformité). S'<em>active</em>, se <em>fige</em> (figement = modification interdite) et se <em>duplique</em>.</td></tr>
-      <tr><td><strong>Référentiel</strong></td><td>Liste de valeurs de référence (types de frais, motifs d'absence, mentions…). Un établissement possède 17 référentiels créés automatiquement à sa création.</td></tr>
+      <tr><td><strong>Référentiel</strong></td><td>Liste de valeurs de référence (types de frais, motifs d'absence, mentions…). Un établissement possède 23 référentiels créés automatiquement à sa création.</td></tr>
       <tr><td><strong>Niveau</strong></td><td>Étape du parcours (1re, 2e, 6e, L1, M1…). Chaque niveau appartient à un <em>cycle</em>.</td></tr>
       <tr><td><strong>Classe</strong></td><td>Groupe d'élèves suivant un enseignement, rattaché à un niveau et une année. États : <em>ouverte</em>, <em>en cours</em>, <em>clôturée</em>.</td></tr>
       <tr><td><strong>Salle</strong></td><td>Espace physique (salle de cours, laboratoire, amphithéâtre…).</td></tr>
@@ -231,15 +233,34 @@
   <!-- ================= 5 ================= -->
   <h1 id="s5">5. Se connecter</h1>
   <ol class="step">
-    <li>Ouvrez <strong>http://localhost:3001</strong>.</li>
-    <li>Saisissez l'adresse e-mail et le mot de passe (voir §3).</li>
-    <li>Cliquez sur <strong>Se connecter</strong>.</li>
+    <li>Ouvrez <strong>http://localhost:3001</strong> : vous arrivez sur la <strong>page d'accueil publique</strong>.</li>
+    <li>Cliquez sur <strong>Connexion</strong>.</li>
+    <li><strong>Étape 1 — votre adresse email.</strong> Saisissez l'email du compte puis cliquez sur <strong>Continuer</strong>. La plateforme retrouve automatiquement l'établissement associé et l'affiche.</li>
+    <li><strong>Étape 2 — votre mot de passe.</strong> Saisissez le mot de passe puis cliquez sur <strong>Se connecter</strong>.</li>
     <li>Vous arrivez sur le <strong>Tableau de bord</strong>.</li>
   </ol>
   <p>En haut à droite, l'en-tête affiche votre nom, votre établissement courant et un bouton de déconnexion. Le menu de gauche (barre latérale) donne accès à toutes les sections.</p>
+  <div class="callout">
+    <strong>Repli manuel :</strong> si l'email n'est pas reconnu, le lien « Saisir l'identifiant de l'établissement manuellement » permet de coller l'UUID fourni par l'administrateur (voir §3). En démonstration : <code>11111111-2222-3333-4444-555555555570</code>.
+  </div>
+  <div class="callout">
+    <strong>Pas encore de compte ?</strong> Le lien « Créer un établissement » mène à l'inscription en libre-service (voir §6).
+  </div>
 
   <!-- ================= 6 ================= -->
-  <h1 id="s6">6. Le multi-établissement</h1>
+  <h1 id="s6">6. Créer son établissement en libre-service</h1>
+  <p>Pas besoin de passer par un administrateur pour ouvrir un établissement. Depuis la <strong>page d'accueil</strong> (<code>http://localhost:3001</code>), le bouton <strong>Créer mon établissement</strong> ouvre le formulaire d'inscription (page <code>/signup</code>).</p>
+  <ol class="step">
+    <li>Renseignez <strong>votre compte</strong> : prénom, nom, adresse email, téléphone au format international (ex. <code>+243810000000</code>), code pays sur 2 lettres (ex. <code>CD</code>), mot de passe (au moins 12 caractères, avec majuscule, minuscule, chiffre et caractère spécial) et acceptez les conditions.</li>
+    <li>Renseignez <strong>votre établissement</strong> : <strong>dénomination</strong>, <strong>code</strong> et <strong>profil</strong> (<code>PRIMAIRE</code>, <code>SECONDAIRE</code> ou <code>UNIVERSITAIRE</code>).</li>
+    <li>Validez. Le compte administrateur et l'espace de l'établissement sont créés, puis vous êtes <strong>automatiquement connecté</strong> et redirigé vers le <strong>Tableau de bord</strong>.</li>
+  </ol>
+  <div class="callout">
+    <strong>Sans installation :</strong> l'inscription suffit. Le nouvel établissement est créé en statut <em>préparation</em> et ses <strong>23 référentiels</strong> sont générés automatiquement. Vous en devenez administrateur (<span class="badge admin">ADMIN</span>).
+  </div>
+
+  <!-- ================= 7 ================= -->
+  <h1 id="s7">7. Le multi-établissement</h1>
   <p>Toutes les données appartiennent à <strong>un</strong> établissement. La plateforme sait toujours « qui regarde » grâce à un jeton transmis à chaque requête (<code>X-Tenant-Id</code>).</p>
   <ul>
     <li>Un <strong>sélecteur de tenant</strong> (dans l'en-tête) permet de basculer d'un établissement à l'autre.</li>
@@ -247,13 +268,14 @@
   </ul>
   <div class="callout warn">Si vous ne voyez pas les données attendues, vérifiez d'abord <strong>quel établissement est sélectionné</strong> en haut de l'écran.</div>
 
-  <!-- ================= 7 ================= -->
-  <h1 id="s7">7. Les écrans, pas-à-pas</h1>
+  <!-- ================= 8 ================= -->
+  <h1 id="s8">8. Les écrans, pas-à-pas</h1>
+  <div class="callout"><strong>Saisie « par nom ».</strong> La console ne demande jamais d'identifiant technique. Les rattachements (classe, salle, matière, cours, enseignant, année, période…) se choisissent dans des <strong>listes déroulantes qui affichent le nom</strong>, et les tableaux restituent ces libellés.</div>
 
-  <h2>7.1 Tableau de bord</h2>
+  <h2>8.1 Tableau de bord</h2>
   <p>Vue synthétique de l'établissement. Point de départ de l'application.</p>
 
-  <h2>7.2 Établissement</h2>
+  <h2>8.2 Établissement</h2>
   <p>Réglages de l'identité de l'école et de son organisation :</p>
   <ul>
     <li><strong>Identité</strong> : nom, sigle, profil, coordonnées.</li>
@@ -263,7 +285,7 @@
     <li><strong>Presets de grilles</strong> : modèles de grilles réutilisables.</li>
   </ul>
 
-  <h2>7.3 Années scolaires</h2>
+  <h2>8.3 Années scolaires</h2>
   <ol class="step">
     <li>Créez une <strong>année</strong> (code, libellé, dates, type).</li>
     <li>Ajoutez des <strong>périodes</strong> (trimestres / semestres).</li>
@@ -271,16 +293,16 @@
     <li><strong>Clôturez</strong> une période ou l'année en fin de cycle.</li>
   </ol>
 
-  <h2>7.4 Grilles</h2>
+  <h2>8.4 Grilles</h2>
   <p>Trois familles : <strong>notation</strong>, <strong>stock</strong>, <strong>conformité</strong>. Sur chaque grille : <strong>Activer</strong>, <strong>Figer</strong> (définitif), <strong>Dupliquer</strong>. La page de détail <em>Grille &gt; [type]</em> permet de saisir barèmes, seuils de décision, mentions, règles d'assiduité…</p>
 
-  <h2>7.5 Référentiels</h2>
+  <h2>8.5 Référentiels</h2>
   <p>17 conteneurs de valeurs. Dépliez un conteneur, ajoutez des <strong>éléments</strong> (code, libellé, valeur) ou <strong>désactivez</strong> un élément.</p>
 
-  <h2>7.6 Écrans réservés ADMIN</h2>
+  <h2>8.6 Écrans réservés ADMIN</h2>
   <p>Visibles uniquement avec le profil ADMIN :</p>
   <ul>
-    <li><strong>Tenants</strong> : créer / gérer un établissement. À la création, les 17 référentiels sont générés automatiquement.</li>
+    <li><strong>Tenants</strong> : créer / gérer un établissement. À la création, les 23 référentiels sont générés automatiquement.</li>
     <li><strong>Utilisateurs</strong> : comptes, rôles, cycle de vie (activer / désactiver / suspendre), réinitialisation du mot de passe.</li>
     <li><strong>Rôles &amp; permissions</strong> : définir des rôles et leurs permissions.</li>
     <li><strong>Notifications</strong> : consulter / envoyer des notifications.</li>
@@ -288,7 +310,7 @@
     <li><strong>Rapports</strong> : demander un rapport (PDF / CSV / JSON) et le télécharger.</li>
   </ul>
 
-  <h2>7.7 Pédagogie · Structure</h2>
+  <h2>8.7 Pédagogie · Structure</h2>
   <p>Menu de gauche, groupe <strong>« Pédagogie · Structure »</strong> :</p>
   <ul>
     <li><strong>Niveaux, Matières, Salles, Créneaux, Régimes horaires</strong> : listes simples avec <em>Nouveau / Modifier / Supprimer</em>.</li>
@@ -297,7 +319,7 @@
     <li><strong>Emplois du temps</strong> : créez un emploi du temps, ouvrez-le, ajoutez des <em>plages</em> (cours + créneau + salle + enseignant), consultez les <em>conflits</em>, puis <em>Publier</em>.</li>
   </ul>
 
-  <h2>7.8 Pédagogie · Personnes</h2>
+  <h2>8.8 Pédagogie · Personnes</h2>
   <ul>
     <li><strong>Élèves</strong> : liste + bouton « œil » pour ouvrir la fiche. La fiche comporte 6 onglets : <em>Identité, Dossier, Inscriptions, Congés, Sanctions, Parents</em>. Actions <em>Transférer</em> et <em>Radier</em> en haut.</li>
     <li><strong>Parents</strong> : parents et tuteurs.</li>
@@ -306,7 +328,7 @@
   </ul>
   <div class="callout"><strong>Astuce :</strong> les listes disposent d'une <strong>barre de recherche</strong> (matricule, nom, code…). Le nombre d'éléments est affiché sous le tableau.</div>
 
-  <h2>7.9 Pédagogie · Inscriptions</h2>
+  <h2>8.9 Pédagogie · Inscriptions</h2>
   <ul>
     <li><strong>Inscriptions UE</strong> : rattachez un élève à une UE, puis <em>Valider</em> (ou refuser / mettre en liste d'attente / annuler).</li>
     <li><strong>Groupes TD/TP</strong> : créez des groupes (code, capacité) et affectez des <em>membres</em> ; un groupe plein refuse les ajouts. Ouvrez / clôturez un groupe depuis sa fiche.</li>
@@ -314,7 +336,7 @@
     <li><strong>Admissions</strong> : évaluez un <em>candidat</em> (éligible ou non) et consultez le <em>parcours</em> d'un élève (crédits acquis, taux de progression).</li>
   </ul>
 
-  <h2>7.10 Pédagogie · Assiduité</h2>
+  <h2>8.10 Pédagogie · Assiduité</h2>
   <ul>
     <li><strong>Séances</strong> : créez une séance (classe, cours, date, créneau), puis <em>Démarrer</em>, <em>Terminer</em>, <em>Reporter</em> ou <em>Annuler</em>.</li>
     <li><strong>Feuilles d'appel</strong> : ouvrez une feuille, <em>pointez</em> les présences, marquez une <em>absence</em> ou un <em>retard</em>, puis <em>Soumettre</em>, <em>Valider</em>, <em>Clôturer</em>. Après clôture, la feuille n'est plus pointable.</li>
@@ -322,14 +344,14 @@
     <li><strong>Assiduité</strong> : consultez le <em>suivi d'un élève</em>, le <em>taux d'une classe</em> ou le <em>registre</em>.</li>
   </ul>
 
-  <h2>7.11 Pédagogie · Évaluations</h2>
+  <h2>8.11 Pédagogie · Évaluations</h2>
   <ul>
     <li><strong>Évaluations</strong> : créez une évaluation (<em>Ouvrir</em>), saisissez les <em>notes</em> sur la feuille, marquez une <em>absence</em>, puis <em>Clôturer</em> et <em>Publier</em>.</li>
     <li><strong>Bulletins</strong> : créez un bulletin, ajoutez des <em>lignes</em>, puis <em>Calculer</em>, <em>Publier</em>, <em>Générer</em>, <em>Signer</em>. Une <em>rectification</em> crée une nouvelle version. Les <em>coupons</em> se tirent depuis le bulletin.</li>
     <li><strong>Moyennes &amp; classement</strong> : calculez la moyenne d'une <em>évaluation</em>, d'un <em>élève</em>, ou le <em>classement</em> d'une classe.</li>
   </ul>
 
-  <h2>7.12 Pédagogie · Examens</h2>
+  <h2>8.12 Pédagogie · Examens</h2>
   <ul>
     <li><strong>Sessions d'examen</strong> : créez une session puis <em>Programmer</em>, <em>Ouvrir</em>, <em>Clôturer</em>, <em>Annuler</em> ; ajoutez-y <em>épreuves</em>, <em>créneaux</em> et <em>convocations</em> (+ notifier).</li>
     <li><strong>Délibérations</strong> : créez une délibération, <em>Ouvrir</em>, saisissez les <em>décisions</em> (individuelles ou par UE), puis <em>Clôturer</em>. Les <em>résultats</em> se publient depuis la décision.</li>
@@ -337,7 +359,7 @@
     <li><strong>Procès-verbaux</strong> : <em>Soumettre</em>, <em>Signer</em>, <em>Homologuer</em> (ou <em>Contester</em>).</li>
   </ul>
 
-  <h2>7.13 Pédagogie · Frais</h2>
+  <h2>8.13 Pédagogie · Frais</h2>
   <ul>
     <li><strong>Grilles tarifaires</strong> : créez une grille, ajoutez des <em>lignes</em> et des <em>réductions</em>, puis <em>Activer</em>, <em>Figer</em> (lecture seule) ou <em>Archiver</em>.</li>
     <li><strong>Avis de paiement</strong> : <em>Émettre</em> un avis, appliquer une <em>remise</em>, consulter les <em>échéances</em>, <em>Annuler</em> si besoin.</li>
@@ -347,7 +369,7 @@
   </ul>
 
   <!-- ================= 8 ================= -->
-  <h1 id="s8">8. Ce que peut faire chaque profil</h1>
+  <h1 id="s9">9. Ce que peut faire chaque profil</h1>
   <table>
     <thead><tr><th>Action</th><th><span class="badge admin">ADMIN</span></th><th><span class="badge customer">CUSTOMER</span></th></tr></thead>
     <tbody>
@@ -360,7 +382,7 @@
   <p>En tant que CUSTOMER, les boutons de création / modification n'apparaissent pas : c'est normal.</p>
 
   <!-- ================= 9 ================= -->
-  <h1 id="s9">9. Messages d'erreur fréquents</h1>
+  <h1 id="s10">10. Messages d'erreur fréquents</h1>
   <table>
     <thead><tr><th style="width:30%">Message / code</th><th>Signification</th><th>Que faire</th></tr></thead>
     <tbody>
@@ -381,7 +403,7 @@
   </table>
 
   <!-- ================= 10 ================= -->
-  <h1 id="s10">10. Dépannage express</h1>
+  <h1 id="s11">11. Dépannage express</h1>
   <ul>
     <li><strong>La page ne charge rien / erreur réseau</strong> : vérifiez que le backend et la console tournent (§2), et que la console est bien sur <strong>http://localhost:3001</strong>.</li>
     <li><strong>Je ne vois pas un menu</strong> : certaines entrées (surtout « Plateforme ») sont réservées à ADMIN.</li>
@@ -390,7 +412,7 @@
   </ul>
 
   <!-- ================= 11 ================= -->
-  <h1 id="s11">11. Parcours de découverte conseillé</h1>
+  <h1 id="s12">12. Parcours de découverte conseillé</h1>
   <ol class="step">
     <li>Se connecter en <span class="badge admin">ADMIN</span>.</li>
     <li><strong>Établissement</strong> : vérifier l'identité et créer un <strong>site</strong>.</li>

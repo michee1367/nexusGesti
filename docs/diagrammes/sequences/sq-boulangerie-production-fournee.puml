@@ -1,0 +1,116 @@
+@startuml sq-boulangerie-production-fournee
+title Sequence - Du plan de production a la fournee valorisee
+autonumber
+skinparam sequenceMessageAlign center
+
+actor "Chef d atelier" as CHEF
+actor "Boulanger" as BOUL
+participant "boulangerie-produit-service" as PROD
+participant "boulangerie-production-service" as FOND
+participant "fin-stock" as STK
+participant "tenant-service" as TEN
+participant "audit-service" as AUD
+
+== Etape 1 : Planification ==
+
+CHEF -> FOND : planifier(date, atelier,\nlignes {recette, quantite})
+FOND -> PROD : resoudre les recettes\n(code, version active)
+PROD --> FOND : besoins matiere\npar recette figee
+
+FOND -> STK : disponibilite des articles\n(quantite, seuil)
+STK --> FOND : disponible + seuil
+
+FOND -> FOND : besoin = somme sur ingredients\nde quantite x (1 + tauxPerte)\n    x quantitePrevue
+
+alt Besoin non couvert
+  FOND -> CHEF : plan non equilibre\ningredient manquant signale
+  note right of FOND
+    Une fournee ne peut pas etre lancee
+    si un ingredient est en rupture.
+    La quantite vient de la recette figee,
+    jamais d une valeur saisie a la main.
+  end note
+else Besoin couvert
+  CHEF -> FOND : valider() puis lancer()
+end
+
+== Etape 2 : Lancement de la fournee ==
+
+BOUL -> FOND : lancer fournee\n(recette, four, operateur)
+activate FOND
+
+FOND -> FOND : Fournee PLANIFIEE -> EN_COURS\nversion de recette figee au lancement
+
+FOND -> STK : verifier lot disponible (FEFO)
+STK --> FOND : lotNumero + prix moyen
+
+FOND -> STK : MouvementStock\nSORTIE_CONSOMMATION\nserviceOrigine = BOULANGERIE
+STK -> STK : decrement disponible du lot
+STK --> FOND : mouvement enregistre
+
+note over FOND, STK
+  <b>CONSOMMATION TRACEE PAR LOT</b>
+  Chaque ingredient sort un lot precis.
+  Un lot preleve n est plus re-livrable :
+  la quantite consommee est opposable
+  en cas d ecart de rendement.
+end note
+
+BOUL -> FOND : declarer consommation reelle\n(lignes article, quantite)
+FOND -> FOND : ecartMatiere =\ntheorique - reel
+
+== Etape 3 : Cuisson et rendu ==
+
+BOUL -> FOND : cuire()
+FOND -> FOND : statut CUITE
+
+BOUL -> FOND : enregistrerRendu(quantiteRealisee)
+FOND -> FOND : rendement =\nrealisee / prevue
+
+alt Rendement sous tolerance
+  FOND -> FOND : PerteProduction\n(typePerte valorisee)
+  note right of FOND
+    Pate perdue, cuisson ratee, casse :
+    chaque nature a son compte.
+    La perte est valorisee au prix moyen,
+    jamais effacee silencieusement.
+  end note
+end
+
+== Etape 4 : Validation et entree en stock ==
+
+BOUL -> FOND : valider()
+
+alt Fournee non validee
+  FOND -> BOUL : aucun produit fini en stock
+  note right of FOND
+    Tant que la fournee n est pas validee,
+    aucun MouvementStock ENTREE_PRODUCTION
+    n est cree : le produit fini n est
+    pas vendable et n apparait pas en stock.
+  end note
+else Fournee validee
+  FOND -> STK : MouvementStock\nENTREE_PRODUCTION\n(produit fini, lot, quantite)
+  STK -> STK : incremente disponible
+  FOND -> STK : MouvementStock\nSORTIE_PERTE (valorisee)
+  FOND -> AUD : evenement fournee.validee\n{recette, version, rendement}
+  AUD --> FOND : trace
+end
+
+deactivate FOND
+
+== Etape 5 : Cout de revient ==
+
+CHEF -> PROD : consulter le cout de revient\n(recette, version)
+PROD -> PROD : cout matiere =\nsomme quantite x prix moyen
+PROD -> PROD : + main d oeuvre, energie,\nemballage (LigneCout)
+PROD --> CHEF : cout de revient par unite
+
+note over PROD
+  <b>AUCUNE VALEUR EN DUR</b>
+  Le prix moyen vient de fin-stock.
+  Une variation du prix d achat se
+  repercute sans modifier le service.
+end note
+
+@enduml

@@ -1,0 +1,137 @@
+@startuml uc-boulangerie-production-service
+skinparam packageStyle rectangle
+skinparam actorStyle stickman
+left to right direction
+
+title Diagramme des Cas d'Utilisation - boulangerie-production-service (Plans et Fournees)
+
+actor "Chef d atelier" as CHEF
+actor "Boulanger" as BOUL
+actor "Patissier" as PAT
+actor "Gerant" as GER
+actor "Magasinier" as MAG
+actor "Systeme Stock" as STK
+actor "Systeme Notifications" as NOT
+
+rectangle "Plateforme NexusGesti" {
+  rectangle "boulangerie-production-service" {
+
+    ' ---- Planification ----
+    usecase "Planifier la production" as UC_Planifier
+    usecase "Calculer les besoins matiere" as UC_Besoins
+    usecase "Verifier la disponibilite" as UC_Dispo
+    usecase "Valider le plan" as UC_ValiderPlan
+    usecase "Lancer le plan" as UC_LancerPlan
+    usecase "Cloturer le plan" as UC_CloturerPlan
+
+    ' ---- Fabrication ----
+    usecase "Lancer une fournee" as UC_LancerFournee
+    usecase "Declarer la consommation" as UC_Consommation
+    usecase "Enregistrer le rendu" as UC_Rendu
+    usecase "Cuire la fournee" as UC_Cuire
+    usecase "Valider une fournee" as UC_ValiderFournee
+    usecase "Annuler une fournee" as UC_AnnulerFournee
+
+    ' ---- Pertes ----
+    usecase "Declarer une perte" as UC_Perte
+    usecase "Valoriser une perte" as UC_ValoriserPerte
+    usecase "Declarer un invendu" as UC_Invendu
+
+    ' ---- Moyens ----
+    usecase "Declarer un atelier" as UC_Atelier
+    usecase "Declarer un four" as UC_Four
+    usecase "Mettre un four en maintenance" as UC_Maintenance
+    usecase "Consulter le rendement" as UC_Rendement
+
+    ' ---- Relations ----
+    UC_Planifier .> UC_Besoins : <<include>>
+    UC_Planifier .> UC_Dispo : <<include>>
+    UC_ValiderPlan .> UC_Dispo : <<require>>
+    UC_LancerPlan .> UC_LancerFournee : <<include>>
+    UC_LancerFournee .> UC_Consommation : <<include>>
+    UC_LancerFournee .> UC_Dispo : <<require>>
+    UC_ValiderFournee .> UC_Rendu : <<include>>
+    UC_ValiderFournee .> UC_Consommation : <<require>>
+    UC_Perte .> UC_ValoriserPerte : <<include>>
+    UC_Invendu .> UC_Perte : <<extend>>
+    UC_AnnulerFournee .> UC_Perte : <<extend>>
+    UC_Rendement .> UC_ValiderFournee : <<require>>
+    UC_LancerFournee .> UC_Maintenance : <<extend>>
+  }
+}
+
+CHEF --> UC_Planifier
+CHEF --> UC_ValiderPlan
+CHEF --> UC_LancerPlan
+CHEF --> UC_CloturerPlan
+CHEF --> UC_ValiderFournee
+CHEF --> UC_Rendement
+CHEF --> UC_Atelier
+CHEF --> UC_Four
+CHEF --> UC_Maintenance
+BOUL --> UC_LancerFournee
+BOUL --> UC_Consommation
+BOUL --> UC_Cuire
+BOUL --> UC_Rendu
+BOUL --> UC_Perte
+PAT --> UC_LancerFournee
+PAT --> UC_Cuire
+PAT --> UC_Rendu
+GER --> UC_Rendement
+GER --> UC_CloturerPlan
+MAG --> UC_Consommation
+MAG --> UC_Invendu
+STK --> UC_Dispo
+STK --> UC_Besoins
+STK --> UC_Consommation
+NOT --> UC_Maintenance
+NOT --> UC_Dispo
+
+note bottom of UC_Dispo
+  <b>DISPONIBILITE AVANT LANCEMENT</b>
+  Le lancement d une fournee interroge
+  fin-stock : un ingredient sous seuil
+  ou en rupture bloque le lancement ou
+  le signale selon GrilleStock.
+  La quantite de chaque ingredient
+  vient de la recette figee.
+end note
+
+note bottom of UC_Consommation
+  <b>CONSOMMATION TRACEE</b>
+  Chaque consommation sort un lot precis
+  du depot (fin-stock) :
+    MouvementStock SORTIE_CONSOMMATION
+  Un reactif ou une matiere prelevee
+  n est pas re-livrable. La cle derive
+  de la fournee et de l article.
+end note
+
+note bottom of UC_ValiderFournee
+  <b>RIEN N ENTRE AVANT VALIDATION</b>
+  Une fournee non validee ne cree aucun
+  MouvementStock ENTREE_PRODUCTION : le
+  produit fini n est pas vendable et
+  n apparait pas en stock.
+end note
+
+note bottom of UC_Perte
+  <b>PERTE = MOUVEMENT VALORISE</b>
+  Casse, cuisson ratee, pate perdue et
+  invendu detruit creent un
+  MouvementStock SORTIE_PERTE valorise
+  au prix moyen. La nature de la perte
+  determine le compte, pas seulement le
+  montant.
+end note
+
+note bottom of UC_ValoriserPerte
+  <b>COUT DE REVIENT</b>
+  La valorisation utilise le prix moyen
+  du depot (fin-stock). Aucun prix n est
+  code en dur : une variation du prix
+  d achat se repercute sans modification
+  du service.
+end note
+
+@enduml

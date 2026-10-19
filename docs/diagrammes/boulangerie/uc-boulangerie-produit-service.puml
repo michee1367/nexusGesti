@@ -1,0 +1,119 @@
+@startuml uc-boulangerie-produit-service
+skinparam packageStyle rectangle
+skinparam actorStyle stickman
+left to right direction
+
+title Diagramme des Cas d'Utilisation - boulangerie-produit-service (Catalogue et Recettes)
+
+actor "Gerant" as GER
+actor "Chef d atelier" as CHEF
+actor "Boulanger" as BOUL
+actor "Patissier" as PAT
+actor "Vendeur" as VEN
+actor "Comptable" as COM
+actor "Systeme Stock" as STK
+
+rectangle "Plateforme NexusGesti" {
+  rectangle "boulangerie-produit-service" {
+
+    ' ---- Catalogue ----
+    usecase "Creer une gamme" as UC_CreerGamme
+    usecase "Creer une categorie" as UC_CreerCategorie
+    usecase "Creer un produit" as UC_CreerProduit
+    usecase "Associer un article de stock" as UC_AssocierArticle
+    usecase "Definir un code-barre" as UC_CodeBarre
+    usecase "Declarer un allergene" as UC_Allergene
+    usecase "Definir une DLC" as UC_DLC
+    usecase "Definir un prix de vente" as UC_PrixVente
+    usecase "Activer un produit" as UC_ActiverProduit
+
+    ' ---- Recettes ----
+    usecase "Saisir une recette" as UC_SaisirRecette
+    usecase "Ajouter un ingredient" as UC_AjouterIngredient
+    usecase "Calculer le cout de revient" as UC_CoutRevient
+    usecase "Calculer les besoins matiere" as UC_Besoins
+    usecase "Activer une recette" as UC_ActiverRecette
+    usecase "Figer une recette" as UC_FigerRecette
+    usecase "Consulter une recette" as UC_ConsulterRecette
+
+    ' ---- Relations ----
+    UC_CreerProduit .> UC_AssocierArticle : <<include>>
+    UC_CreerProduit .> UC_PrixVente : <<include>>
+    UC_ActiverProduit .> UC_PrixVente : <<require>>
+    UC_CodeBarre .> UC_CreerProduit : <<extend>>
+    UC_Allergene .> UC_CreerProduit : <<extend>>
+    UC_DLC .> UC_CreerProduit : <<extend>>
+    UC_SaisirRecette .> UC_AjouterIngredient : <<include>>
+    UC_SaisirRecette .> UC_CoutRevient : <<include>>
+    UC_ActiverRecette .> UC_Besoins : <<include>>
+    UC_FigerRecette .> UC_ConsulterRecette : <<require>>
+    UC_Besoins .> UC_ConsulterRecette : <<include>>
+  }
+}
+
+GER --> UC_CreerGamme
+GER --> UC_CreerCategorie
+GER --> UC_ActiverProduit
+GER --> UC_PrixVente
+GER --> UC_ActiverRecette
+GER --> UC_CoutRevient
+CHEF --> UC_CreerProduit
+CHEF --> UC_PrixVente
+CHEF --> UC_SaisirRecette
+CHEF --> UC_AjouterIngredient
+CHEF --> UC_ActiverRecette
+CHEF --> UC_FigerRecette
+CHEF --> UC_Besoins
+BOUL --> UC_ConsulterRecette
+BOUL --> UC_Besoins
+PAT --> UC_SaisirRecette
+PAT --> UC_AjouterIngredient
+PAT --> UC_ConsulterRecette
+VEN --> UC_CreerProduit
+VEN --> UC_CodeBarre
+VEN --> UC_Allergene
+VEN --> UC_DLC
+COM --> UC_CoutRevient
+STK --> UC_AssocierArticle
+STK --> UC_Besoins
+
+note bottom of UC_AssocierArticle
+  <b>PRODUIT ET ARTICLE</b>
+  Un produit boulangerie est lie a un
+  article de fin-stock par articleCode.
+  Le produit porte le metier (gamme,
+  allergenes, DLC, prix de vente) ;
+  l article porte le stock et la
+  valorisation. Aucun des deux ne
+  duplique l autre.
+end note
+
+note bottom of UC_CoutRevient
+  <b>AUCUNE VALEUR EN DUR</b>
+  Le cout matiere est calcule au prix
+  moyen du depot, fourni par fin-stock.
+  Le cout de revient ajoute la main
+  d oeuvre, l energie et l emballage :
+  il n est jamais saisi a la main.
+end note
+
+note bottom of UC_FigerRecette
+  <b>VERSIONNEMENT</b>
+  figer() verrouille la recette. Une
+  correction posterieure cree une nouvelle
+  version : les fournees en cours gardent
+  la version qu elles ont utilisee.
+end note
+
+note bottom of UC_Besoins
+  <b>BESOIN MATIERE</b>
+  besoin = somme sur les ingredients de :
+    quantite x (1 + taux perte)
+              x quantite produite
+
+  Le besoin alimente le plan de
+  production ; il ne cree aucun
+  mouvement de stock a lui seul.
+end note
+
+@enduml

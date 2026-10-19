@@ -1,0 +1,154 @@
+@startuml uc-boulangerie-vente-service
+skinparam packageStyle rectangle
+skinparam actorStyle stickman
+left to right direction
+
+title Diagramme des Cas d'Utilisation - boulangerie-vente-service (Point de vente et Commandes)
+
+actor "Vendeur" as VEN
+actor "Caissier" as CAIS
+actor "Client" as CLI
+actor "Gerant" as GER
+actor "Livreur" as LIV
+actor "Systeme Stock" as STK
+actor "Systeme Comptable" as COM
+actor "Systeme Fidelite" as FID
+actor "Systeme Notifications" as NOT
+
+rectangle "Plateforme NexusGesti" {
+  rectangle "boulangerie-vente-service" {
+
+    ' ---- Caisse ----
+    usecase "Ouvrir une session de caisse" as UC_OuvrirCaisse
+    usecase "Cloturer une session de caisse" as UC_CloturerCaisse
+    usecase "Consulter les encaissements du jour" as UC_EncaisJour
+
+    ' ---- Vente comptoir ----
+    usecase "Enregistrer une vente" as UC_Vente
+    usecase "Scanner un produit" as UC_Scanner
+    usecase "Appliquer une remise" as UC_Remise
+    usecase "Encaisser une espece" as UC_Espece
+    usecase "Encaisser une carte" as UC_Carte
+    usecase "Encaisser une mobile money" as UC_MobileMoney
+    usecase "Editer un ticket" as UC_Ticket
+    usecase "Annuler une vente" as UC_AnnulerVente
+    usecase "Rembourser une vente" as UC_Rembourser
+
+    ' ---- Fidelite ----
+    usecase "Crediter des points" as UC_CrediterPoints
+    usecase "Utiliser des points" as UC_UtiliserPoints
+
+    ' ---- Commandes ----
+    usecase "Saisir une commande client" as UC_Commande
+    usecase "Encaisser un acompte" as UC_Acompte
+    usecase "Demarrer la production" as UC_DemarrerProd
+    usecase "Preparer une commande" as UC_Preparer
+    usecase "Retirer une commande" as UC_Retirer
+    usecase "Annuler une commande" as UC_AnnulerCommande
+
+    ' ---- Relations ----
+    UC_OuvrirCaisse .> UC_CloturerCaisse : <<extend>>
+    UC_Vente .> UC_Scanner : <<extend>>
+    UC_Vente .> UC_Remise : <<extend>>
+    UC_Vente .> UC_CrediterPoints : <<include>>
+    UC_Vente .> UC_Espece : <<extend>>
+    UC_Vente .> UC_Carte : <<extend>>
+    UC_Vente .> UC_MobileMoney : <<extend>>
+    UC_Vente .> UC_Ticket : <<include>>
+    UC_UtiliserPoints .> UC_Vente : <<extend>>
+    UC_AnnulerVente .> UC_Rembourser : <<extend>>
+    UC_Commande .> UC_Acompte : <<include>>
+    UC_Retirer .> UC_Preparer : <<include>>
+    UC_Retirer .> UC_Acompte : <<require>>
+    UC_AnnulerCommande .> UC_Acompte : <<extend>>
+    UC_EncaisJour .> UC_CloturerCaisse : <<require>>
+  }
+}
+
+VEN --> UC_Vente
+VEN --> UC_Scanner
+VEN --> UC_Remise
+VEN --> UC_Ticket
+VEN --> UC_Commande
+VEN --> UC_Preparer
+CAIS --> UC_OuvrirCaisse
+CAIS --> UC_CloturerCaisse
+CAIS --> UC_Espece
+CAIS --> UC_Carte
+CAIS --> UC_AnnulerVente
+CAIS --> UC_Rembourser
+CAIS --> UC_EncaisJour
+CLI --> UC_Vente
+CLI --> UC_CrediterPoints
+CLI --> UC_UtiliserPoints
+CLI --> UC_Commande
+CLI --> UC_Acompte
+CLI --> UC_Retirer
+GER --> UC_Remise
+GER --> UC_EncaisJour
+GER --> UC_AnnulerCommande
+LIV --> UC_Retirer
+STK --> UC_Vente
+STK --> UC_Retirer
+COM --> UC_Vente
+FID --> UC_CrediterPoints
+FID --> UC_UtiliserPoints
+NOT --> UC_Preparer
+
+note bottom of UC_Vente
+  <b>ENCAISSEMENT IDEMPOTENT</b>
+  Toute vente porte une cle
+  d idempotence. Un rejeu ne cree qu un
+  ticket, un mouvement de stock et une
+  ecriture. Le numero de ticket est
+  sequentiel par jour et par session.
+end note
+
+note bottom of UC_Vente
+  <b>LE MODULE N ENCAISSE PAS EN COMPTA</b>
+  La vente encaisse au comptoir, puis
+  emet vente.encaissee vers
+  fin-compta-core, qui produit :
+    especes : D 571 / C 701
+    credit  : D 411 / C 701
+  La cle derive de sourceId et
+  numeroTicket.
+end note
+
+note bottom of UC_CloturerCaisse
+  <b>CLOTURE DE CAISSE</b>
+  ecart = montant compte - total
+  encaisse. Une session non cloturee
+  bloque l ouverture de la suivante :
+  la caisse reste reproductible et
+  auditable.
+end note
+
+note bottom of UC_CrediterPoints
+  <b>POINTS SUR VENTE ENCAISSEE</b>
+  Les points ne sont credites que sur
+  une vente VALIDEE et non remboursee.
+  Un retour genere un mouvement
+  d annulation : le solde ne peut pas
+  etre fausse par un gain annule.
+end note
+
+note bottom of UC_Retirer
+  <b>ACOMPTE ET SOLDE</b>
+  Une commande avec acompte ne se
+  retire que si le solde est nul. Une
+  commande annulee transforme l acompte
+  en avoir sur le tiers, jamais en
+  modification retroactive.
+end note
+
+note bottom of UC_Scanner
+  <b>VENTE AU DETAIL</b>
+  Le produit vendu provient du
+  catalogue boulangerie. La sortie de
+  stock correspondante est un
+  MouvementStock SORTIE_VENTE chez
+  fin-stock, jamais un decompte local.
+end note
+
+@enduml

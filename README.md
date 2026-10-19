@@ -1,6 +1,6 @@
 # NexusGesti
 
-Plateforme de gestion SaaS multi-tenant pour **établissements scolaires**, **hôpitaux** et **cabinets de gestion financière OHADA**.
+Plateforme de gestion SaaS multi-tenant pour **établissements scolaires**, **hôpitaux**, **boulangeries / pâtisseries** et **cabinets de gestion financière OHADA**.
 
 ## Modélisation
 
@@ -13,7 +13,8 @@ docs/
 │   ├── pedagogie/    7 modèles + 7 cas d'utilisation
 │   ├── hopital/      6 modèles + 6 cas d'utilisation
 │   ├── finance/      6 modèles + 6 cas d'utilisation
-│   ├── sequences/    6 diagrammes de séquence des flux critiques
+│   ├── boulangerie/  6 modèles + 6 cas d'utilisation
+│   ├── sequences/    9 diagrammes de séquence des flux critiques
 │   └── rendu/        SVG générés
 └── architecture.md
 ```
@@ -24,8 +25,9 @@ docs/
 | Pédagogie | `structure`, `people`, `enrollment`, `attendance`, `assessment`, `exam`, `fees` | 14 |
 | Hôpital | `patient`, `rdv`, `consultation`, `pharmacie`, `hospitalisation`, `plateau-technique` | 12 |
 | Finance | `compta-core`, `facturation`, `stock`, `inventaire`, `immobilisation`, `etats` | 12 |
-| Séquences | paiement, délibération, rappel de lot, clôture d'exercice, séjour, acte → facture | 6 |
-| **Total** | **25 services** | **56** |
+| Boulangerie | `produit`, `production`, `vente`, `clients`, `approvisionnement`, `personnel` | 12 |
+| Séquences | paiement, délibération, rappel de lot, clôture d'exercice, séjour, acte → facture, fournée, vente/caisse, réception | 9 |
+| **Total** | **31 services** | **71** |
 
 ## Générer les SVG
 
@@ -49,5 +51,7 @@ java -jar plantuml.jar -Playout=smetana -tsvg -o docs/diagrammes/rendu docs/diag
 **Cash et inter-service** — un paiement d'un coupon produit un reçu, un coupon de paiement et une imputation comptable, validés par empreinte SHA-256 et clé d'idempotence.
 
 **Conformité OHADA/SYSCOHADA RDC** — devise fonctionnelle USD, taux moyen pondéré, plan de comptes par classes 1 à 7, états certifiés, FEC.
+
+**Boulangerie adossée au socle finance** — le domaine `boulangerie` porte le métier (catalogue, recettes, fournées, caisse, fidélité, achats, personnel) et **réutilise la finance** : `fin-stock` porte les articles, lots et mouvements, `fin-facturation` les tiers et factures, `fin-compta-core` les écritures. Le module de vente n'encaisse rien en comptabilité : il émet un événement (`vente.encaissee`) et la comptabilité produit l'écriture (espèces `D 571 / C 701`, crédit `D 411 / C 701`).
 
 **Traçabilité** — toute action sensible émet un événement vers `audit-service`.

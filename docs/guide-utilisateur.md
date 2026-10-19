@@ -29,6 +29,10 @@ Il existe **deux profils d'utilisateur** :
 - **ADMIN** : peut tout voir **et** tout modifier.
 - **CUSTOMER** : peut **consulter** les données (lecture seule).
 
+Depuis votre navigateur, la plateforme s'ouvre sur une **page d'accueil publique** qui présente les trois
+domaines. Elle propose deux points d'entrée : **Connexion** (compte existant, §5) et **Créer mon
+établissement** (inscription en libre-service, §6).
+
 ---
 
 ## 2. Démarrage (technique, une seule fois)
@@ -44,7 +48,7 @@ Depuis la racine du projet, deux scripts démarrent tout :
 ./scripts/front-up.sh          # ou front-up.ps1
 ```
 
-Au premier lancement, le backend compile et démarre **9 services** + l'infrastructure
+Au premier lancement, le backend compile et démarre **14 services** + l'infrastructure
 (base PostgreSQL, Redis, Kafka, Keycloak, Prometheus, Grafana, Vault). Comptez quelques minutes.
 
 Quand les scripts affichent « UP », ouvrez le navigateur.
@@ -75,7 +79,7 @@ Quand les scripts affichent « UP », ouvrez le navigateur.
 
 **Établissement (tenant)** : l'école ou l'université. Chaque établissement est un « locataire »
 isolé de la plateforme. On change d'établissement via le **sélecteur de tenant** en haut de
-l'écran (voir §6).
+l'écran (voir §7).
 
 **Profil d'établissement** : type d'école — `PRIMAIRE`, `SECONDAIRE` ou `UNIVERSITAIRE`. Il
 active ou non certains modules (ECTS, délibération par UE…).
@@ -88,7 +92,7 @@ active ou non certains modules (ECTS, délibération par UE…).
 se *duplique*.
 
 **Référentiel** : liste de valeurs de référence (types de frais, motifs d'absence, mentions…).
-Un établissement possède 17 référentiels, créés automatiquement à sa création.
+Un établissement possède 23 référentiels, créés automatiquement à sa création.
 
 **Niveau** : étape du parcours (1re, 2e, 6e, L1, M1…). Chaque niveau appartient à un **cycle**
 (primaire, secondaire, supérieur…).
@@ -201,17 +205,46 @@ une **remise**.
 
 ## 5. Se connecter
 
-1. Ouvrez **http://localhost:3001**.
-2. Saisissez l'adresse e-mail et le mot de passe (voir §3).
-3. Cliquez sur **Se connecter**.
-4. Vous arrivez sur le **Tableau de bord**.
+1. Ouvrez **http://localhost:3001** : vous arrivez sur la **page d'accueil publique**.
+2. Cliquez sur **Connexion**.
+3. **Étape 1 — votre adresse email.** Saisissez l'email du compte puis cliquez sur **Continuer**.
+   La plateforme retrouve automatiquement l'établissement associé et l'affiche.
+4. **Étape 2 — votre mot de passe.** Saisissez le mot de passe puis cliquez sur **Se connecter**.
+5. Vous arrivez sur le **Tableau de bord**.
 
 En haut à droite, l'en-tête affiche votre nom, votre établissement courant et un bouton de
 déconnexion. Le menu de gauche (barre latérale) donne accès à toutes les sections.
 
+> **Repli manuel :** si l'email n'est pas reconnu, le lien « Saisir l'identifiant de l'établissement
+> manuellement » permet de coller l'UUID fourni par l'administrateur (voir §3 pour le compte de
+> démonstration). En démonstration : `11111111-2222-3333-4444-555555555570`.
+
+> **Pas encore de compte ?** Le lien « Créer un établissement » mène à l'inscription en libre-service
+> (voir §6).
+
 ---
 
-## 6. Comprendre le multi-établissement
+## 6. Créer son établissement en libre-service
+
+Pas besoin de passer par un administrateur pour ouvrir un établissement. Depuis la **page d'accueil**
+(`http://localhost:3001`), le bouton **Créer mon établissement** ouvre le formulaire d'inscription (page
+`/signup`).
+
+1. Renseignez **votre compte** : prénom, nom, adresse email, téléphone au format international
+   (ex. `+243810000000`), code pays sur 2 lettres (ex. `CD`), mot de passe (au moins 12 caractères,
+   avec majuscule, minuscule, chiffre et caractère spécial) et acceptez les conditions.
+2. Renseignez **votre établissement** : **dénomination**, **code** et **profil** (`PRIMAIRE`,
+   `SECONDAIRE` ou `UNIVERSITAIRE`).
+3. Validez. Le compte administrateur et l'espace de l'établissement sont créés, puis vous êtes
+   **automatiquement connecté** et redirigé vers le **Tableau de bord**.
+
+> **Sans installation :** l'inscription suffit. Le nouvel établissement est créé en statut
+> *préparation* et ses **23 référentiels** sont générés automatiquement. Vous en devenez
+> administrateur (rôle ADMIN).
+
+---
+
+## 7. Comprendre le multi-établissement
 
 Toutes les données appartiennent à **un** établissement. La plateforme sait toujours « qui
 regarde » grâce à un **jeton transmis à chaque requête** (`X-Tenant-Id`).
@@ -226,12 +259,16 @@ regarde » grâce à un **jeton transmis à chaque requête** (`X-Tenant-Id`).
 
 ---
 
-## 7. Les écrans, pas-à-pas
+## 8. Les écrans, pas-à-pas
 
-### 7.1 Tableau de bord
+> **Saisie « par nom ».** La console ne demande jamais d'identifiant technique. Les rattachements
+> (classe, salle, matière, cours, enseignant, année, période…) se choisissent dans des **listes
+> déroulantes qui affichent le nom**, et les tableaux restituent ces libellés.
+
+### 8.1 Tableau de bord
 Vue synthétique de l'établissement. Point de départ.
 
-### 7.2 Établissement (`Établissement`)
+### 8.2 Établissement (`Établissement`)
 Réglages de l'identité de l'école et de son organisation :
 - **Identité** : nom, sigle, profil, coordonnées.
 - **Sites** : implantations géographiques (campus, annexes).
@@ -239,24 +276,24 @@ Réglages de l'identité de l'école et de son organisation :
 - **Paramètres** : réglages divers.
 - **Presets de grilles** : modèles de grilles réutilisables.
 
-### 7.3 Années scolaires (`Années scolaires`)
+### 8.3 Années scolaires (`Années scolaires`)
 1. Créez une **année** (code, libellé, dates, type).
 2. Ajoutez des **périodes** (trimestres/semestres).
 3. **Ouvrez** l'année pour la rendre courante.
 4. **Clôturez** une période ou l'année en fin de cycle.
 
-### 7.4 Grilles (`Grilles`)
+### 8.4 Grilles (`Grilles`)
 Trois familles de grilles : **notation**, **stock**, **conformité**.
 Sur chaque grille : **Activer**, **Figer** (définitif), **Dupliquer**. La page de détail
 `Grille > [type]` permet de saisir barèmes, seuils de décision, mentions, règles d'assiduité…
 
-### 7.5 Référentiels (`Référentiels`)
+### 8.5 Référentiels (`Référentiels`)
 17 conteneurs de valeurs. Dépliez un conteneur, ajoutez des **éléments** (code, libellé,
 valeur), ou **désactivez** un élément.
 
-### 7.6 Écrans réservés ADMIN
+### 8.6 Écrans réservés ADMIN
 Visibles uniquement avec le profil ADMIN :
-- **Tenants** : créer/gérer un établissement. À la création, les 17 référentiels sont
+- **Tenants** : créer/gérer un établissement. À la création, les 23 référentiels sont
   générés automatiquement.
 - **Utilisateurs** : comptes, rôles, cycle de vie (activer/désactiver/suspendre), réinitialisation
   du mot de passe.
@@ -265,7 +302,7 @@ Visibles uniquement avec le profil ADMIN :
 - **Audit** : rechercher dans le journal des actions.
 - **Rapports** : demander un rapport (PDF/CSV/JSON) et le télécharger.
 
-### 7.7 Pédagogie · Structure
+### 8.7 Pédagogie · Structure
 Menu de gauche, groupe **« Pédagogie · Structure »** :
 - **Niveaux**, **Matières**, **Salles**, **Créneaux**, **Régimes horaires** : listes simples
   avec **Nouveau / Modifier / Supprimer**.
@@ -275,7 +312,7 @@ Menu de gauche, groupe **« Pédagogie · Structure »** :
 - **Emplois du temps** : créez un emploi du temps, ouvrez-le, ajoutez des **plages**
   (cours + créneau + salle + enseignant), consultez les **conflits**, puis **Publier**.
 
-### 7.8 Pédagogie · Personnes
+### 8.8 Pédagogie · Personnes
 Menu de gauche, groupe **« Pédagogie · Personnes »** :
 - **Élèves** : liste + bouton **œil** pour ouvrir la fiche. La fiche comporte 6 onglets :
   *Identité, Dossier, Inscriptions, Congés, Sanctions, Parents*. Actions **Transférer** et
@@ -288,7 +325,7 @@ Menu de gauche, groupe **« Pédagogie · Personnes »** :
 > **Astuce :** les listes ont une **barre de recherche** (matricule, nom, code…). Le nombre
 > d'éléments est affiché sous le tableau.
 
-### 7.9 Pédagogie · Inscriptions
+### 8.9 Pédagogie · Inscriptions
 Menu de gauche, groupe **« Pédagogie · Inscriptions »** (surtout utile au supérieur) :
 - **Inscriptions UE** : rattachez un élève à une UE, puis **Valider** (ou refuser / mettre en
   liste d'attente / annuler).
@@ -298,7 +335,7 @@ Menu de gauche, groupe **« Pédagogie · Inscriptions »** (surtout utile au su
 - **Admissions** : évaluez un **candidat** (éligible ou non) et consultez le **parcours** d'un
   élève (crédits acquis, taux de progression).
 
-### 7.10 Pédagogie · Assiduité
+### 8.10 Pédagogie · Assiduité
 - **Séances** : créez une séance (classe, cours, date, créneau), puis **Démarrer**, **Terminer**,
   **Reporter** ou **Annuler**.
 - **Feuilles d'appel** : ouvrez une feuille, **pointez** les présences, marquez une **absence** ou
@@ -308,7 +345,7 @@ Menu de gauche, groupe **« Pédagogie · Inscriptions »** (surtout utile au su
   requalifie l'absence.
 - **Assiduité** : consultez le **suivi d'un élève**, le **taux d'une classe** ou le **registre**.
 
-### 7.11 Pédagogie · Évaluations
+### 8.11 Pédagogie · Évaluations
 - **Évaluations** : créez une évaluation (**Ouvrir**), saisissez les **notes** sur la feuille,
   marquez une **absence**, puis **Clôturer** et **Publier**.
 - **Bulletins** : créez un bulletin, ajoutez des **lignes**, puis **Calculer**, **Publier**,
@@ -317,7 +354,7 @@ Menu de gauche, groupe **« Pédagogie · Inscriptions »** (surtout utile au su
 - **Moyennes & classement** : calculez la moyenne d'une **évaluation**, d'un **élève**, ou le
   **classement** d'une classe.
 
-### 7.12 Pédagogie · Examens
+### 8.12 Pédagogie · Examens
 - **Sessions d'examen** : créez une session puis **Programmer**, **Ouvrir**, **Clôturer**,
   **Annuler** ; ajoutez-y **épreuves**, **créneaux** et **convocations** (+ notifier).
 - **Délibérations** : créez une délibération, **Ouvrir**, saisissez les **décisions**
@@ -325,7 +362,7 @@ Menu de gauche, groupe **« Pédagogie · Inscriptions »** (surtout utile au su
 - **Rattrapages** : déclarez un candidat **présent** ou **exempt**.
 - **Procès-verbaux** : **Soumettre**, **Signer**, **Homologuer** (ou **Contester**).
 
-### 7.13 Pédagogie · Frais
+### 8.13 Pédagogie · Frais
 - **Grilles tarifaires** : créez une grille, ajoutez des **lignes** et des **réductions**, puis
   **Activer**, **Figer** (lecture seule) ou **Archiver**.
 - **Avis de paiement** : **Émettre** un avis, appliquer une **remise**, consulter les **échéances**,
@@ -337,7 +374,7 @@ Menu de gauche, groupe **« Pédagogie · Inscriptions »** (surtout utile au su
 
 ---
 
-## 8. Ce que peut faire chaque profil (récapitulatif)
+## 9. Ce que peut faire chaque profil (récapitulatif)
 
 | Action | ADMIN | CUSTOMER |
 |---|---|---|
@@ -350,7 +387,7 @@ En tant que CUSTOMER, les boutons de création/modification n'apparaissent pas :
 
 ---
 
-## 9. Messages d'erreur fréquents
+## 10. Messages d'erreur fréquents
 
 | Message / code | Signification | Que faire |
 |---|---|---|
@@ -370,7 +407,7 @@ En tant que CUSTOMER, les boutons de création/modification n'apparaissent pas :
 
 ---
 
-## 10. Dépannage express
+## 11. Dépannage express
 
 - **La page ne charge rien / erreur réseau** : vérifiez que le backend et la console tournent
   (§2), et que la console est bien sur **http://localhost:3001**.
@@ -382,7 +419,7 @@ En tant que CUSTOMER, les boutons de création/modification n'apparaissent pas :
 
 ---
 
-## 11. Parcours conseillé pour une première découverte
+## 12. Parcours conseillé pour une première découverte
 
 1. Se connecter en **ADMIN**.
 2. **Établissement** : vérifier l'identité et créer un **site**.

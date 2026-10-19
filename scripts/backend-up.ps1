@@ -26,6 +26,8 @@ $Services = [ordered]@{
     'academic-assessment-service' = 8115
     'academic-exam-service'       = 8116
     'academic-fees-service'       = 8117
+    'boulangerie-produit-service' = 8141
+    'boulangerie-production-service' = 8142
     'api-gateway'          = 8080
 }
 
@@ -61,6 +63,17 @@ function Wait-Healthy([string]$Name, [int]$Tries = 30) {
 if (-not (Wait-Healthy 'postgres' 30)) { Die "postgres non healthy" }
 if (-not (Wait-Healthy 'redis' 15))    { Die "redis non healthy" }
 if (-not (Wait-Healthy 'kafka' 40))    { Die "kafka non healthy" }
+
+# kafka-init ne s'execute qu'a la creation du conteneur : sur une infra deja
+# lancee, un nouveau topic (ex. boulangerie.events) n'existe jamais et le
+# producteur bloque sur UNKNOWN_TOPIC_OR_PARTITION. On le rejoue (idempotent).
+Info "==> Kafka : creation idempotente des topics"
+Push-Location $Backend
+try {
+    docker compose run --rm kafka-init
+    if ($LASTEXITCODE -ne 0) { Write-Host "    kafka-init a echoue (topics a verifier manuellement)" -ForegroundColor Yellow }
+}
+finally { Pop-Location }
 
 Info "==> Attente Keycloak 8180"
 $kc = $false
