@@ -2153,3 +2153,141 @@ export interface Fournee {
   rendement?: number | null;
   ecartMatiere?: number | null;
 }
+
+// =====================================================================
+// BOULANGERIE — lot 3 (approvisionnement-service)
+// =====================================================================
+
+export type StatutCommandeAchat =
+  | "BROUILLON"
+  | "VALIDEE"
+  | "ENVOYEE"
+  | "PARTIELLE"
+  | "RECEPTIONNEE"
+  | "FACTUREE"
+  | "ANNULEE";
+
+export type StatutReception =
+  | "ATTENDUE"
+  | "EN_CONTROLE"
+  | "ACCEPTEE"
+  | "REFUSEE"
+  | "PARTIELLE";
+
+export type UrgenceAppro = "RUPTURE" | "HAUTE" | "NORMALE";
+
+export interface FournisseurBoulangerie {
+  idFournisseur?: string | null;
+  code: string;
+  tiersCode?: string | null;
+  raisonSociale?: string | null;
+  delaiLivraisonJours?: number | null;
+  conditionsReglement?: string | null;
+  categorieProduits?: string | null;
+  montantMiniCommande?: number | null;
+  actif?: boolean;
+}
+
+export interface EvaluationFournisseur {
+  idFournisseur?: string | null;
+  code?: string | null;
+  actif?: boolean;
+  fiable?: boolean;
+  delaiLivraisonJours?: number;
+  nbCommandes?: number;
+  nbReceptionsHonorees?: number;
+  nbReceptionsRefusees?: number;
+}
+
+export interface SaisieBesoin {
+  articleCode: string;
+  libelle?: string | null;
+  quantiteDisponible: number;
+  seuil: number;
+  consommationPrevue: number;
+  delaiReapproJours?: number | null;
+}
+
+export interface BesoinApprovisionnement {
+  articleCode: string;
+  libelle?: string | null;
+  quantiteDisponible?: number | null;
+  seuil?: number | null;
+  quantiteSuggeree?: number | null;
+  delaiReapproJours?: number | null;
+  urgence?: UrgenceAppro | null;
+}
+
+export interface LigneCommandeAchat {
+  id?: string | null;
+  commandeId?: string | null;
+  articleCode: string;
+  designation?: string | null;
+  quantiteCommandee?: number | null;
+  quantiteRecue?: number | null;
+  prixUnitaire?: number | null;
+  tauxTva?: number | null;
+  resteARecevoir?: number | null;
+  montantHT?: number | null;
+  montantTVA?: number | null;
+}
+
+export interface CommandeAchat {
+  idCommande?: string | null;
+  numero?: string | null;
+  fournisseurTiersCode: string;
+  date?: string | null;
+  dateLivraisonPrevue?: string | null;
+  statut?: StatutCommandeAchat;
+  montantHT?: number | null;
+  montantTVA?: number | null;
+  montantTTC?: number | null;
+  devise?: string | null;
+  motifAnnulation?: string | null;
+  lignes?: LigneCommandeAchat[] | null;
+  resteARecevoir?: number | null;
+}
+
+export interface LigneReception {
+  id?: string | null;
+  receptionId?: string | null;
+  articleCode: string;
+  quantiteCommandee?: number | null;
+  quantiteRecue?: number | null;
+  prixAchat?: number | null;
+  lotNumero?: string | null;
+  datePeremption?: string | null;
+  conforme?: boolean;
+  motifNonConformite?: string | null;
+}
+
+export interface Reception {
+  idReception?: string | null;
+  numero?: string | null;
+  commandeId?: string | null;
+  commandeNumero?: string | null;
+  date?: string | null;
+  recuPar?: string | null;
+  bonLivraison?: string | null;
+  statut?: StatutReception;
+  motif?: string | null;
+  lignes?: LigneReception[] | null;
+}
+
+export interface EcartRapprochement {
+  articleCode?: string | null;
+  quantiteCommandee?: number | null;
+  quantiteRecue?: number | null;
+  prixCommande?: number | null;
+  prixAchat?: number | null;
+  ecartPrixAchat?: number | null;
+}
+
+export interface Rapprochement {
+  commandeNumero?: string | null;
+  statutCommande?: string | null;
+  montantCommandeTTC?: number | null;
+  montantReceptionsTTC?: number | null;
+  concordant?: boolean;
+  ecarts?: EcartRapprochement[] | null;
+}

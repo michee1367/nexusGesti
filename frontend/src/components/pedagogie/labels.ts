@@ -29,6 +29,9 @@ import type {
   IngredientRecette,
   PlanProduction,
   Fournee,
+  FournisseurBoulangerie,
+  CommandeAchat,
+  Reception,
 } from "@/types";
 import { formatDate, formatTime } from "@/components/pedagogie/format";
 
@@ -93,6 +96,15 @@ export const planLabel = (plan: PlanProduction) =>
 
 export const fourneeLabel = (fournee: Fournee) =>
   `${fournee.numero ?? fournee.idFournee}${fournee.produitCode ? ` — ${fournee.produitCode}` : ""}`;
+
+export const fournisseurLabel = (fournisseur: FournisseurBoulangerie) =>
+  fournisseur.raisonSociale ? `${fournisseur.code} — ${fournisseur.raisonSociale}` : fournisseur.code;
+
+export const commandeLabel = (commande: CommandeAchat) =>
+  `${commande.numero ?? commande.idCommande}${commande.fournisseurTiersCode ? ` — ${commande.fournisseurTiersCode}` : ""}`;
+
+export const receptionLabel = (reception: Reception) =>
+  `${reception.numero ?? reception.idReception}${reception.commandeNumero ? ` — ${reception.commandeNumero}` : ""}`;
 
 export function toSelectOptions<T>(
   rows: T[] | null | undefined,

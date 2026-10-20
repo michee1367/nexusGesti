@@ -46,6 +46,7 @@
         <!-- BOULANGERIE -->
         <module>services/boulangerie-produit-service</module>
         <module>services/boulangerie-production-service</module>
+        <module>services/boulangerie-approvisionnement-service</module>
     </modules>
 
     <properties>

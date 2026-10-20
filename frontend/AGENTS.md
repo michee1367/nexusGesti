@@ -11,8 +11,10 @@ Le périmètre couvre le **socle** (tenants, établissements, grilles, référen
 utilisateurs, rôles/permissions) et **toute la pédagogie — lots 4a à 4g** (structure,
 people, enrollment, attendance, assessment, exam, fees), branchée sur les services
 `academic-*` 8111→8117, ainsi que le **lot 1 boulangerie** (produits, recettes, gammes,
-catégories) branché sur `boulangerie-produit-service` 8141 et le **lot 2 boulangerie**
-(plans de production, fournées) branché sur `boulangerie-production-service` 8142.
+catégories) branché sur `boulangerie-produit-service` 8141, le **lot 2 boulangerie**
+(plans de production, fournées) branché sur `boulangerie-production-service` 8142 et le
+**lot 3 boulangerie** (fournisseurs, besoins, commandes d'achat, réceptions) branché sur
+`boulangerie-approvisionnement-service` 8143.
 Hôpital / finance n'ont pas encore de pages.
 
 ## Stack
@@ -109,6 +111,14 @@ Le port de dev par défaut (3000) est **occupé par Grafana** → lancer la cons
     création avec lignes imbriquées via formulaire custom, le backend exige ≥1 ligne),
     `/boulangerie/fournees` (+ `[id]` : cycle PLANIFIEE→EN_COURS→CUITE→VALIDEE avec rendu,
     cuisson, validation, annulation motivée, consommations par lot, pertes valorisées).
+    Lot 3 (approvisionnement) —
+    `/boulangerie/fournisseurs` (+ `[id]` : identité, évaluation `getEvaluation`,
+    activer/désactiver), `/boulangerie/besoins` (saisies multi-lignes seuil/conso/dispo →
+    `POST /besoins/calcule` et `/besoins/sous-seuil`, badges urgence),
+    `/boulangerie/commandes` (+ `[id]` : lignes, montants HT/TVA/TTC, reste à recevoir,
+    transitions valider/envoyer/annuler avec motif inline, onglet rapprochement concordant/écarts),
+    `/boulangerie/receptions` (+ `[id]` : cycles contrôler/accepter/refuser(motif),
+    conformité par ligne ; création avec lignes — non conforme ⇒ motif obligatoire).
 - `ProtectedLayout` engage la session (`ANONYME` → `/login`) mais ne coupe pas par rôle :
   les pages ADMIN utilisent `useAuth().user?.isAdmin` pour afficher / bloquer.
 
@@ -146,22 +156,33 @@ Le port de dev par défaut (3000) est **occupé par Grafana** → lancer la cons
   GrilleTarifaire, CouponPaiement, Journalier…) exposent `id`.
   `feesApi.paiements.create(body, idempotencyKey)` renseigne l'en-tête `Idempotency-Key`
   (**obligatoire** sur `POST /ped/paiements`).
-- **Pages Boulangerie (lots 1-2)** : DTO dans `src/types/index.ts` (`Gamme`, `CategorieProduit`,
+- **Pages Boulangerie (lots 1-3)** : DTO dans `src/types/index.ts` (`Gamme`, `CategorieProduit`,
   `Produit`, `FicheRecette`, `IngredientRecette`, `LigneCout`, `BesoinMatiere`, `CoutRecette` +
   enums `UniteVente`, `Allergene`, `NatureCout` ; lot 2 : `PlanProduction`, `LignePlan`, `Fournee`,
-  `LigneConsommation`, `PerteProduction` + enums `StatutPlan`, `StatutFournee`, `TypePerte`),
+  `LigneConsommation`, `PerteProduction` + enums `StatutPlan`, `StatutFournee`, `TypePerte` ;
+  lot 3 : `FournisseurBoulangerie`, `EvaluationFournisseur`, `SaisieBesoin`,
+  `BesoinApprovisionnement`, `CommandeAchat`, `LigneCommandeAchat`, `Reception`, `LigneReception`,
+  `Rapprochement` + enums `StatutCommandeAchat`, `StatutReception`, `UrgenceAppro`),
   client `boulangerieApi` dans `api.ts` (préfixe passerelle `/boul/**`, groupes `gammes`,
-  `categories`, `produits`, `recettes`, `plans`, `fournees`). Clés d'id **non homogènes** :
+  `categories`, `produits`, `recettes`, `plans`, `fournees`, `fournisseurs`, `besoins`,
+  `commandes`, `receptions`). Clés d'id **non homogènes** :
   `Produit` expose `idProduit`, `FicheRecette` expose `idRecette`, `Gamme`/`CategorieProduit`
   exposent `id`, `PlanProduction` expose `idPlan`, `Fournee` expose `idFournee`,
-  `PerteProduction` expose `idPerte`. Les FK sont des **codes** (`gammeCode`, `categorieCode`,
-  `produitCode`, `articleCode`, `recetteCode`) — les lookups
+  `PerteProduction` expose `idPerte`, `FournisseurBoulangerie` expose `idFournisseur`,
+  `CommandeAchat` expose `idCommande`, `Reception` expose `idReception`. Les FK sont des
+  **codes** (`gammeCode`, `categorieCode`, `produitCode`, `articleCode`, `recetteCode`,
+  `fournisseurTiersCode`, `commandeId` en UUID sur `Reception`) — les lookups
   `useGammesMap`/`useCategoriesMap`/`useProduitsMap`/`useRecettesCodeMap` sont donc
   **keyed par `code`**.
   `boulangerieApi.recettes.cout(id, prix)` construit les paramètres répétés `prix=CODE:MONTANT`.
-  Backend sans `PUT`/`DELETE` : `ResourceCrud` est utilisé avec `create` seul (pas d'`update`/`remove`).
+  Backend sans `PUT`/`DELETE` sur les lots 1-2 : `ResourceCrud` est utilisé avec `create` seul
+  (pas d'`update`/`remove`) ; le lot 3 ajoute `PUT /fournisseurs/{id}` → `ResourceCrud` avec
+  `create` + `update`.
   Le lot 2 utilise des formulaires custom (plans : lignes imbriquées obligatoires à la création ;
   fournées : cycle de vie + consommations/pertes sur la page détail).
+  Le lot 3 utilise des formulaires custom (commandes : lignes imbriquées ; réceptions : lignes
+  avec drapeau `conforme` + motif exigé ; besoins : saisies multi-lignes vers le calcul),
+  les motifs d'annulation/refus sont saisis **inline en page détail** (jamais `prompt`).
 - **Sélecteurs « par nom » (jamais d'UUID saisi)** : les FK ne sont plus des `<Input>` d'UUID
   mais des listes déroulantes affichant un libellé.
   - `src/components/pedagogie/labels.ts` : label par entité (`eleveLabel`, `classeLabel`, `ueLabel`,
@@ -189,7 +210,8 @@ Le port de dev par défaut (3000) est **occupé par Grafana** → lancer la cons
 - Ports : console **3001** (Grafana occupe 3000), passerelle 8080 (API), Keycloak 8180 (tokens),
   tenant-service 8101, identity-service 8102, academic-structure 8111, academic-people 8112,
   academic-enrollment 8113, academic-attendance 8114,   academic-assessment 8115, academic-exam 8116,
-  academic-fees 8117, boulangerie-produit 8141, boulangerie-production 8142.
+  academic-fees 8117, boulangerie-produit 8141, boulangerie-production 8142,
+  boulangerie-approvisionnement 8143.
   Utilisateurs de test (runtime, provisionnés par `backend/infrastructure/keycloak/provision.sh`) :
   `demo.admin@nexusgesti.com` / `Admin_pass123!` (ADMIN), `demo.customer@nexusgesti.com` /
   `demo_secret_customer` (CUSTOMER).

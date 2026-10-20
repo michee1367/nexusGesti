@@ -53,6 +53,10 @@ import {
   LayoutGrid,
   Tags,
   Flame,
+  Truck,
+  PackageSearch,
+  ShoppingCart,
+  PackageCheck,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -150,6 +154,13 @@ const boulangerieProductionItems: NavItem[] = [
   { href: "/boulangerie/fournees", label: "Fournées", icon: Flame },
 ];
 
+const boulangerieApproItems: NavItem[] = [
+  { href: "/boulangerie/fournisseurs", label: "Fournisseurs", icon: Truck },
+  { href: "/boulangerie/besoins", label: "Besoins d'appro.", icon: PackageSearch },
+  { href: "/boulangerie/commandes", label: "Commandes d'achat", icon: ShoppingCart },
+  { href: "/boulangerie/receptions", label: "Réceptions", icon: PackageCheck },
+];
+
 const adminItems: NavItem[] = [
   { href: "/tenants", label: "Tenants", icon: Users },
   { href: "/utilisateurs", label: "Utilisateurs", icon: UserCog },
@@ -174,6 +185,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
     { title: "Pédagogie · Frais", items: feesItems },
     { title: "Boulangerie · Produits", items: boulangerieItems },
     { title: "Boulangerie · Production", items: boulangerieProductionItems },
+    { title: "Boulangerie · Approvisionnement", items: boulangerieApproItems },
   ];
 
   const renderItem = ({ href, label, icon: Icon }: NavItem) => {

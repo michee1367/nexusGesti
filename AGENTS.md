@@ -24,9 +24,12 @@ le travail front d'une phase ne s'ouvre qu'une fois la brique backend validée.
 Les 31 services sont **modélisés** (voir §2), mais la passerelle n'en route encore que **25** — le domaine
 `boulangerie` (6 services) est **en cours d'implémentation** : le domaine est modélisé en PlantUML et le
 **lot 1 `boulangerie-produit-service` est construit** (routes `/api/v1/boul/**`) **avec son front lot 1**
-(`./frontend`, pages `/boulangerie/{produits,recettes,gammes,categories}`), et le **lot 2
+(`./frontend`, pages `/boulangerie/{produits,recettes,gammes,categories}`), le **lot 2
 `boulangerie-production-service` est construit** (plans, fournées, port 8142) **avec son front lot 2**
-(pages `/boulangerie/{plans,fournees}`). **Seuls 17 modules Maven sont construits** (voir §9).
+(pages `/boulangerie/{plans,fournees}`) et le **lot 3 `boulangerie-approvisionnement-service` est construit**
+(fournisseurs, besoins, commandes, réceptions, port 8143) **avec son front lot 3**
+(pages `/boulangerie/{fournisseurs,besoins,commandes,receptions}`). **Seuls 18 modules Maven sont construits**
+(voir §9).
 Ne pas supposer qu'un service existe sous prétexte que sa route existe.
 
 ---
@@ -44,7 +47,7 @@ docs/diagrammes/
   finance/     6 modèles + 6 cas d'utilisation
   sequences/   9 séquences (paiement, délibération, rappel lot, clôture, séjour, acte → facture, fournée, vente/caisse, réception)
   rendu/       71 SVG à générer — ACTUELLEMENT VIDE
-backend/       Maven parent + 17 modules construits (voir §9)
+backend/       Maven parent + 18 modules construits (voir §9)
 frontend/      console socle Next.js 16 (phases 1-2) — mémo dédié dans frontend/AGENTS.md
 scripts/       démarrage local : backend-up.{sh,ps1} + front-up.{sh,ps1} (voir §11)
 ```
@@ -201,7 +204,7 @@ qu'une fois sa brique backend validée (build + `mvn test` + E2E passerelle + co
 | 5 | hôpital (6 services) | à faire | à faire (après validation back) |
 | 6 | finance (6 services, OHADA) | à faire | à faire (après validation back) |
 
-### Modules réellement construits (17)
+### Modules réellement construits (18)
 
 ```
 shared/common-domain     noyau pur, aucune dépendance Spring
@@ -222,11 +225,12 @@ services/academic-exam-service pedagogie : sessions, epreuves, creneaux, convoca
 services/academic-fees-service pedagogie : grilles tarifaires, avis, reductions, paiements idempotents, coupons, journaliers (8117)
 services/boulangerie-produit-service boulangerie : gammes, categories, produits, fiches recette versionnees, ingredients, cout de revient (8141) + producteur `boulangerie.events`
 services/boulangerie-production-service boulangerie : plans de production, fournées, consommations par lot, pertes valorisées (8142) + producteur `boulangerie.events`
+services/boulangerie-approvisionnement-service boulangerie : fournisseurs, besoins, commandes d achat, receptions controlees (8143) + producteur `boulangerie.events`
 ```
 
-`mvn test` au niveau racine : **BUILD SUCCESS, 420 tests verts** (54 tenant + 16 identity + 24 auth + 2 audit
+`mvn test` au niveau racine : **BUILD SUCCESS, 487 tests verts** (59 tenant + 19 identity + 26 auth + 2 audit
 + 6 gateway + 24 structure + 25 people + 35 enrollment + 44 attendance + 44 assessment + 50 exam + 40 fees
-+ **30 produit** + **26 production**).
++ **30 produit** + **26 production** + **57 approvisionnement**).
 
 ### Les 25 routes de la passerelle ≠ les modules construits
 
@@ -240,7 +244,7 @@ Vérifier l'existence du module avant d'appeler un service.
 | pédagogie | `/api/v1/ped/**` | `academic-structure` 8111 · `academic-people` 8112 · `academic-enrollment` 8113 · `academic-attendance` 8114 · `academic-assessment` 8115 · `academic-exam` 8116 · `academic-fees` 8117 |
 | hôpital | `/api/v1/hop/**` | `patient` 8121 · `rdv` 8122 · `consultation` 8123 · `pharmacie` 8124 · `hospitalisation` 8125 · `plateau-technique` 8126 |
 | finance | `/api/v1/fin/**` | `fin-compta-core` 8131 · `fin-facturation` 8132 · `fin-stock` 8133 · `fin-inventaire` 8134 · `fin-immobilisation` 8135 · `fin-etats` 8136 |
-| boulangerie | `/api/v1/boul/**` | `boulangerie-produit` 8141 (lot 1) · `production` 8142 (lot 2) · `approvisionnement` 8143 · `vente` 8144 · `clients` 8145 · `personnel` 8146 (à venir) |
+| boulangerie | `/api/v1/boul/**` | `boulangerie-produit` 8141 (lot 1) · `production` 8142 (lot 2) · `approvisionnement` 8143 (lot 3) · `vente` 8144 · `clients` 8145 · `personnel` 8146 (à venir) |
 | passerelle | — | `api-gateway` 8080 (Keycloak sur 8180) |
 
 Pas de `fin-tresorerie` : la trésorerie est un préfixe de `fin-compta-core` (`/api/v1/fin/tresorerie/**`).
@@ -249,8 +253,11 @@ Pas de `fin-tresorerie` : la trésorerie est un préfixe de `fin-compta-core` (`
 existent. Le **lot 1 `boulangerie-produit-service` (8141) est construit** (routes `/api/v1/boul/{produits,
 gammes,categories,recettes}/**`, producteur `boulangerie.events`) **avec son front lot 1** ; le **lot 2
 `boulangerie-production-service` (8142) est construit** (routes `/api/v1/boul/{plans,fournees}/**`,
-producteur `boulangerie.events`) **avec son front lot 2** ; les lots 3→6 (`approvisionnement`, `vente`,
-`clients`, `personnel`, ports 8143-8146) restent à faire, la route
+producteur `boulangerie.events`) **avec son front lot 2** ; le **lot 3
+`boulangerie-approvisionnement-service` (8143) est construit** (routes `/api/v1/boul/{fournisseurs,
+besoins,commandes,receptions}/**`, producteur `boulangerie.events`, E2E 49/0) **avec son front lot 3**
+(pages `/boulangerie/{fournisseurs,besoins,commandes,receptions}`) ; les lots 4→6 (`vente`,
+`clients`, `personnel`, ports 8144-8146) restent à faire, la route
 `/api/v1/boul/**` s'élargit lot par lot (D17). Le domaine est adossé à la finance (`fin-stock`,
 `fin-facturation`, `fin-compta-core`) et activé par le profil `BOULANGERIE` (§2, profil ajouté dans
 `socle/modele-tenant-service.puml`).
@@ -1338,12 +1345,103 @@ Flyway `flyway_boulangerie_production_history`, package `com.nexusgesti.boulange
   **Vérifs** : `npx tsc --noEmit` 0 erreur ; `npm run lint` 0 erreur (2 warnings préexistants
   `avatar.tsx`) ; `npm run build` OK (routes `/boulangerie/{plans,fournees}` + `[id]` générées).
 
+### boulangerie-approvisionnement-service — lot 3 construit (2026-10-20)
+
+**Backend 3 `boulangerie-approvisionnement-service`** (port **8143**, schéma `boulangerie_approvisionnement`,
+table Flyway `flyway_boulangerie_approvisionnement_history`, package `com.nexusgesti.boulangerie.approvisionnement`),
+**avec Kafka** (producteur `boulangerie.events`, D18) :
+
+- **Périmètre** : fournisseurs (`Fournisseur`), besoins d'approvisionnement (**calculés**, non persistés :
+  `BesoinApprovisionnement` record + `SaisieBesoin`), commandes d'achat (`CommandeAchat` + `LigneCommandeAchat`),
+  réceptions contrôlées (`Reception` + `LigneReception`), rapprochement commande ↔ réceptions (MVP, facture
+  = phase 6), évaluation fournisseur (calculée). 5 tables.
+- **Domaine pur** (aucune valeur métier en dur) : `Fournisseur` (`activer`/`desactiver`,
+  `getDelaiLivraisonReel` — commandes ENVOYEE+), `CommandeAchat` (`valider` BROUILLON→VALIDEE,
+  `envoyer` VALIDEE→ENVOYEE, `annuler(motif)` sauf RECEPTIONNEE/FACTUREE/ANNULEE, `estRecevable()`
+  ENVOYEE|PARTIELLE, `marquerPartielle`/`marquerReceptionnee` via `getResteARecevoir()`, montants
+  HT/TVA/TTC recalculés depuis lignes, devise défaut USD), `LigneCommandeAchat` (`verifier`,
+  `getMontantHT`, `getResteARecevoir`), `Reception` (`controle` ATTENDUE→EN_CONTROLE, `accepter`
+  EN_CONTROLE→ACCEPTEE|PARTIELLE **exige `estConforme()`**, `refuser(motif)`→REFUSEE,
+  `estConforme()` = toutes lignes conformes), `LigneReception` (non conforme → motif exigé),
+  `BesoinApprovisionnement` (`quantiteSuggeree = max(0, seuil + consommationPrevue - disponible)`,
+  `urgence` RUPTURE/HAUTE/NORMALE). Exception `ApprovisionnementException` (`NOT_FOUND` 404 ;
+  `TRANSITION_INVALIDE`/`ETAT_INVALIDE`/`ITEM_EXISTANT`/`RECETTE`… 409 ; `INVALIDE` 400).
+- **Contrôle de réception strict, sans appel REST** : `accepter()` refuse toute réception dont une ligne
+  est non conforme — le contrôle est posé par le service (`controle`) à partir des motifs déjà portés par
+  les lignes, pas par un tiers externe (décision de lot : pas de dépendance vers un service qualité).
+- **Persistance / applicatif / web** : 5 entités + repos (`adapter.out.persistence`) + adapter
+  (upsert, delete-then-reinsert des lignes, `tenant_id` via `TenantContext.require().asUuid()`),
+  `ApprovisionnementService` (`@Transactional`, numéros CMD-/REC- count+1 par tenant, `creerCommande`
+  force BROUILLON + `quantiteRecue=0`, `creerReception` force ATTENDUE), `ApprovisionnementController`
+  (`/api/v1`, lecture `ADMIN|CUSTOMER` / écriture `ADMIN`), `ApprovisionnementExceptionHandler`.
+  Routes : `/fournisseurs[+/{id}/activer|desactiver|evaluation]`, `/besoins/calcule`,
+  `/besoins/sous-seuil`, `/commandes[/{id}/valider|envoyer|annuler|rapprochement]`,
+  `/receptions[/{id}/controle|accepter|refuser]`.
+- **Événements** (`boulangerie.events`) : `commande.validee`, `commande.annulee`,
+  `reception.acceptee` (+ `mouvement.stock` `ENTREE_ACHAT` par ligne conforme, valorisé
+  `quantite × prixAchat`), `reception.refusee`, `besoin.sous-seuil`.
+- **Tests : 57 verts** (domaine `CommandeAchat`/`Reception`/`BesoinApprovisionnement`/`FournisseurBoulangerie`
+  + `ApprovisionnementServiceTest` + `@WebMvcTest ApprovisionnementControllerSecurityTest`).
+  `mvn test` racine : **BUILD SUCCESS, 487 tests**.
+- **Câblage** : module dans le pom racine (bloc BOULANGERIE) ; route passerelle
+  `/api/v1/boul/{fournisseurs,besoins,commandes,receptions}/**` → 8143 ; cible Prometheus
+  `host.docker.internal:8143` (conteneur relancé, `up=1`) ; `scripts/backend-up.{sh,ps1}`.
+- **Boot + E2E passerelle (2026-10-20)** : 8143 UP ; Flyway V1/V2/V3 `success`, RLS `t/t` sur les 5
+  tables et `f/f` sur l'historique ; **`scripts/test-boulangerie-lot3-approvisionnement.sh` : 49 OK / 0 KO**
+  (fournisseur 201/200 ; besoins calcul `quantiteSuggeree` 60 + `urgence` HAUTE + sous-seuil 1 alerte ;
+  commande CMD-00001 BROUILLON→VALIDEE (`montantTTC` 81.20)→ENVOYEE ; réception complète REC-00001
+  ATTENDUE→EN_CONTROLE→ACCEPTEE, commande→RECEPTIONNEE, `quantiteRecue` 100 ; acceptation sans contrôle
+  409 ; sur-réception 400 ; réception partielle→PARTIELLE ; ligne non conforme sans motif 400, avec motif
+  201, acceptée→409, refusée→REFUSEE ; annulation sans motif 400, avec motif→ANNULEE, réception sur
+  annulée 409 ; rapprochement concordant true / écart de prix `ecartPrixAchat` 0.25 → false ;
+  évaluation fournisseur (commandes=4, refusees=1) ; audit-service persiste `commande.validee` /
+  `reception.acceptee` ; isolation tenant B `[]`, 401/400, CUSTOMER lecture 200 / écriture+transition 403).
+- **Pièges payés (2026-10-20)** :
+  - colonne `motif_annulation` oubliée dans `V1__approvisionnement_schema.sql` alors que
+    `CommandeAchatEntity` la mape → boot KO `Schema-validation: missing column`. Correctif : colonne
+    ajoutée à V1 + **schéma recréé** (`DROP SCHEMA boulangerie_approvisionnement CASCADE` — service neuf,
+    non commité). Règle : toute édition de V1 d'un service non commité impose la recréation du schéma.
+  - `DROP SCHEMA` refusé par `nexusgesti_app` (« must be owner ») : exécuter via le superuser du conteneur
+    (`docker exec … psql -U nexusgesti`), pas l'utilisateur applicatif.
+  - Le `mvn clean` au niveau racine **échoue si un `java -jar *SNAPSHOT.jar` tourne** (verrou .jar) :
+    tuer les JVM concernées avant le package.
+  - Les `BigDecimal` de l'API sont sérialisés Jackson sans zéros finaux (`81.2` et non `81.20`) : les
+    assertions E2E comparent les deux formes.
+
+### Front boulangerie lot 3 — approvisionnement (2026-10-20)
+
+**Front lot 3** construit le 2026-10-20 après validation back (D13), console `./frontend` :
+
+- **Types** (`src/types/index.ts`, bloc « BOULANGERIE — lot 3 ») : `StatutCommandeAchat`,
+  `StatutReception`, `UrgenceAppro`, `FournisseurBoulangerie`, `EvaluationFournisseur`, `SaisieBesoin`,
+  `BesoinApprovisionnement`, `LigneCommandeAchat`, `CommandeAchat`, `LigneReception`, `Reception`,
+  `EcartRapprochement`, `Rapprochement`.
+- **API** (`src/services/api.ts`) : groupes `boulangerieApi.{fournisseurs, besoins, commandes, receptions}`
+  (create/update(PUT)/activer/desactiver/evaluation ; calcule/sousSeuil ; valider/envoyer/annuler(id,motif)/
+  rapprochement ; controle/accepter/refuser(id,motif)).
+- **Labels + lookups** (`components/pedagogie/labels.ts`) : `fournisseurLabel`, `commandeLabel`,
+  `receptionLabel`.
+- **Sidebar** : groupe « Boulangerie · Approvisionnement » (Fournisseurs, Besoins d'appro.,
+  Commandes d'achat, Réceptions — `Truck`/`PackageSearch`/`ShoppingCart`/`PackageCheck`).
+- **Pages (7)** : `/boulangerie/fournisseurs` (liste + création/édition) + `[id]` (identité, évaluation
+  `getEvaluation`, activer/désactiver) ; `/boulangerie/besoins` (saisies multi-lignes seuil/conso/dispo →
+  `POST /besoins/calcule`, `POST /besoins/sous-seuil`, badges urgence) ; `/boulangerie/commandes`
+  (liste + création avec lignes imbriquées et `EntitySelect` fournisseurs) + `[id]` (lignes, montants
+  HT/TVA/TTC, reste à recevoir, transitions valider/envoyer/annuler avec motif inline, onglet
+  rapprochement concordant/écarts) ; `/boulangerie/receptions` (liste + création lignes : commande, article,
+  qté reçue, prix achat, lot, conforme + motif exigé si non conforme) + `[id]` (cycles contrôler/accepter/
+  refuser(motif), conformité par ligne). Mutations réservées `isAdmin`, listes `ADMIN|CUSTOMER`.
+- **Vérifs** : `npx tsc --noEmit` 0 erreur ; `npm run lint` 0 erreur (2 warnings préexistants `avatar.tsx`) ;
+  `npm run build` OK (16 routes `/boulangerie/*`, dont les 7 du lot 3).
+
 ### Restant
 
-- **Boulangerie lots 1-2** construits et documentés le 2026-10-17 (back : 30 tests produit + 26 tests
-  production ; front : types/pages/sidebars lot 1 et lot 2, `tsc` + lint + build verts) ;
-  **commits à faire sur demande** (back lot 1 + lot 2 + fronts, tout en `??` non tracké).
-  Reste les lots 3→6 (`approvisionnement`→`personnel`, ports 8143-8146), back d'abord (D13).
+- **Boulangerie lots 1-2** commités le 2026-10-17 (`c1f2ed5` back, `c7d2b00` front, `9c77090` journal).
+- **Boulangerie lot 3 back** construit et documenté le 2026-10-20 (57 tests ; E2E passerelle 49/0 via
+  `scripts/test-boulangerie-lot3-approvisionnement.sh` ; boot 8143 + Flyway + RLS vérifiés ; Prometheus
+  17/17 cibles `up`) ; **front lot 3 construit le 2026-10-20** (7 pages, `tsc` + lint + build verts,
+  voir journal §11). **Commit back + front + doc sur demande.** Reste les lots 4→6
+  (`vente`→`clients`→`personnel`, ports 8144-8146), back d'abord (D13).
 - **Commit `5158d45` (251 fichiers)** : docs + `.gitignore` + `backend/`. Phase 1 close.
 - **Phase 2 commitée le 2026-10-08** : `e25283e` (tenant-service + doc D7/D10 + E2E + colonne Front).
 - **Console socle commitée le 2026-10-08** : décrite au journal §11 (plomberie + pages socle + ADMIN,

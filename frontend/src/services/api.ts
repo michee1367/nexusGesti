@@ -133,6 +133,13 @@ import type {
   LigneConsommation,
   PerteProduction,
   TypePerte,
+  FournisseurBoulangerie,
+  EvaluationFournisseur,
+  SaisieBesoin,
+  BesoinApprovisionnement,
+  CommandeAchat,
+  Reception,
+  Rapprochement,
 } from "@/types";
 
 export const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080/api/v1";
@@ -1133,6 +1140,52 @@ export const boulangerieApi = {
         body: { articleCode: string; quantite: number; typePerte: TypePerte; motif?: string; prixMoyen?: number },
       ) => rawFetch<Fournee>(`/boul/fournees/${id}/pertes`, jsonInit("POST", body)),
     },
+  },
+  fournisseurs: {
+    list: () => rawFetch<FournisseurBoulangerie[]>("/boul/fournisseurs"),
+    get: (id: string) => rawFetch<FournisseurBoulangerie>(`/boul/fournisseurs/${id}`),
+    create: (body: Partial<FournisseurBoulangerie>) =>
+      rawFetch<FournisseurBoulangerie>("/boul/fournisseurs", jsonInit("POST", body)),
+    update: (id: string, body: Partial<FournisseurBoulangerie>) =>
+      rawFetch<FournisseurBoulangerie>(`/boul/fournisseurs/${id}`, jsonInit("PUT", body)),
+    activer: (id: string) =>
+      rawFetch<FournisseurBoulangerie>(`/boul/fournisseurs/${id}/activer`, { method: "POST" }),
+    desactiver: (id: string) =>
+      rawFetch<FournisseurBoulangerie>(`/boul/fournisseurs/${id}/desactiver`, { method: "POST" }),
+    evaluation: (id: string) =>
+      rawFetch<EvaluationFournisseur>(`/boul/fournisseurs/${id}/evaluation`),
+  },
+  besoins: {
+    calcule: (body: SaisieBesoin[]) =>
+      rawFetch<BesoinApprovisionnement[]>("/boul/besoins/calcule", jsonInit("POST", body)),
+    sousSeuil: (body: { articleCode: string; quantiteDisponible: number; seuil: number }[]) =>
+      rawFetch<BesoinApprovisionnement[]>("/boul/besoins/sous-seuil", jsonInit("POST", body)),
+  },
+  commandes: {
+    list: () => rawFetch<CommandeAchat[]>("/boul/commandes"),
+    get: (id: string) => rawFetch<CommandeAchat>(`/boul/commandes/${id}`),
+    create: (body: Partial<CommandeAchat>) =>
+      rawFetch<CommandeAchat>("/boul/commandes", jsonInit("POST", body)),
+    valider: (id: string) =>
+      rawFetch<CommandeAchat>(`/boul/commandes/${id}/valider`, { method: "POST" }),
+    envoyer: (id: string) =>
+      rawFetch<CommandeAchat>(`/boul/commandes/${id}/envoyer`, { method: "POST" }),
+    annuler: (id: string, motif: string) =>
+      rawFetch<CommandeAchat>(`/boul/commandes/${id}/annuler`, jsonInit("POST", { motif })),
+    rapprochement: (id: string) =>
+      rawFetch<Rapprochement>(`/boul/commandes/${id}/rapprochement`),
+  },
+  receptions: {
+    list: () => rawFetch<Reception[]>("/boul/receptions"),
+    get: (id: string) => rawFetch<Reception>(`/boul/receptions/${id}`),
+    create: (body: Partial<Reception>) =>
+      rawFetch<Reception>("/boul/receptions", jsonInit("POST", body)),
+    controle: (id: string) =>
+      rawFetch<Reception>(`/boul/receptions/${id}/controle`, { method: "POST" }),
+    accepter: (id: string) =>
+      rawFetch<Reception>(`/boul/receptions/${id}/accepter`, { method: "POST" }),
+    refuser: (id: string, motif: string) =>
+      rawFetch<Reception>(`/boul/receptions/${id}/refuser`, jsonInit("POST", { motif })),
   },
 };
 export { tryRefresh };
