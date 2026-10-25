@@ -16,40 +16,10 @@ scrape_configs:
     static_configs:
       - targets: ["host.docker.internal:8101"]
 
-  - job_name: academic-structure-service
+  - job_name: pedagogie-service
     metrics_path: /actuator/prometheus
     static_configs:
       - targets: ["host.docker.internal:8111"]
-
-  - job_name: academic-people-service
-    metrics_path: /actuator/prometheus
-    static_configs:
-      - targets: ["host.docker.internal:8112"]
-
-  - job_name: academic-enrollment-service
-    metrics_path: /actuator/prometheus
-    static_configs:
-      - targets: ["host.docker.internal:8113"]
-
-  - job_name: academic-attendance-service
-    metrics_path: /actuator/prometheus
-    static_configs:
-      - targets: ["host.docker.internal:8114"]
-
-  - job_name: academic-assessment-service
-    metrics_path: /actuator/prometheus
-    static_configs:
-      - targets: ["host.docker.internal:8115"]
-
-  - job_name: academic-exam-service
-    metrics_path: /actuator/prometheus
-    static_configs:
-      - targets: ["host.docker.internal:8116"]
-
-  - job_name: academic-fees-service
-    metrics_path: /actuator/prometheus
-    static_configs:
-      - targets: ["host.docker.internal:8117"]
 
   - job_name: boulangerie-produit-service
     metrics_path: /actuator/prometheus

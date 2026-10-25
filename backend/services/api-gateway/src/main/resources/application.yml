@@ -15,7 +15,7 @@ spring:
         # Si le chemin ne contient pas le motif, replaceAll le laisse intact.
         - name: RewritePath
           args:
-            regexp: /api/v1/(socle|ped|hop|fin|boul)/(.*)
+            regexp: /api/v1/(socle|ped|boul)/(.*)
             replacement: /api/v1/$2
         - name: RequestRateLimiter
           args:
@@ -33,35 +33,11 @@ spring:
           predicates:
             - Path=/api/v1/socle/**
 
-        # ---------- PEDAGOGIE (ports 8111-8117) ----------
-        - id: academic-structure-service
-          uri: http://${ACADEMIC_STRUCTURE_SERVICE_HOST:localhost}:8111
+        # ---------- PEDAGOGIE (8111) ----------
+        - id: pedagogie-service
+          uri: http://${PEDAGOGIE_SERVICE_HOST:localhost}:8111
           predicates:
-            - Path=/api/v1/ped/structures/**,/api/v1/ped/cycles/**,/api/v1/ped/niveaux/**,/api/v1/ped/classes/**,/api/v1/ped/promotions/**,/api/v1/ped/semestres/**,/api/v1/ped/ues/**,/api/v1/ped/matieres/**,/api/v1/ped/cours/**,/api/v1/ped/salles/**,/api/v1/ped/creneaux/**,/api/v1/ped/regimes-horaires/**,/api/v1/ped/emplois-du-temps/**
-        - id: academic-people-service
-          uri: http://${ACADEMIC_PEOPLE_SERVICE_HOST:localhost}:8112
-          predicates:
-            - Path=/api/v1/ped/enseignants/**,/api/v1/ped/eleves/**,/api/v1/ped/parents/**,/api/v1/ped/personnel/**
-        - id: academic-enrollment-service
-          uri: http://${ACADEMIC_ENROLLMENT_SERVICE_HOST:localhost}:8113
-          predicates:
-            - Path=/api/v1/ped/inscriptions/**,/api/v1/ped/admissions/**,/api/v1/ped/dispenses/**
-        - id: academic-attendance-service
-          uri: http://${ACADEMIC_ATTENDANCE_SERVICE_HOST:localhost}:8114
-          predicates:
-            - Path=/api/v1/ped/absences/**,/api/v1/ped/appels/**,/api/v1/ped/assiduite/**,/api/v1/ped/seances/**
-        - id: academic-assessment-service
-          uri: http://${ACADEMIC_ASSESSMENT_SERVICE_HOST:localhost}:8115
-          predicates:
-            - Path=/api/v1/ped/notes/**,/api/v1/ped/evaluations/**,/api/v1/ped/bulletins/**,/api/v1/ped/moyennes/**
-        - id: academic-exam-service
-          uri: http://${ACADEMIC_EXAM_SERVICE_HOST:localhost}:8116
-          predicates:
-            - Path=/api/v1/ped/sessions/**,/api/v1/ped/epreuves/**,/api/v1/ped/convocations/**,/api/v1/ped/notes-examen/**,/api/v1/ped/corrections/**,/api/v1/ped/deliberations/**,/api/v1/ped/decisions/**,/api/v1/ped/resultats/**,/api/v1/ped/rattrapages/**,/api/v1/ped/proces-verbaux/**
-        - id: academic-fees-service
-          uri: http://${ACADEMIC_FEES_SERVICE_HOST:localhost}:8117
-          predicates:
-            - Path=/api/v1/ped/frais/**,/api/v1/ped/paiements/**,/api/v1/ped/coupons/**
+            - Path=/api/v1/ped/**
 
         # ---------- BOULANGERIE (ports 8141-8146) ----------
         - id: boulangerie-produit-service
@@ -81,58 +57,6 @@ spring:
           predicates:
             - Path=/api/v1/boul/caisses/**,/api/v1/boul/ventes/**,/api/v1/boul/commandes-clients/**
 
-
-        # ---------- HOPITAL (ports 8121-8126) ----------
-        - id: hopital-patient-service
-          uri: http://${HOPITAL_PATIENT_SERVICE_HOST:localhost}:8121
-          predicates:
-            - Path=/api/v1/hop/patients/**,/api/v1/hop/dossiers/**
-        - id: hopital-rdv-service
-          uri: http://${HOPITAL_RDV_SERVICE_HOST:localhost}:8122
-          predicates:
-            - Path=/api/v1/hop/rdv/**,/api/v1/hop/agenda/**,/api/v1/hop/salles/**
-        - id: hopital-consultation-service
-          uri: http://${HOPITAL_CONSULTATION_SERVICE_HOST:localhost}:8123
-          predicates:
-            - Path=/api/v1/hop/consultations/**,/api/v1/hop/prescriptions/**,/api/v1/hop/comptes-rendus/**
-        - id: hopital-pharmacie-service
-          uri: http://${HOPITAL_PHARMACIE_SERVICE_HOST:localhost}:8124
-          predicates:
-            - Path=/api/v1/hop/pharmacie/**,/api/v1/hop/lots/**,/api/v1/hop/depots/**,/api/v1/hop/dispensations/**
-        - id: hopital-hospitalisation-service
-          uri: http://${HOPITAL_HOSPITALISATION_SERVICE_HOST:localhost}:8125
-          predicates:
-            - Path=/api/v1/hop/sejours/**,/api/v1/hop/admissions/**,/api/v1/hop/sorties/**,/api/v1/hop/lits/**,/api/v1/hop/services/**
-        - id: hopital-plateau-technique-service
-          uri: http://${HOPITAL_PLATEAU_TECHNIQUE_SERVICE_HOST:localhost}:8126
-          predicates:
-            - Path=/api/v1/hop/examens/**,/api/v1/hop/demandes-examen/**,/api/v1/hop/resultats/**,/api/v1/hop/equipements/**
-
-        # ---------- FINANCE (ports 8131-8136) ----------
-        - id: fin-compta-core
-          uri: http://${FIN_COMPTA_CORE_HOST:localhost}:8131
-          predicates:
-            - Path=/api/v1/fin/comptabilite/**,/api/v1/fin/plan-comptable/**,/api/v1/fin/journaux/**,/api/v1/fin/exercices/**,/api/v1/fin/taux-change/**,/api/v1/fin/tresorerie/**
-        - id: fin-facturation-service
-          uri: http://${FIN_FACTURATION_SERVICE_HOST:localhost}:8132
-          predicates:
-            - Path=/api/v1/fin/tiers/**,/api/v1/fin/factures/**,/api/v1/fin/avoirs/**,/api/v1/fin/reglements/**,/api/v1/fin/actes-facturables/**
-        - id: fin-stock-service
-          uri: http://${FIN_STOCK_SERVICE_HOST:localhost}:8133
-          predicates:
-            - Path=/api/v1/fin/stocks/**,/api/v1/fin/articles/**,/api/v1/fin/mouvements-stock/**
-        - id: fin-inventaire-service
-          uri: http://${FIN_INVENTAIRE_SERVICE_HOST:localhost}:8134
-          predicates:
-            - Path=/api/v1/fin/inventaires/**,/api/v1/fin/inventes/**
-        - id: fin-immobilisation-service
-          uri: http://${FIN_IMMOBILISATION_SERVICE_HOST:localhost}:8135
-          predicates:
-            - Path=/api/v1/fin/immobilisations/**,/api/v1/fin/amortissements/**
-        - id: fin-etats-service
-          uri: http://${FIN_ETATS_SERVICE_HOST:localhost}:8136
-          predicates:
-            - Path=/api/v1/fin/bilan/**,/api/v1/fin/compte-resultat/**,/api/v1/fin/fec/**,/api/v1/fin/etats-certifies/**
 
   security:
     oauth2:

@@ -31,13 +31,7 @@
         <module>services/socle-service</module>
 
         <!-- PEDAGOGIE -->
-        <module>services/academic-structure-service</module>
-        <module>services/academic-people-service</module>
-        <module>services/academic-enrollment-service</module>
-        <module>services/academic-attendance-service</module>
-        <module>services/academic-assessment-service</module>
-        <module>services/academic-exam-service</module>
-        <module>services/academic-fees-service</module>
+        <module>services/pedagogie-service</module>
         <!-- BOULANGERIE -->
         <module>services/boulangerie-produit-service</module>
         <module>services/boulangerie-production-service</module>
