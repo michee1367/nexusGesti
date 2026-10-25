@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# NexusGesti - demarre l'infra Docker puis les services construits (socle + pedagogie).
+# NexusGesti - demarre l'infra Docker puis les 3 applications par domaine + la passerelle.
 # Usage : scripts/backend-up.sh [--no-build]
 set -uo pipefail
 
@@ -7,6 +7,8 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 BACKEND="$ROOT/backend"
 LOGDIR="$BACKEND/logs"
 MVN="${MVN:-mvn}"
+JAVA_OPTS="${JAVA_OPTS:--Xms256m -Xmx512m -XX:MaxMetaspaceSize=192m -XX:ActiveProcessorCount=2}"
+GATEWAY_JAVA_OPTS="${GATEWAY_JAVA_OPTS:--Xms128m -Xmx256m -XX:MaxMetaspaceSize=160m -XX:ActiveProcessorCount=2}"
 
 SERVICES=(socle-service pedagogie-service boulangerie-service api-gateway)
 declare -A PORTS=(
@@ -94,7 +96,9 @@ info "==> Demarrage des services"
 for svc in "${SERVICES[@]}"; do
   jar="$BACKEND/services/${svc}/target/${svc}-1.0.0-SNAPSHOT.jar"
   [[ -f "$jar" ]] || fail "jar absent : $jar (build ?)"
-  nohup java -jar "$jar" > "$LOGDIR/${svc}.log" 2>&1 &
+  opts="$JAVA_OPTS"
+  [[ "$svc" == "api-gateway" ]] && opts="$GATEWAY_JAVA_OPTS"
+  nohup java $opts -jar "$jar" > "$LOGDIR/${svc}.log" 2>&1 &
   echo $! > "$LOGDIR/${svc}.pid"
   info "    ${svc} (PID $!) -> logs/${svc}.log"
 done

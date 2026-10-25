@@ -29,6 +29,19 @@ docs/
 | Séquences | paiement, délibération, rappel de lot, clôture d'exercice, séjour, acte → facture, fournée, vente/caisse, réception | 9 |
 | **Total** | **31 services** | **71** |
 
+## Implémentation actuelle
+
+La modélisation décrit 31 services ; l'implémentation les regroupe en **3 applications par domaine** pour réduire l'empreinte mémoire, avec un schéma PostgreSQL par domaine et la même isolation RLS :
+
+| Application | Services regroupés | Port | Schéma |
+|---|---|---|---|
+| `socle-service` | tenant, identity, auth, notification, audit, reporting | 8101 | `socle` |
+| `pedagogie-service` | structure, people, enrollment, attendance, assessment, exam, fees | 8111 | `pedagogie` |
+| `boulangerie-service` | produit, production, approvisionnement, vente | 8141 | `boulangerie` |
+| `api-gateway` | routage, CORS, `X-Tenant-Id` | 8080 | — |
+
+Hôpital et finance restent à implémenter ; les modules boulangerie `clients` et `personnel` aussi. Les routes et packages d'origine sont conservés (`/api/v1/socle/**`, `/api/v1/ped/**`, `/api/v1/boul/**`). Voir `backend/README.md` pour le démarrage et les limites mémoire par défaut.
+
 ## Générer les SVG
 
 Graphviz n'est pas requis, le moteur **smetana** est utilisé.

@@ -17,21 +17,25 @@ Plateforme SaaS multi-tenant pour trois domaines :
 | **Boulangerie** | produits/recettes, production, vente/caisse, clients/fidélité, approvisionnement, personnel (adossé à la finance) |
 | **Finance** | comptabilité OHADA / SYSCOHADA RDC |
 
-**Périmètre actuel : documentation + backend `./backend` + console socle `./frontend` (phases 1-2).**
-La console couvre phases 1-2 (auth direct-grant, tenancy, grilles, années, référentiels, pages ADMIN).
-Toute phase suit la règle **back d'abord, front ensuite** (D13 + colonne Front en §9) :
+**Périmètre actuel : documentation + backend `./backend` + console `./frontend`.**
+La console couvre le socle, la pédagogie et les lots 1-3 boulangerie.
+Toute phase suit la règle **back d'abord, front ensuite** (D13) :
 le travail front d'une phase ne s'ouvre qu'une fois la brique backend validée.
-Les 31 services sont **modélisés** (voir §2), mais la passerelle n'en route encore que **25** — le domaine
-`boulangerie` (6 services) est **en cours d'implémentation** : le domaine est modélisé en PlantUML et le
-**lot 1 `boulangerie-produit-service` est construit** (routes `/api/v1/boul/**`) **avec son front lot 1**
-(`./frontend`, pages `/boulangerie/{produits,recettes,gammes,categories}`), le **lot 2
-`boulangerie-production-service` est construit** (plans, fournées, port 8142) **avec son front lot 2**
-(pages `/boulangerie/{plans,fournees}`) et le **lot 3 `boulangerie-approvisionnement-service` est construit**
-(fournisseurs, besoins, commandes, réceptions, port 8143) **avec son front lot 3**
-(pages `/boulangerie/{fournisseurs,besoins,commandes,receptions}`) et le **lot 4
-`boulangerie-vente-service` est construit** (caisses, ventes idempotentes, commandes client, port 8144,
-**back seulement** — front lot 4 à faire). **Seuls 19 modules Maven sont construits**
-(voir §9).
+
+**Fusion par domaine (2026-10-25).** Les 18 microservices des domaines construits sont regroupés en
+**3 applications** (un processus + un schéma Postgres par domaine), la passerelle restant à part :
+
+| Application | Services regroupés | Port | Schéma |
+|---|---|---|---|
+| `socle-service` | tenant, identity, auth, notification, audit, reporting | 8101 | `socle` |
+| `pedagogie-service` | structure, people, enrollment, attendance, assessment, exam, fees | 8111 | `pedagogie` |
+| `boulangerie-service` | produit, production, approvisionnement, vente | 8141 | `boulangerie` |
+| `api-gateway` | routage, CORS, `X-Tenant-Id` | 8080 | — |
+
+Les **31 services restent le découpage de modélisation** (voir §2) ; les routes et packages d'origine
+sont conservés. La passerelle ne route que **3 préfixes** : `/api/v1/socle/**`, `/api/v1/ped/**`,
+`/api/v1/boul/**`. Hôpital et finance ne sont pas construits ; les modules boulangerie `clients` et
+`personnel` restent à faire. **6 modules Maven** au total (3 apps + gateway + 2 `shared`).
 Ne pas supposer qu'un service existe sous prétexte que sa route existe.
 
 ---
@@ -49,8 +53,8 @@ docs/diagrammes/
   finance/     6 modèles + 6 cas d'utilisation
   sequences/   9 séquences (paiement, délibération, rappel lot, clôture, séjour, acte → facture, fournée, vente/caisse, réception)
   rendu/       71 SVG à générer — ACTUELLEMENT VIDE
-backend/       Maven parent + 19 modules construits (voir §9)
-frontend/      console socle Next.js 16 (phases 1-2) — mémo dédié dans frontend/AGENTS.md
+backend/       Maven parent + 6 modules construits : 3 apps + gateway + 2 shared (voir §9)
+frontend/      console Next.js 16 (socle + pédagogie + boulangerie lots 1-3) — mémo dans frontend/AGENTS.md
 scripts/       démarrage local : backend-up.{sh,ps1} + front-up.{sh,ps1} (voir §11)
 ```
 
@@ -58,7 +62,7 @@ scripts/       démarrage local : backend-up.{sh,ps1} + front-up.{sh,ps1} (voir 
 **0 SVG pour l'instant** : `docs/diagrammes/rendu/` est vide, le rendu n'a jamais été fait ni versionné.
 §4 reste la procédure de rendu à suivre un jour ; entre temps, ne pas écrire « 71 SVG » dans un fichier de suivi.
 
-Services hôpital : `patient`, `rdv`, `consultation`, `pharmacie`, `hospitalisation`, `plateau-technique`. Services boulangerie : `produit`, `production`, `vente`, `clients`, `approvisionnement`, `personnel`. 31 services au total (25 routés).
+Services hôpital : `patient`, `rdv`, `consultation`, `pharmacie`, `hospitalisation`, `plateau-technique`. Services boulangerie : `produit`, `production`, `vente`, `clients`, `approvisionnement`, `personnel`. 31 services modélisés, regroupés en 3 applications + passerelle.
 
 ---
 
@@ -192,80 +196,71 @@ Pour les classes issues du dépôt, préférer le stéréotype du propriétaire 
 
 ## 9. État de l'implémentation backend
 
-Ordre des phases validé : **socle → pédagogie → hôpital → finance.** Une brique = un commit.
-**Règle (D13) : back d'abord, front ensuite** — une phase n'ouvre sa console frontend
-qu'une fois sa brique backend validée (build + `mvn test` + E2E passerelle + commit).
+Ordre métier validé : **socle → pédagogie → hôpital → finance**, avec la boulangerie
+adossée à la finance. Une brique = un commit. **Règle (D13) : back d'abord, front ensuite** —
+une phase n'ouvre sa console frontend qu'une fois sa brique backend validée
+(build + `mvn test` + E2E passerelle + commit).
 
-| Phase | Périmètre | État back | État front |
-|---|---|---|---|
-| 0 | Rendu SVG des 71 diagrammes | **écartée par l'utilisateur** | — |
-| 1 | Socle technique (`shared/*` + passerelle + infra) | **VALIDÉE** — 5 services bootent, `/actuator/health` → 200, Prometheus 5 cibles `up`, **RLS prouvé de bout en bout** (§11, 2026-10-07), D3 et D4 appliqués, `mvn test` vert (59), **commit `5158d45`** | Console socle (base) : layout, auth direct-grant, tenancy — **livrée avec la console (phases 1-2)** |
-| 2 | `tenant-service` (agégat `Etablissement`, `ProfilEtablissement`, grilles) | **VALIDÉE** — plan §12 exécuté le 2026-10-08 : 8+e module, 24 tables + RLS, 54 tests, grille activer/figer → 409 `GRILLE_FIGEE`, E2E passerelle complet (§11 2026-10-08), **commit `e25283e`** | pages socle : dashboard, tenant, grilles + `[type]`, annees, referentiels — **livrée avec la console (phases 1-2)** |
-| 3 | reste du socle (`identity`, `auth`, `notification`, `audit`, `reporting`) | **en cours** — `identity-service` construit le 2026-10-09 (lot 1 : utilisateurs + rôles/permissions, miroir Keycloak) ; **self-service signup MVP** (2026-10-11) : `auth-service` `register` enrichi (rôle `ADMIN`, attribut Keycloak `tenant_id`, payload `user.created` portant `etablissement`) ; `tenant-service` + `identity-service` devenus **consommateurs Kafka** `tenant.events`/`user.created` (création `Etablissement` + ligne proxy utilisateur, idempotents) ; **login par email `resolve-tenant`** (2026-10-12) ; reste `auth` durcissement + `notification`/`audit`/`reporting` | Console identité : pages `/utilisateurs` + `/roles` (2026-10-09) ; **landing publique `/` + `/signup` self-service** (2026-10-11) ; **login email-first + sélecteurs « par nom » pédagogie** (2026-10-12, `tsc`+lint verts) |
-| 4 | pédagogie (7 services `academic-*`) | **en cours** — lot 4a `academic-structure-service` **commité `3125320`** (niveaux, classes, promotions, semestres, UE, matières, cours ECUE, salles, créneaux, régimes horaires, emplois du temps) ; lot 4b `academic-people-service` **commité `7565e35`** (élèves, dossiers, inscriptions, congés, sanctions, parents/liens, enseignants/affectations, agents, services) ; lot 4c `academic-enrollment-service` construit le 2026-10-10 (inscriptions UE, groupes TD/TP, règles d'éligibilité, parcours — MVP) ; lot 4d `academic-attendance-service` **commité `1ae85ba`** (séances, feuilles d'appel, présences, absences, justificatifs, suivi d'assiduité — `/seances` réassigné de exam à attendance) ; lot 4e `academic-assessment-service` construit le 2026-10-10 (évaluations, notes, feuilles, moyennes, bulletins, coupons — boot + E2E passerelle validés) ; lot 4f `academic-exam-service` **commité `1ed5d2c`** (sessions, épreuves, créneaux, convocations, notes d'examen, corrections, délibérations, décisions, résultats, rattrapages, PV — boot + E2E passerelle validés) ; lot 4g `academic-fees-service` **commité `6772a05`** (grilles tarifaires, avis, réductions, paiements idempotents, coupons, journaliers — boot + E2E passerelle validés) — **phase 4 back complète** | 4a/4b : pages pédagogie livrées (`8b26390`) ; 4c-4g : pages pédagogie construites le 2026-10-11 (`tsc` + lint + build verts), **commit à faire** |
-| 5 | hôpital (6 services) | à faire | à faire (après validation back) |
-| 6 | finance (6 services, OHADA) | à faire | à faire (après validation back) |
+### État courant après fusion par domaine (2026-10-25)
 
-### Modules réellement construits (19)
-
-```
-shared/common-domain     noyau pur, aucune dépendance Spring
-shared/common-lib        tenancy, sécurité, idempotence
-services/api-gateway     25 routes, filtre X-Tenant-Id
-services/auth-service
-services/notification-service
-services/audit-service
-services/reporting-service
-services/tenant-service   socle métier : etablissement, grilles, referentiels (8101) + consommateur `tenant.events`/`user.created`
-services/identity-service socle identité : utilisateurs + rôles/permissions, miroir Keycloak (8102) + consommateur `tenant.events`/`user.created`
-services/academic-structure-service pedagogie : arbre, salles, creneaux, emplois du temps (8111)
-services/academic-people-service pedagogie : eleves, dossiers, inscriptions, personnel, affectations (8112)
-services/academic-enrollment-service pedagogie : inscriptions UE, groupes TD/TP, eligibilite, parcours (8113)
-services/academic-attendance-service pedagogie : seances, feuilles d appel, presences, absences, justificatifs, assiduite (8114)
-services/academic-assessment-service pedagogie : evaluations, notes, feuilles, moyennes, bulletins, coupons (8115)
-services/academic-exam-service pedagogie : sessions, epreuves, creneaux, convocations, notes d examen, corrections, deliberations, resultats, rattrapages, proces-verbaux (8116)
-services/academic-fees-service pedagogie : grilles tarifaires, avis, reductions, paiements idempotents, coupons, journaliers (8117)
-services/boulangerie-produit-service boulangerie : gammes, categories, produits, fiches recette versionnees, ingredients, cout de revient (8141) + producteur `boulangerie.events`
-services/boulangerie-production-service boulangerie : plans de production, fournées, consommations par lot, pertes valorisées (8142) + producteur `boulangerie.events`
-services/boulangerie-approvisionnement-service boulangerie : fournisseurs, besoins, commandes d achat, receptions controlees (8143) + producteur `boulangerie.events`
-services/boulangerie-vente-service boulangerie : caisses, ventes idempotentes, commandes client, acomptes, retraits (8144) + producteur `boulangerie.events`
-```
-
-`mvn test` au niveau racine : **BUILD SUCCESS, 499 tests verts** (59 tenant + 19 identity + 26 auth + 2 audit
-+ 6 gateway + 24 structure + 25 people + 35 enrollment + 44 attendance + 44 assessment + 50 exam + 40 fees
-+ **30 produit** + **26 production** + **57 approvisionnement** + **12 vente**).
-
-### Les 25 routes de la passerelle ≠ les modules construits
-
-Toutes sont déclarées dans `services/api-gateway/src/main/resources/application.yml`
-mais **une route vers un module inexistant renverra un refus de connexion**, pas un 404.
-Vérifier l'existence du module avant d'appeler un service.
-
-| Domaine | Préfixe | Services (port) |
+| Brique | État back | État front |
 |---|---|---|
-| socle | `/api/v1/socle/**` | `tenant` 8101 · `identity` 8102 · `auth` 8103 · `notification` 8104 · `audit` 8105 · `reporting` 8106 |
-| pédagogie | `/api/v1/ped/**` | `academic-structure` 8111 · `academic-people` 8112 · `academic-enrollment` 8113 · `academic-attendance` 8114 · `academic-assessment` 8115 · `academic-exam` 8116 · `academic-fees` 8117 |
-| hôpital | `/api/v1/hop/**` | `patient` 8121 · `rdv` 8122 · `consultation` 8123 · `pharmacie` 8124 · `hospitalisation` 8125 · `plateau-technique` 8126 |
-| finance | `/api/v1/fin/**` | `fin-compta-core` 8131 · `fin-facturation` 8132 · `fin-stock` 8133 · `fin-inventaire` 8134 · `fin-immobilisation` 8135 · `fin-etats` 8136 |
-| boulangerie | `/api/v1/boul/**` | `boulangerie-produit` 8141 (lot 1) · `production` 8142 (lot 2) · `approvisionnement` 8143 (lot 3) · `vente` 8144 (lot 4, back) · `clients` 8145 · `personnel` 8146 (à venir) |
-| passerelle | — | `api-gateway` 8080 (Keycloak sur 8180) |
+| Socle (tenant, identity, auth, notification, audit, reporting) | construit, fusionné dans `socle-service` (8101), **106 tests** | console livrée (dashboard, tenant, grilles, années, référentiels, utilisateurs, rôles, landing/signup, login email-first) |
+| Pédagogie (structure, people, enrollment, attendance, assessment, exam, fees) | construit, fusionné dans `pedagogie-service` (8111), **262 tests** | 28 pages livrées (4c-4g) + 4a/4b |
+| Boulangerie (produit, production, approvisionnement, vente) | construit, fusionné dans `boulangerie-service` (8141), **125 tests**, E2E lots 1/3 et smoke vente verts | lots 1-3 livrés ; **front vente à faire** |
+| Hôpital (6 services) | à faire | — |
+| Finance (6 services) | à faire | — |
+| Boulangerie clients/personnel | à faire (modules 5-6) | — |
 
-Pas de `fin-tresorerie` : la trésorerie est un préfixe de `fin-compta-core` (`/api/v1/fin/tresorerie/**`).
+**Fusions commitées** : socle `1212b2a`, pédagogie `bccd3eb`, boulangerie `58d6fe0`.
 
-**Boulangerie (6 services) : en cours d'implémentation (D18-D20).** Les 6 modèles + 6 UC + 3 séquences
-existent. Le **lot 1 `boulangerie-produit-service` (8141) est construit** (routes `/api/v1/boul/{produits,
-gammes,categories,recettes}/**`, producteur `boulangerie.events`) **avec son front lot 1** ; le **lot 2
-`boulangerie-production-service` (8142) est construit** (routes `/api/v1/boul/{plans,fournees}/**`,
-producteur `boulangerie.events`) **avec son front lot 2** ; le **lot 3
-`boulangerie-approvisionnement-service` (8143) est construit** (routes `/api/v1/boul/{fournisseurs,
-besoins,commandes,receptions}/**`, producteur `boulangerie.events`, E2E 49/0) **avec son front lot 3**
-(pages `/boulangerie/{fournisseurs,besoins,commandes,receptions}`) ; le **lot 4
-`boulangerie-vente-service` (8144) est construit** (routes `/api/v1/boul/{caisses,ventes,commandes-clients}/**`,
-producteur `boulangerie.events`) **back seulement** (front lot 4 à faire) ; les lots 5→6 (`clients`,
-`personnel`, ports 8145-8146) restent à faire, la route
-`/api/v1/boul/**` s'élargit lot par lot (D17). Le domaine est adossé à la finance (`fin-stock`,
-`fin-facturation`, `fin-compta-core`) et activé par le profil `BOULANGERIE` (§2, profil ajouté dans
-`socle/modele-tenant-service.puml`).
+`mvn test` racine après fusion : **BUILD SUCCESS, 499 tests** — socle 106, pédagogie 262,
+boulangerie 125 (30 produit + 26 production + 57 approvisionnement + 12 vente), gateway 6.
+
+### Historique des phases produit (avant fusion, conservé)
+
+| Phase | Périmètre | Résultat |
+|---|---|---|
+| 0 | Rendu SVG des 71 diagrammes | **écartée par l'utilisateur** |
+| 1 | Socle technique (`shared/*` + passerelle + infra) | **validée** — 5 services bootaient, RLS prouvé, commit `5158d45` |
+| 2 | `tenant-service` (24 tables + RLS, grilles) | **validée** — commit `e25283e` |
+| 3 | reste du socle (`identity`, `auth`, `notification`, `audit`, `reporting`) | construit au fil des lots ; durcissement `auth` encore ouvert |
+| 4 | pédagogie (7 services `academic-*`) | **back complète** (commits `3125320`, `7565e35`, `0692137`, `1ae85ba`, `1ed5d2c`, `6772a05`) ; front 4c-4g livré |
+| 5 | hôpital (6 services) | à faire |
+| 6 | finance (6 services, OHADA) | à faire |
+
+### Modules réellement construits (6)
+
+```
+shared/common-domain
+shared/common-lib
+services/socle-service        socle : tenant, identity, auth, notification, audit, reporting (8101)
+services/pedagogie-service    pedagogie : structure, people, enrollment, attendance, assessment, exam, fees (8111)
+services/boulangerie-service  boulangerie : produit, production, approvisionnement, vente (8141)
+services/api-gateway          3 routes /api/v1/{socle,ped,boul}/**, filtre X-Tenant-Id (8080)
+```
+
+Chaque application possède **un seul schéma** (`socle`, `pedagogie`, `boulangerie`), une seule
+table Flyway (`flyway_<domaine>_history`) et ses migrations fusionnées
+(`V1__<domaine>_schema.sql`, `V2__rls.sql`, `V3__app_role.sql`). Les packages et routes d'origine
+sont conservés ; le détail des services est dans le journal ci-dessous.
+
+### Routes de la passerelle
+
+La passerelle ne déclare plus que les applications existantes :
+
+| Domaine | Préfixe | Cible |
+|---|---|---|
+| socle | `/api/v1/socle/**` | `socle-service` 8101 |
+| pédagogie | `/api/v1/ped/**` | `pedagogie-service` 8111 |
+| boulangerie | `/api/v1/boul/**` | `boulangerie-service` 8141 |
+| passerelle | — | `api-gateway` 8080 (Keycloak 8180) |
+
+Les préfixes hôpital/finance seront ajoutés avec leurs applications (D17). À l'intérieur de
+`boulangerie-service`, la route `/api/v1/boul/**` couvre produit, production, approvisionnement et
+vente ; `clients` et `personnel` restent à construire. L'appel production → produit pour les besoins
+matières est **in-process** (`ProduitRecetteProviderAdapter`), sans HTTP.
+
 
 ### Multi-tenancy — implémenté en phase 1
 
@@ -276,8 +271,8 @@ producteur `boulangerie.events`) **back seulement** (front lot 4 à faire) ; les
   réinitialisé au `close()`. Un tenant ne peut jamais fuiter vers le suivant, ni vers le pool suivant.
 - `common-lib` ne peut pas être dépendance de `api-gateway` : WebFlux réactif incompatible avec le filtre servlet.
   La passerelle ne dépend que de `common-domain`.
-- Les politiques RLS sont posées **dans les migrations de chaque service**. Une migration qui ne les pose pas n'est pas terminée.
-  Schéma par service, **pas** de schéma monolithe `V1__init_schema.sql`.
+- Les politiques RLS sont posées **dans les migrations de chaque application**. Une migration qui ne les pose pas n'est pas terminée.
+  Un schéma par **domaine** (`socle`, `pedagogie`, `boulangerie`), **pas** de schéma monolithe `V1__init_schema.sql`.
 
 ### Décisions arbitrées (ne pas rouvrir)
 
@@ -1490,7 +1485,45 @@ table Flyway `flyway_boulangerie_approvisionnement_history`, package `com.nexusg
     alors qu'aucun `java` ne tourne — suspect verrou OneDrive/antivirus sur `Documents` ; un
     `mvn -DskipTests package` sans `clean` a suffi.
 
-### Restant
+### Fusion par domaine — socle, pédagogie, boulangerie (2026-10-25)
+
+**Objectif** : réduire la RAM d'un backend qui lançait 19 processus. Les 18 microservices des
+domaines construits sont regroupés en **3 applications** + la passerelle, chacune avec **un schéma
+Postgres fusionné** ; les packages, routes et contrôleurs d'origine sont conservés.
+
+- **Socle** `1212b2a` : 6 services → `socle-service` (8101, schéma `socle`) ; `V1__socle_schema.sql`
+  fusionne 35 tables (dont partition `audit_log_default`), `V2__rls.sql` ignore les partitions,
+  `V3__app_role.sql` ; **106 tests** ; boot + E2E passerelle verts (login, RBAC, RLS A/B, self-service
+  signup + Kafka).
+- **Pédagogie** `bccd3eb` : 7 services → `pedagogie-service` (8111, schéma `pedagogie`) ; 71 tables,
+  RLS + 22 index d'unicité métier ; collision `creneau` résolue par `CreneauExamenEntity`
+  (`pedagogie.creneau_examen`) ; **262 tests** ; boot + E2E verts.
+- **Boulangerie** `58d6fe0` : 4 services → `boulangerie-service` (8141, schéma `boulangerie`) ;
+  23 tables, RLS, 11 index uniques ; **125 tests** ; boot + E2E lot 1 (26/0), lot 3 et smoke vente
+  (caisse → vente idempotente → encaissement → clôture, écart 0, `vente.encaissee` audité) verts.
+- **Appels internes** : `ProduitRecetteProviderAdapter` remplace le client HTTP production → produit ;
+  `RecetteInternalController` reste disponible.
+- **Configs** : une seule chaîne `SecurityConfig` par application, un `JpaConfig`, un `KafkaConfig`
+  (`@Profile("!test")`) ; `application.yml` par app avec `spring.flyway.url` explicite, schéma et
+  table d'historique dédiés.
+- **Passerelle** : 3 routes seulement (`/api/v1/{socle,ped,boul}/**` → 8101/8111/8141),
+  `RewritePath` réduit à `(socle|ped|boul)`, routes hôpital/finance retirées.
+- **Exploitation** : Prometheus ne cible plus que 4 processus ; `scripts/backend-up.{sh,ps1}`
+  démarrent 4 jars avec `JAVA_OPTS` (`-Xmx512m`, gateway `-Xmx256m`) ; Postgres
+  `max_connections=200` reste un correctif dev (production : PgBouncer + pools 2-4).
+- **Pièges payés** :
+  - `perl -0pi -e 's###...###'` avec délimiteur `#` a corrompu `api-gateway/application.yml`
+    (restauré par `git checkout`, puis édité avec l'outil d'édition) — ne pas utiliser `#` comme
+    délimiteur sur du YAML.
+  - les tests `@WebMvcTest` ne trouvent le `@SpringBootConfiguration` que si `*Application` est dans
+    le package racine `com.nexusgesti`.
+  - `ProduitRecetteClient` supprimé : l'interface `RecetteProvider` est implémentée par un adapter
+    in-process, pas par un client REST.
+  - le `mvn clean` racine échoue si un jar tourne (verrou Windows) ; tuer les JVM concernées.
+- **Reste** : front vente (lot 4), modules boulangerie `clients`/`personnel`, domaines hôpital/finance,
+  mise à jour de la CI (absente) et des compteurs de services dans les guides.
+
+
 
 - **Boulangerie lots 1-2** commités le 2026-10-17 (`c1f2ed5` back, `c7d2b00` front, `9c77090` journal).
 - **Boulangerie lot 3** (back + front + doc) **commité `2ce1f19`** le 2026-10-20 (65 fichiers ; 57 tests ;

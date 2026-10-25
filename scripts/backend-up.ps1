@@ -1,4 +1,4 @@
-# NexusGesti - demarre l'infra Docker puis les services construits (socle + pedagogie).
+# NexusGesti - demarre l'infra Docker puis les 3 applications par domaine + la passerelle.
 # Usage : scripts/backend-up.ps1 [-NoBuild]
 [CmdletBinding()]
 param(
@@ -11,6 +11,8 @@ $Root    = Split-Path -Parent $PSScriptRoot
 $Backend = Join-Path $Root 'backend'
 $LogDir  = Join-Path $Backend 'logs'
 $Mvn     = if ($env:MVN) { $env:MVN } else { 'mvn' }
+$JavaOpts = if ($env:JAVA_OPTS) { $env:JAVA_OPTS } else { '-Xms256m -Xmx512m -XX:MaxMetaspaceSize=192m -XX:ActiveProcessorCount=2' }
+$GatewayJavaOpts = if ($env:GATEWAY_JAVA_OPTS) { $env:GATEWAY_JAVA_OPTS } else { '-Xms128m -Xmx256m -XX:MaxMetaspaceSize=160m -XX:ActiveProcessorCount=2' }
 
 $Services = [ordered]@{
     'socle-service'        = 8101
@@ -101,7 +103,8 @@ foreach ($svc in $Services.Keys) {
     if (-not (Test-Path $jar)) { Die "jar absent : $jar (build ?)" }
     $out = Join-Path $LogDir "$svc.log"
     $err = Join-Path $LogDir "$svc.err.log"
-    $p = Start-Process -FilePath 'java' -ArgumentList @('-jar', $jar) -NoNewWindow -PassThru `
+    $opts = if ($svc -eq 'api-gateway') { $GatewayJavaOpts } else { $JavaOpts }
+    $p = Start-Process -FilePath 'java' -ArgumentList (@($opts -split '\s+' | Where-Object { $_ }) + @('-jar', $jar)) -NoNewWindow -PassThru `
         -RedirectStandardOutput $out -RedirectStandardError $err
     Set-Content -Path (Join-Path $LogDir "$svc.pid") -Value $p.Id
     Info "    $svc (PID $($p.Id)) -> logs/$svc.log"

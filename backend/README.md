@@ -1,18 +1,38 @@
 # NexusGesti Backend
 
-Plateforme SaaS multi-tenant : socle, pedagogie, hopital, finance OHADA/RDC.
+Plateforme SaaS multi-tenant : socle, pedagogie, boulangerie, puis hopital et finance OHADA/RDC.
 
 ## Stack
 
 | Couche | Technologie |
 |--------|-------------|
 | Backend | Java 21 + Spring Boot 3.4, architecture hexagonale |
-| Persistance | PostgreSQL 16 + Flyway, un schema par service, RLS |
+| Persistance | PostgreSQL 16 + Flyway, **un schema par domaine**, RLS |
 | Cache | Redis 7 |
-| Evenements | Apache Kafka, 5 topics |
+| Evenements | Apache Kafka, 6 topics |
 | API Gateway | Spring Cloud Gateway |
 | Identite | Keycloak 25 (OIDC, JWT) |
 | Conteneurs | Docker, Docker Compose |
+
+## Applications (fusion par domaine)
+
+Les 18 microservices d'origine sont regroupes en **3 applications** qui partagent
+un processus et un schema, tout en conservant leurs packages, routes et ports
+d'origine. La passerelle reste un processus separe.
+
+| Application | Domaines inclus | Port | Schema |
+|-------------|-----------------|------|--------|
+| `socle-service` | tenant, identity, auth, notification, audit, reporting | 8101 | `socle` |
+| `pedagogie-service` | structure, people, enrollment, attendance, assessment, exam, fees | 8111 | `pedagogie` |
+| `boulangerie-service` | produit, production, approvisionnement, vente | 8141 | `boulangerie` |
+| `api-gateway` | routage, CORS, controle `X-Tenant-Id` | 8080 | — |
+
+Hopital (8121-8126) et finance (8131-8136) ne sont pas encore implementes.
+Les modules boulangerie `clients` et `personnel` restent a construire.
+
+Chaque application demarre avec une seule chaine de securite, une seule
+configuration JPA/Kafka et une seule table d'historique Flyway
+(`flyway_socle_history`, `flyway_pedagogie_history`, `flyway_boulangerie_history`).
 
 ## Modules partages
 
@@ -27,7 +47,7 @@ Deux modes cohabitent :
 
 | Mode | Isolation |
 |------|-----------|
-| SaaS mutualise | `etablissement_id` sur chaque table + RLS PostgreSQL |
+| SaaS mutualise | `tenant_id` sur chaque table + RLS PostgreSQL |
 | On-premise dedie | base dediee par instance |
 
 Le client porte son etablissement dans l'en-tete `X-Tenant-Id`. Il est valide par
@@ -37,34 +57,38 @@ remis a zero au retour dans le pool pour qu'un tenant ne fuite jamais vers le su
 
 Une migration qui ne pose pas ses politiques RLS n'est pas terminee.
 
-## Domaines et ports
+## Domaines et routes
 
-| Domaine | Services | Ports |
-|---------|----------|-------|
-| Passerelle | `api-gateway` | 8080 |
-| Socle | `tenant` `identity` `auth` `notification` `audit` `reporting` | 8101-8106 |
-| Pedagogie | `academic-structure` `people` `enrollment` `attendance` `assessment` `exam` `fees` | 8111-8117 |
-| Hopital | `patient` `rdv` `consultation` `pharmacie` `hospitalisation` `plateau-technique` | 8121-8126 |
-| Finance | `fin-compta-core` `facturation` `stock` `inventaire` `immobilisation` `etats` | 8131-8136 |
+| Domaine | Etat | Prefixe passerelle |
+|---------|------|--------------------|
+| Socle | construit | `/api/v1/socle/**` |
+| Pedagogie | construit | `/api/v1/ped/**` |
+| Boulangerie | produit, production, approvisionnement, vente construits | `/api/v1/boul/**` |
+| Hopital | a faire | `/api/v1/hop/**` |
+| Finance | a faire | `/api/v1/fin/**` |
 
-Preprefixes d'API : `/api/v1/socle/**`, `/api/v1/ped/**`, `/api/v1/hop/**`, `/api/v1/fin/**`.
+La passerelle ne route que vers les applications reellement presentes.
 
 ## Topics Kafka
 
-`tenant.events` · `ped.events` · `hopital.events` · `fin.events` · `audit.events`
+`tenant.events` · `ped.events` · `boulangerie.events` · `hopital.events` · `fin.events` · `audit.events`
 
-Crees par `infrastructure/kafka/topics.sh` au demarrage de Kafka.
+Crees par `infrastructure/kafka/topics.sh` au demarrage de Kafka ; `scripts/backend-up.*`
+rejoue `kafka-init` (idempotent) pour creer les topics ajoutes apres le premier demarrage.
 
 ## Demarrage local
 
 ```bash
-# Infra + les 7 services du socle + attente /actuator/health (git-bash)
+# Infra + les 3 applications + la passerelle, puis attente /actuator/health (git-bash)
 scripts/backend-up.sh          # ou scripts/backend-up.ps1 (PowerShell)
-scripts/front-up.sh            # console socle sur http://localhost:3001
+scripts/front-up.sh            # console sur http://localhost:3001
 
 docker compose up -d           # infra seule
 mvn test                       # tests unitaires
 ```
+
+Limites memoire par defaut des scripts : `-Xmx512m` par application domaine,
+`-Xmx256m` pour la passerelle (surchargeables par `JAVA_OPTS` et `GATEWAY_JAVA_OPTS`).
 
 ## Regle transverse
 
