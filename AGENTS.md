@@ -28,7 +28,9 @@ Les 31 services sont **modélisés** (voir §2), mais la passerelle n'en route e
 `boulangerie-production-service` est construit** (plans, fournées, port 8142) **avec son front lot 2**
 (pages `/boulangerie/{plans,fournees}`) et le **lot 3 `boulangerie-approvisionnement-service` est construit**
 (fournisseurs, besoins, commandes, réceptions, port 8143) **avec son front lot 3**
-(pages `/boulangerie/{fournisseurs,besoins,commandes,receptions}`). **Seuls 18 modules Maven sont construits**
+(pages `/boulangerie/{fournisseurs,besoins,commandes,receptions}`) et le **lot 4
+`boulangerie-vente-service` est construit** (caisses, ventes idempotentes, commandes client, port 8144,
+**back seulement** — front lot 4 à faire). **Seuls 19 modules Maven sont construits**
 (voir §9).
 Ne pas supposer qu'un service existe sous prétexte que sa route existe.
 
@@ -47,7 +49,7 @@ docs/diagrammes/
   finance/     6 modèles + 6 cas d'utilisation
   sequences/   9 séquences (paiement, délibération, rappel lot, clôture, séjour, acte → facture, fournée, vente/caisse, réception)
   rendu/       71 SVG à générer — ACTUELLEMENT VIDE
-backend/       Maven parent + 18 modules construits (voir §9)
+backend/       Maven parent + 19 modules construits (voir §9)
 frontend/      console socle Next.js 16 (phases 1-2) — mémo dédié dans frontend/AGENTS.md
 scripts/       démarrage local : backend-up.{sh,ps1} + front-up.{sh,ps1} (voir §11)
 ```
@@ -204,7 +206,7 @@ qu'une fois sa brique backend validée (build + `mvn test` + E2E passerelle + co
 | 5 | hôpital (6 services) | à faire | à faire (après validation back) |
 | 6 | finance (6 services, OHADA) | à faire | à faire (après validation back) |
 
-### Modules réellement construits (18)
+### Modules réellement construits (19)
 
 ```
 shared/common-domain     noyau pur, aucune dépendance Spring
@@ -226,11 +228,12 @@ services/academic-fees-service pedagogie : grilles tarifaires, avis, reductions,
 services/boulangerie-produit-service boulangerie : gammes, categories, produits, fiches recette versionnees, ingredients, cout de revient (8141) + producteur `boulangerie.events`
 services/boulangerie-production-service boulangerie : plans de production, fournées, consommations par lot, pertes valorisées (8142) + producteur `boulangerie.events`
 services/boulangerie-approvisionnement-service boulangerie : fournisseurs, besoins, commandes d achat, receptions controlees (8143) + producteur `boulangerie.events`
+services/boulangerie-vente-service boulangerie : caisses, ventes idempotentes, commandes client, acomptes, retraits (8144) + producteur `boulangerie.events`
 ```
 
-`mvn test` au niveau racine : **BUILD SUCCESS, 487 tests verts** (59 tenant + 19 identity + 26 auth + 2 audit
+`mvn test` au niveau racine : **BUILD SUCCESS, 499 tests verts** (59 tenant + 19 identity + 26 auth + 2 audit
 + 6 gateway + 24 structure + 25 people + 35 enrollment + 44 attendance + 44 assessment + 50 exam + 40 fees
-+ **30 produit** + **26 production** + **57 approvisionnement**).
++ **30 produit** + **26 production** + **57 approvisionnement** + **12 vente**).
 
 ### Les 25 routes de la passerelle ≠ les modules construits
 
@@ -244,7 +247,7 @@ Vérifier l'existence du module avant d'appeler un service.
 | pédagogie | `/api/v1/ped/**` | `academic-structure` 8111 · `academic-people` 8112 · `academic-enrollment` 8113 · `academic-attendance` 8114 · `academic-assessment` 8115 · `academic-exam` 8116 · `academic-fees` 8117 |
 | hôpital | `/api/v1/hop/**` | `patient` 8121 · `rdv` 8122 · `consultation` 8123 · `pharmacie` 8124 · `hospitalisation` 8125 · `plateau-technique` 8126 |
 | finance | `/api/v1/fin/**` | `fin-compta-core` 8131 · `fin-facturation` 8132 · `fin-stock` 8133 · `fin-inventaire` 8134 · `fin-immobilisation` 8135 · `fin-etats` 8136 |
-| boulangerie | `/api/v1/boul/**` | `boulangerie-produit` 8141 (lot 1) · `production` 8142 (lot 2) · `approvisionnement` 8143 (lot 3) · `vente` 8144 · `clients` 8145 · `personnel` 8146 (à venir) |
+| boulangerie | `/api/v1/boul/**` | `boulangerie-produit` 8141 (lot 1) · `production` 8142 (lot 2) · `approvisionnement` 8143 (lot 3) · `vente` 8144 (lot 4, back) · `clients` 8145 · `personnel` 8146 (à venir) |
 | passerelle | — | `api-gateway` 8080 (Keycloak sur 8180) |
 
 Pas de `fin-tresorerie` : la trésorerie est un préfixe de `fin-compta-core` (`/api/v1/fin/tresorerie/**`).
@@ -256,8 +259,10 @@ gammes,categories,recettes}/**`, producteur `boulangerie.events`) **avec son fro
 producteur `boulangerie.events`) **avec son front lot 2** ; le **lot 3
 `boulangerie-approvisionnement-service` (8143) est construit** (routes `/api/v1/boul/{fournisseurs,
 besoins,commandes,receptions}/**`, producteur `boulangerie.events`, E2E 49/0) **avec son front lot 3**
-(pages `/boulangerie/{fournisseurs,besoins,commandes,receptions}`) ; les lots 4→6 (`vente`,
-`clients`, `personnel`, ports 8144-8146) restent à faire, la route
+(pages `/boulangerie/{fournisseurs,besoins,commandes,receptions}`) ; le **lot 4
+`boulangerie-vente-service` (8144) est construit** (routes `/api/v1/boul/{caisses,ventes,commandes-clients}/**`,
+producteur `boulangerie.events`) **back seulement** (front lot 4 à faire) ; les lots 5→6 (`clients`,
+`personnel`, ports 8145-8146) restent à faire, la route
 `/api/v1/boul/**` s'élargit lot par lot (D17). Le domaine est adossé à la finance (`fin-stock`,
 `fin-facturation`, `fin-compta-core`) et activé par le profil `BOULANGERIE` (§2, profil ajouté dans
 `socle/modele-tenant-service.puml`).
@@ -1434,14 +1439,65 @@ table Flyway `flyway_boulangerie_approvisionnement_history`, package `com.nexusg
 - **Vérifs** : `npx tsc --noEmit` 0 erreur ; `npm run lint` 0 erreur (2 warnings préexistants `avatar.tsx`) ;
   `npm run build` OK (16 routes `/boulangerie/*`, dont les 7 du lot 3).
 
+### boulangerie-vente-service — lot 4 construit (2026-10-20)
+
+**Backend 4 `boulangerie-vente-service`** (port **8144**, schéma `boulangerie_vente`, table Flyway
+`flyway_boulangerie_vente_history`, package `com.nexusgesti.boulangerie.vente`), **avec Kafka**
+(producteur `boulangerie.events`, D18) :
+
+- **Périmètre** : caisses (`SessionCaisse`), ventes idempotentes (`Vente` + `LigneVente` + `PaiementVente`),
+  commandes client (`CommandeClient` + `LigneCommandeClient` + `Acompte`). 7 tables. **Front lot 4 à faire.**
+- **Domaine pur** (aucune valeur métier en dur) : `SessionCaisse` (`ouvrir`/`cloturer`, une seule session
+  ouverte par tenant, `getEcart()` = `montantCompte − (fondInitial + totalEncaisse)`), `Vente` (création
+  EN_COURS avec ≥1 ligne, `valider` exige paiements ≥ TTC, `annuler(motif)`, `rembourser`, rendu espèces
+  seulement, totaux session/moyens de paiement calculés), `LigneVente` (`getMontantLigne`, lot optionnel),
+  `PaiementVente` (`finaliser`, rendu si ESPECES), `CommandeClient` (`acompte`, `confirmer`,
+  `demarrerProduction`, `marquerPrete`, `retirer` uniquement si `getSoldeDu() <= 0`, `getResteAProduire`,
+  `getSoldeDu`), `LigneCommandeClient`, `Acompte`. Enums `CanalVente`/`StatutVente`/
+  `ModePaiementCaisse`/`StatutCommandeClient`/`TypeMouvementStock` (`SORTIE_VENTE` uniquement, enum local
+  contrat inter-services). Exception `VenteException` (`NOT_FOUND` 404 ; `TRANSITION_INVALIDE`/
+  `ETAT_INVALIDE`/`IDEMPOTENCE_EN_COURS`/`ITEM_EXISTANT` 409 ; `INVALIDE` 400).
+- **Persistance / applicatif / web** : 7 entités + repos + `VentePersistenceAdapter` (upsert d'agrégat,
+  delete-then-reinsert des lignes/paiements, `tenant_id` via `TenantContext.require().asUuid()`),
+  `VenteService` (`@Transactional` ; idempotence Redis `IdempotencyService` — `Idempotency-Key` obligatoire
+  sur `POST /ventes`, rejeu renvoie le même id ; numéros `TKT-%06d` par session et `CMD-C-%05d` par tenant),
+  `VenteController` (`/api/v1`, lecture `ADMIN|CUSTOMER` / écriture `ADMIN`), `VenteExceptionHandler`.
+  Routes : `/caisses` (+`/ouvrir`, `/{id}`, `/{id}/cloturer`), `/ventes` (+`/{id}`,
+  `/encaisser`, `/annuler`, `/rembourser`), `/commandes-clients` (+`/{id}`, `/lignes`, `/confirmer`,
+  `/acompte`, `/demarrer-production`, `/pretes`, `/retirer`, `/annuler`). Préfixe passerelle
+  `/api/v1/boul/{caisses,ventes,commandes-clients}/**` (`commandes-clients` car `/boul/commandes/**` est
+  déjà pris par l'approvisionnement).
+- **Événements** (`boulangerie.events`) : `vente.encaissee` (+ `mouvement.stock` `SORTIE_VENTE` par ligne,
+  `prixAchat` null → `prixMoyen`), `vente.annulee`, `caisse.cloturee`,
+  `commande.client.{creee,confirmee,annulee}`. Aucun événement au retrait d'une commande client (MVP).
+- **Tests : 12 verts** (`SessionCaisseTest` 3, `VenteTest` 3, `CommandeClientTest` 2,
+  `@WebMvcTest VenteControllerSecurityTest` 4). `mvn test` racine : **BUILD SUCCESS, 499 tests**.
+- **Câblage** : pom racine (bloc BOULANGERIE) ; route passerelle + cible Prometheus
+  `host.docker.internal:8144` ; `scripts/backend-up.{sh,ps1}` (8144).
+- **Boot (2026-10-20)** : 8144 UP ; Flyway V1/V2/V3 `success`, RLS `t/t` sur les 7 tables et `f/f` sur
+  l'historique ; gateway 8080 → 200 ; `/actuator/health` 8144 → `UP`. **E2E passerelle non exécuté**
+  (script lot 4 à écrire) ; front lot 4 à construire.
+- **Pièges payés (2026-10-20)** :
+  - `scripts/backend-up.sh` : la map `PORTS[$svc]` a `set -u`, ajouter un service à `SERVICES` sans
+    l'ajouter à **toutes** les structures provoque `PORTS[$svc]: unbound variable` (ligne 88) et bloque
+    le script avant tout démarrage. Corrigé (entrée `SERVICES` + `PORTS`, accès `${PORTS[$svc]:-}`).
+  - **Postgres `max_connections` (défaut 100) saturé par 18 microservices** : `tenant-service` (premier
+    démarré) échoue en `FATAL: remaining connection slots are reserved for roles with the SUPERUSER
+    attribute`. Correctif **court terme dev** : `command: ["postgres","-c","max_connections=200",
+    "-c","superuser_reserved_connections=3"]` dans `backend/docker-compose.yml`. **Production** :
+    PgBouncer `pool_mode=transaction` + `maximum-pool-size` HikariCP 2-4 par service (ne pas monter à 200).
+  - `mvn clean` peut échouer sur `api-gateway/target/*.jar` (`Device or resource busy` / rename repackage)
+    alors qu'aucun `java` ne tourne — suspect verrou OneDrive/antivirus sur `Documents` ; un
+    `mvn -DskipTests package` sans `clean` a suffi.
+
 ### Restant
 
 - **Boulangerie lots 1-2** commités le 2026-10-17 (`c1f2ed5` back, `c7d2b00` front, `9c77090` journal).
-- **Boulangerie lot 3 back** construit et documenté le 2026-10-20 (57 tests ; E2E passerelle 49/0 via
-  `scripts/test-boulangerie-lot3-approvisionnement.sh` ; boot 8143 + Flyway + RLS vérifiés ; Prometheus
-  17/17 cibles `up`) ; **front lot 3 construit le 2026-10-20** (7 pages, `tsc` + lint + build verts,
-  voir journal §11). **Commit back + front + doc sur demande.** Reste les lots 4→6
-  (`vente`→`clients`→`personnel`, ports 8144-8146), back d'abord (D13).
+- **Boulangerie lot 3** (back + front + doc) **commité `2ce1f19`** le 2026-10-20 (65 fichiers ; 57 tests ;
+  E2E 49/0 ; front 7 pages).
+- **Boulangerie lot 4 back + correctifs infra** construits le 2026-10-20 (12 tests ; 499 racine ;
+  `PORTS[$svc]` réparé ; Postgres `max_connections=200`) — **E2E passerelle et front lot 4 à faire**,
+  puis commit. Reste les lots 5→6 (`clients`→`personnel`, ports 8145-8146), back d'abord (D13).
 - **Commit `5158d45` (251 fichiers)** : docs + `.gitignore` + `backend/`. Phase 1 close.
 - **Phase 2 commitée le 2026-10-08** : `e25283e` (tenant-service + doc D7/D10 + E2E + colonne Front).
 - **Console socle commitée le 2026-10-08** : décrite au journal §11 (plomberie + pages socle + ADMIN,

@@ -96,6 +96,11 @@ spring:
           uri: http://${BOULANGERIE_APPROVISIONNEMENT_SERVICE_HOST:localhost}:8143
           predicates:
             - Path=/api/v1/boul/fournisseurs/**,/api/v1/boul/besoins/**,/api/v1/boul/commandes/**,/api/v1/boul/receptions/**
+        - id: boulangerie-vente-service
+          uri: http://${BOULANGERIE_VENTE_SERVICE_HOST:localhost}:8144
+          predicates:
+            - Path=/api/v1/boul/caisses/**,/api/v1/boul/ventes/**,/api/v1/boul/commandes-clients/**
+
 
         # ---------- HOPITAL (ports 8121-8126) ----------
         - id: hopital-patient-service

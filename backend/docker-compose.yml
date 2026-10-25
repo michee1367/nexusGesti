@@ -5,6 +5,11 @@ services:
   # ---------- Donnees ----------
   postgres:
     image: postgres:16-alpine
+    # 18 microservices multiplient les pools HikariCP : le defaut (100) est
+    # atteint au demarrage et les services suivants echouent en
+    # "remaining connection slots are reserved for roles with the SUPERUSER attribute".
+    # Court terme dev. En production : PgBouncer + pools HikariCP reduits.
+    command: ["postgres", "-c", "max_connections=200", "-c", "superuser_reserved_connections=3"]
     environment:
       POSTGRES_DB: nexusgesti
       POSTGRES_USER: nexusgesti

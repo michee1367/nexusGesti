@@ -8,7 +8,7 @@ BACKEND="$ROOT/backend"
 LOGDIR="$BACKEND/logs"
 MVN="${MVN:-mvn}"
 
-SERVICES=(tenant-service identity-service auth-service notification-service audit-service reporting-service academic-structure-service academic-people-service academic-enrollment-service academic-attendance-service academic-assessment-service academic-exam-service academic-fees-service boulangerie-produit-service boulangerie-production-service boulangerie-approvisionnement-service api-gateway)
+SERVICES=(tenant-service identity-service auth-service notification-service audit-service reporting-service academic-structure-service academic-people-service academic-enrollment-service academic-attendance-service academic-assessment-service academic-exam-service academic-fees-service boulangerie-produit-service boulangerie-production-service boulangerie-approvisionnement-service boulangerie-vente-service api-gateway)
 declare -A PORTS=(
   [tenant-service]=8101
   [identity-service]=8102
@@ -26,6 +26,7 @@ declare -A PORTS=(
   [boulangerie-produit-service]=8141
   [boulangerie-production-service]=8142
   [boulangerie-approvisionnement-service]=8143
+  [boulangerie-vente-service]=8144
   [api-gateway]=8080
 )
 
@@ -84,7 +85,8 @@ done
 # 3. Arret des services deja presents (port ou ligne de commande) -> evite verrou .jar
 info "==> Arret des services existants"
 for svc in "${SERVICES[@]}"; do
-  port="${PORTS[$svc]}"
+  port="${PORTS[$svc]:-}"
+  [[ -z "$port" ]] && continue
   pid="$(netstat -ano 2>/dev/null | awk -v p=":${port}" '$0 ~ p && /LISTENING/ {print $NF; exit}')"
   if [[ -n "${pid:-}" ]]; then
     taskkill //F //PID "$pid" >/dev/null 2>&1 && info "    port ${port} libere (PID ${pid})"
@@ -115,7 +117,8 @@ done
 info "==> Attente /actuator/health"
 UP=0
 for svc in "${SERVICES[@]}"; do
-  port="${PORTS[$svc]}"
+  port="${PORTS[$svc]:-}"
+  [[ -z "$port" ]] && continue
   ok=0
   for ((i = 0; i < 60; i++)); do
     code="$(curl -s -o /dev/null -w '%{http_code}' "http://localhost:${port}/actuator/health" --max-time 3 || true)"

@@ -29,6 +29,7 @@ $Services = [ordered]@{
     'boulangerie-produit-service' = 8141
     'boulangerie-production-service' = 8142
     'boulangerie-approvisionnement-service' = 8143
+    'boulangerie-vente-service' = 8144
     'api-gateway'          = 8080
 }
 
