@@ -39,23 +39,11 @@ spring:
           predicates:
             - Path=/api/v1/ped/**
 
-        # ---------- BOULANGERIE (ports 8141-8146) ----------
-        - id: boulangerie-produit-service
-          uri: http://${BOULANGERIE_PRODUIT_SERVICE_HOST:localhost}:8141
+        # ---------- BOULANGERIE ----------
+        - id: boulangerie-service
+          uri: http://${BOULANGERIE_SERVICE_HOST:localhost}:8141
           predicates:
-            - Path=/api/v1/boul/produits/**,/api/v1/boul/gammes/**,/api/v1/boul/categories/**,/api/v1/boul/recettes/**
-        - id: boulangerie-production-service
-          uri: http://${BOULANGERIE_PRODUCTION_SERVICE_HOST:localhost}:8142
-          predicates:
-            - Path=/api/v1/boul/plans/**,/api/v1/boul/fournees/**
-        - id: boulangerie-approvisionnement-service
-          uri: http://${BOULANGERIE_APPROVISIONNEMENT_SERVICE_HOST:localhost}:8143
-          predicates:
-            - Path=/api/v1/boul/fournisseurs/**,/api/v1/boul/besoins/**,/api/v1/boul/commandes/**,/api/v1/boul/receptions/**
-        - id: boulangerie-vente-service
-          uri: http://${BOULANGERIE_VENTE_SERVICE_HOST:localhost}:8144
-          predicates:
-            - Path=/api/v1/boul/caisses/**,/api/v1/boul/ventes/**,/api/v1/boul/commandes-clients/**
+            - Path=/api/v1/boul/**
 
 
   security:

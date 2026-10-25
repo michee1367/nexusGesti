@@ -8,14 +8,11 @@ BACKEND="$ROOT/backend"
 LOGDIR="$BACKEND/logs"
 MVN="${MVN:-mvn}"
 
-SERVICES=(socle-service pedagogie-service boulangerie-produit-service boulangerie-production-service boulangerie-approvisionnement-service boulangerie-vente-service api-gateway)
+SERVICES=(socle-service pedagogie-service boulangerie-service api-gateway)
 declare -A PORTS=(
   [socle-service]=8101
   [pedagogie-service]=8111
-  [boulangerie-produit-service]=8141
-  [boulangerie-production-service]=8142
-  [boulangerie-approvisionnement-service]=8143
-  [boulangerie-vente-service]=8144
+  [boulangerie-service]=8141
   [api-gateway]=8080
 )
 

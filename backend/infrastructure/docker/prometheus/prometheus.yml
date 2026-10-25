@@ -21,22 +21,7 @@ scrape_configs:
     static_configs:
       - targets: ["host.docker.internal:8111"]
 
-  - job_name: boulangerie-produit-service
+  - job_name: boulangerie-service
     metrics_path: /actuator/prometheus
     static_configs:
       - targets: ["host.docker.internal:8141"]
-
-  - job_name: boulangerie-production-service
-    metrics_path: /actuator/prometheus
-    static_configs:
-      - targets: ["host.docker.internal:8142"]
-
-  - job_name: boulangerie-approvisionnement-service
-    metrics_path: /actuator/prometheus
-    static_configs:
-      - targets: ["host.docker.internal:8143"]
-
-  - job_name: boulangerie-vente-service
-    metrics_path: /actuator/prometheus
-    static_configs:
-      - targets: ["host.docker.internal:8144"]

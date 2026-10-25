@@ -15,10 +15,7 @@ $Mvn     = if ($env:MVN) { $env:MVN } else { 'mvn' }
 $Services = [ordered]@{
     'socle-service'        = 8101
     'pedagogie-service'    = 8111
-    'boulangerie-produit-service' = 8141
-    'boulangerie-production-service' = 8142
-    'boulangerie-approvisionnement-service' = 8143
-    'boulangerie-vente-service' = 8144
+    'boulangerie-service' = 8141
     'api-gateway'          = 8080
 }
 

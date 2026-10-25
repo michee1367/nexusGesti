@@ -33,10 +33,7 @@
         <!-- PEDAGOGIE -->
         <module>services/pedagogie-service</module>
         <!-- BOULANGERIE -->
-        <module>services/boulangerie-produit-service</module>
-        <module>services/boulangerie-production-service</module>
-        <module>services/boulangerie-approvisionnement-service</module>
-        <module>services/boulangerie-vente-service</module>
+        <module>services/boulangerie-service</module>
     </modules>
 
     <properties>
