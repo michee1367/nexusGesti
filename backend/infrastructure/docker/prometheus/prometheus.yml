@@ -11,35 +11,10 @@ scrape_configs:
     static_configs:
       - targets: ["host.docker.internal:8080"]
 
-  - job_name: auth-service
-    metrics_path: /actuator/prometheus
-    static_configs:
-      - targets: ["host.docker.internal:8103"]
-
-  - job_name: notification-service
-    metrics_path: /actuator/prometheus
-    static_configs:
-      - targets: ["host.docker.internal:8104"]
-
-  - job_name: audit-service
-    metrics_path: /actuator/prometheus
-    static_configs:
-      - targets: ["host.docker.internal:8105"]
-
-  - job_name: reporting-service
-    metrics_path: /actuator/prometheus
-    static_configs:
-      - targets: ["host.docker.internal:8106"]
-
-  - job_name: tenant-service
+  - job_name: socle-service
     metrics_path: /actuator/prometheus
     static_configs:
       - targets: ["host.docker.internal:8101"]
-
-  - job_name: identity-service
-    metrics_path: /actuator/prometheus
-    static_configs:
-      - targets: ["host.docker.internal:8102"]
 
   - job_name: academic-structure-service
     metrics_path: /actuator/prometheus

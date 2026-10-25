@@ -1,0 +1,27 @@
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        default_schema: socle
+  flyway:
+    enabled: true
+    user: test
+    password: test
+  kafka:
+    listener:
+      auto-startup: false
+
+nexusgesti:
+  internal-service-token: test-internal-token
+  security:
+    oauth2:
+      enabled: false
+  auth:
+    mfa-issuer: NexusGesti
+    encryption-key: test-encryption-key-32bytes!!!!
+    session-refresh-days: 7
+    max-sessions-per-user: 5
+    login-max-attempts: 5
+    login-lock-minutes: 15

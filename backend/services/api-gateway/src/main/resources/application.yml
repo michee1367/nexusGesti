@@ -27,31 +27,11 @@ spring:
             name: defaultCircuitBreaker
             fallbackUri: forward:/fallback
       routes:
-        # ---------- SOCLE (ports 8101-8106) ----------
-        - id: tenant-service
-          uri: http://${TENANT_SERVICE_HOST:localhost}:8101
+        # ---------- SOCLE (8101) ----------
+        - id: socle-service
+          uri: http://${SOCLE_SERVICE_HOST:localhost}:8101
           predicates:
-            - Path=/api/v1/socle/tenants/**,/api/v1/socle/etablissements/**,/api/v1/socle/grilles/**,/api/v1/socle/annees/**,/api/v1/socle/referentiels/**
-        - id: identity-service
-          uri: http://${IDENTITY_SERVICE_HOST:localhost}:8102
-          predicates:
-            - Path=/api/v1/socle/identites/**,/api/v1/socle/utilisateurs/**
-        - id: auth-service
-          uri: http://${AUTH_SERVICE_HOST:localhost}:8103
-          predicates:
-            - Path=/api/v1/socle/auth/**
-        - id: notification-service
-          uri: http://${NOTIFICATION_SERVICE_HOST:localhost}:8104
-          predicates:
-            - Path=/api/v1/socle/notifications/**
-        - id: audit-service
-          uri: http://${AUDIT_SERVICE_HOST:localhost}:8105
-          predicates:
-            - Path=/api/v1/socle/audit/**
-        - id: reporting-service
-          uri: http://${REPORTING_SERVICE_HOST:localhost}:8106
-          predicates:
-            - Path=/api/v1/socle/reports/**,/api/v1/socle/etats-comptables/**
+            - Path=/api/v1/socle/**
 
         # ---------- PEDAGOGIE (ports 8111-8117) ----------
         - id: academic-structure-service

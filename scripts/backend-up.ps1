@@ -13,12 +13,7 @@ $LogDir  = Join-Path $Backend 'logs'
 $Mvn     = if ($env:MVN) { $env:MVN } else { 'mvn' }
 
 $Services = [ordered]@{
-    'tenant-service'       = 8101
-    'identity-service'     = 8102
-    'auth-service'         = 8103
-    'notification-service' = 8104
-    'audit-service'        = 8105
-    'reporting-service'    = 8106
+    'socle-service'        = 8101
     'academic-structure-service' = 8111
     'academic-people-service'    = 8112
     'academic-enrollment-service' = 8113

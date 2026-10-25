@@ -28,12 +28,7 @@
         <module>services/api-gateway</module>
 
         <!-- SOCLE -->
-        <module>services/tenant-service</module>
-        <module>services/identity-service</module>
-        <module>services/auth-service</module>
-        <module>services/notification-service</module>
-        <module>services/audit-service</module>
-        <module>services/reporting-service</module>
+        <module>services/socle-service</module>
 
         <!-- PEDAGOGIE -->
         <module>services/academic-structure-service</module>
