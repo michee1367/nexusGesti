@@ -2,7 +2,8 @@
 
 Guide pas-à-pas de la plateforme, de l'ouverture de session jusqu'aux écrans livrés
 aujourd'hui (**socle** + **pédagogie** complète : structure, personnes, inscriptions,
-assiduité, évaluations, examens, frais).
+assiduité, évaluations, examens, frais + **boulangerie** lots 1 à 3 : produits,
+production, approvisionnement).
 
 > Ce document est écrit pour un utilisateur non technique. Chaque terme métier est défini
 > dans le **Glossaire** (§4). Les identifiants sont donnés au §3.
@@ -21,15 +22,23 @@ Elle est organisée en **domaines** :
 |---|---|---|
 | **Socle** | Réglages de l'établissement, années scolaires, grilles, référentiels, utilisateurs, audit, rapports | Disponible |
 | **Pédagogie** | Structure, Personnes, Inscriptions (UE, groupes, admissions), Assiduité (séances, appels), Évaluations (notes, bulletins), Examens (sessions, délibérations), Frais (grilles, avis, paiements) | Disponible |
+| **Boulangerie** | Produits et recettes, plans de production, fournées, fournisseurs, besoins, commandes d'achat, réceptions | Lots 1 à 3 disponibles (vente/caisse : API seulement) |
 | **Hôpital** | Patients, rendez-vous, consultations, pharmacie | À venir |
 | **Finance** | Comptabilité OHADA / SYSCOHADA (RDC) | À venir |
+
+### Guides spécialisés
+
+- [Guide Boulangerie](guide-boulangerie.md) — produits, recettes, production et
+  approvisionnement, écran par écran.
+- [Guide de déploiement en production](../backend/infrastructure/deploiement/README.md)
+  — installation VPS, PostgreSQL, Keycloak, Nginx, sauvegardes et mise à jour.
 
 Il existe **deux profils d'utilisateur** :
 
 - **ADMIN** : peut tout voir **et** tout modifier.
 - **CUSTOMER** : peut **consulter** les données (lecture seule).
 
-Depuis votre navigateur, la plateforme s'ouvre sur une **page d'accueil publique** qui présente les trois
+Depuis votre navigateur, la plateforme s'ouvre sur une **page d'accueil publique** qui présente les
 domaines. Elle propose deux points d'entrée : **Connexion** (compte existant, §5) et **Créer mon
 établissement** (inscription en libre-service, §6).
 
@@ -48,8 +57,9 @@ Depuis la racine du projet, deux scripts démarrent tout :
 ./scripts/front-up.sh          # ou front-up.ps1
 ```
 
-Au premier lancement, le backend compile et démarre **14 services** + l'infrastructure
-(base PostgreSQL, Redis, Kafka, Keycloak, Prometheus, Grafana, Vault). Comptez quelques minutes.
+Au premier lancement, le backend compile et démarre **4 applications** (socle, pédagogie,
+boulangerie, passerelle) + l'infrastructure (base PostgreSQL, Redis, Kafka, Keycloak, Prometheus,
+Grafana, Vault). Comptez quelques minutes.
 
 Quand les scripts affichent « UP », ouvrez le navigateur.
 
@@ -81,8 +91,8 @@ Quand les scripts affichent « UP », ouvrez le navigateur.
 isolé de la plateforme. On change d'établissement via le **sélecteur de tenant** en haut de
 l'écran (voir §7).
 
-**Profil d'établissement** : type d'école — `PRIMAIRE`, `SECONDAIRE` ou `UNIVERSITAIRE`. Il
-active ou non certains modules (ECTS, délibération par UE…).
+**Profil d'établissement** : type d'activité — `PRIMAIRE`, `SECONDAIRE`, `UNIVERSITAIRE` ou
+`BOULANGERIE`. Il active ou non certains modules (ECTS, délibération par UE, production…).
 
 **Année scolaire** : période de référence (ex. 2025-2026). Elle contient des **périodes**
 (trimestres, semestres…). Une année peut être *prévue*, *ouverte* puis *clôturée*.
@@ -234,7 +244,7 @@ Pas besoin de passer par un administrateur pour ouvrir un établissement. Depuis
    (ex. `+243810000000`), code pays sur 2 lettres (ex. `CD`), mot de passe (au moins 12 caractères,
    avec majuscule, minuscule, chiffre et caractère spécial) et acceptez les conditions.
 2. Renseignez **votre établissement** : **dénomination**, **code** et **profil** (`PRIMAIRE`,
-   `SECONDAIRE` ou `UNIVERSITAIRE`).
+   `SECONDAIRE`, `UNIVERSITAIRE` ou `BOULANGERIE`).
 3. Validez. Le compte administrateur et l'espace de l'établissement sont créés, puis vous êtes
    **automatiquement connecté** et redirigé vers le **Tableau de bord**.
 

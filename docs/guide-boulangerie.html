@@ -1,0 +1,1536 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>NexusGesti — Guide Boulangerie</title>
+<style>
+  :root{
+    --ink:#0f172a; --muted:#475569; --line:#e2e8f0; --bg:#ffffff;
+    --brand:#b45309; --brand-deep:#92400e; --brand-soft:#fffbeb;
+    --accent:#0f766e; --accent-soft:#ecfdf5;
+    --warn:#b45309; --warn-soft:#fffbeb; --danger:#b91c1c; --danger-soft:#fef2f2;
+    --slate-100:#f1f5f9;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    font-family:"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    color:var(--ink); background:var(--bg); line-height:1.55; font-size:13.5px;
+    -webkit-print-color-adjust:exact; print-color-adjust:exact;
+  }
+  .page{max-width:900px;margin:0 auto;padding:32px 40px 56px}
+  .cover{border-bottom:4px solid var(--brand);margin-bottom:28px;padding-bottom:20px}
+  .cover .kicker{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--brand);font-weight:700}
+  .cover h1{font-size:30px;line-height:1.15;margin:8px 0 6px}
+  .cover .sub{color:var(--muted);font-size:15px;margin:7px 0}
+  .cover .meta{margin-top:14px;display:flex;flex-wrap:wrap;gap:8px}
+  .chip{display:inline-block;font-size:11.5px;border:1px solid var(--line);border-radius:999px;padding:3px 10px;color:var(--muted);background:var(--slate-100)}
+  .chip.brand{background:var(--brand-soft);border-color:#fde68a;color:var(--brand-deep);font-weight:600}
+  h2{font-size:19px;margin:32px 0 8px;padding-top:6px;break-after:avoid}
+  h2 .n{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:7px;background:var(--brand);color:#fff;font-size:14px;margin-right:9px;vertical-align:2px}
+  h3{font-size:15px;margin:20px 0 6px;color:var(--brand-deep);break-after:avoid}
+  p{margin:7px 0}
+  ul,ol{margin:7px 0 7px 20px;padding:0}
+  li{margin:3px 0}
+  a{color:var(--brand-deep);text-decoration:none}
+  a:hover{text-decoration:underline}
+  hr{border:0;border-top:1px solid var(--line);margin:26px 0}
+  .toc{background:var(--slate-100);border:1px solid var(--line);border-radius:10px;padding:16px 20px;margin:22px 0 28px;break-inside:avoid}
+  .toc h2{margin:0 0 8px;font-size:15px;padding:0}
+  .toc ol{margin-left:18px}
+  .toc a{color:var(--ink)}
+  .leading{font-size:14px;color:var(--muted)}
+  .table-wrap{overflow-x:auto;margin:10px 0}
+  table{width:100%;border-collapse:collapse;font-size:12.5px}
+  th,td{border:1px solid var(--line);padding:7px 10px;text-align:left;vertical-align:top}
+  th{background:var(--slate-100);font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
+  td code, p code, li code{background:#f1f5f9;border:1px solid #e2e8f0;border-radius:4px;padding:0 5px;font-family:"Cascadia Code",Consolas,monospace;font-size:12px}
+  pre{background:#0f172a;color:#e2e8f0;border-radius:9px;padding:12px 14px;overflow-x:auto;font-size:12px;line-height:1.5;break-inside:avoid}
+  pre code{background:none;border:0;padding:0;color:inherit;font-family:"Cascadia Code",Consolas,monospace}
+  .warn,.note,.ok{border-radius:8px;padding:10px 14px;margin:12px 0;font-size:12.5px;border:1px solid}
+  .warn{background:var(--warn-soft);border-color:#fde68a}
+  .note{background:var(--brand-soft);border-color:#fde68a}
+  .ok{background:var(--accent-soft);border-color:#a7f3d0}
+  .warn strong:first-child{color:var(--warn)}
+  .warn p:first-child{margin-top:0}
+  .warn p:last-child{margin-bottom:0}
+  input[type="checkbox"]{accent-color:var(--brand);margin-right:4px}
+  .foot{margin-top:34px;border-top:1px solid var(--line);padding-top:12px;color:var(--muted);font-size:11.5px}
+  @page{margin:18mm 15mm}
+  @media print{
+    .page{max-width:none;padding:0}
+    h2{break-after:avoid}
+    .toc{break-inside:avoid}
+    .table-wrap{overflow:visible}
+    table{font-size:11.5px}
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header class="cover">
+    <div class="kicker">NexusGesti · Guide d'utilisation</div>
+    <h1>NexusGesti — Guide Boulangerie</h1>
+<p class="sub"><strong>Produits, production et approvisionnement</strong>
+Document utilisateur — console NexusGesti, lots 1 à 3.</p>
+    <div class="meta">
+      <span class="chip brand">Boulangerie</span>
+      <span class="chip">Lots 1 à 3</span>
+      <span class="chip">Produits · Production · Approvisionnement</span>
+    </div>
+  </header>
+
+  <section class="toc">
+    <h2>Sommaire</h2>
+    <ol>
+        <li><a href="#s1">Avant de commencer</a></li>
+        <li><a href="#s2">Se connecter et retrouver son établissement</a></li>
+        <li><a href="#s3">Vue d&#39;ensemble du menu Boulangerie</a></li>
+        <li><a href="#s4">Gammes et catégories</a></li>
+        <li><a href="#s5">Produits</a></li>
+        <li><a href="#s6">Fiches recette</a></li>
+        <li><a href="#s7">Plans de production</a></li>
+        <li><a href="#s8">Fournées</a></li>
+        <li><a href="#s9">Approvisionnement : fournisseurs</a></li>
+        <li><a href="#s10">Besoins d&#39;approvisionnement</a></li>
+        <li><a href="#s11">Commandes d&#39;achat</a></li>
+        <li><a href="#s12">Réceptions</a></li>
+        <li><a href="#s13">Scénario complet d&#39;une journée</a></li>
+        <li><a href="#s14">Statuts et règles</a></li>
+        <li><a href="#s15">Erreurs fréquentes</a></li>
+        <li><a href="#s16">Limites connues</a></li>
+        <li><a href="#s17">Checklist de prise en main</a></li>
+    </ol>
+  </section>
+
+<h2 id="s1"><span class="n">1</span>Avant de commencer</h2>
+<p>Ce guide couvre les écrans Boulangerie livrés dans la console :</p>
+<ul>
+<li><strong>Produits</strong> : gammes, catégories, catalogue, fiches recette versionnées.</li>
+<li><strong>Production</strong> : plans de production, besoins matières, fournées, consommations et pertes.</li>
+<li><strong>Approvisionnement</strong> : fournisseurs, besoins calculés, commandes d&#39;achat, réceptions contrôlées.</li>
+</ul>
+<p>Il ne couvre pas encore la <strong>vente/caisse</strong> : l&#39;API du lot 4 existe, mais aucun écran
+n&#39;est disponible dans cette version de la console.</p>
+<h3>Rôles</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Rôle</th>
+<th>Accès</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>ADMIN</code></td>
+<td>Consultation et toutes les créations, modifications et transitions</td>
+</tr>
+<tr>
+<td><code>CUSTOMER</code></td>
+<td>Consultation en lecture seule</td>
+</tr>
+</tbody></table></div>
+<p>Les boutons d&#39;écriture (création, modification, transition) ne sont pas affichés
+pour un compte <code>CUSTOMER</code>. Si un bouton est présent mais qu&#39;une action renvoie
+<strong>403</strong>, le compte n&#39;a pas le rôle requis.</p>
+<h3>Vocabulaire</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Terme</th>
+<th>Définition</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Produit</strong></td>
+<td>Article vendu ou fabriqué : pain, viennoiserie, pâtisserie…</td>
+</tr>
+<tr>
+<td><strong>Gamme</strong></td>
+<td>Grande famille commerciale (pain, viennoiserie…).</td>
+</tr>
+<tr>
+<td><strong>Catégorie</strong></td>
+<td>classement plus fin (baguette, croissant…).</td>
+</tr>
+<tr>
+<td><strong>Recette</strong></td>
+<td>Formule de fabrication versionnée : ingrédients, rendement, cuisson.</td>
+</tr>
+<tr>
+<td><strong>Ingrédient</strong></td>
+<td>Article consommé par une recette (farine, beurre…).</td>
+</tr>
+<tr>
+<td><strong>Plan de production</strong></td>
+<td>Programme journalier de fournées par atelier.</td>
+</tr>
+<tr>
+<td><strong>Fournée</strong></td>
+<td>Fabrication réelle d&#39;une recette, avec quantités, consommations et pertes.</td>
+</tr>
+<tr>
+<td><strong>Rendement</strong></td>
+<td>Quantité réellement produite par rapport à la quantité prévue.</td>
+</tr>
+<tr>
+<td><strong>Article (stock)</strong></td>
+<td>Code logique d&#39;une matière ou d&#39;un produit dans le stock. Le stock n&#39;est pas géré dans cette console.</td>
+</tr>
+<tr>
+<td><strong>Lot</strong></td>
+<td>Numéro de lot d&#39;une matière reçue ou consommée.</td>
+</tr>
+<tr>
+<td><strong>Tiers</strong></td>
+<td>Code du fournisseur dans la comptabilité. Il peut être vide à ce stade.</td>
+</tr>
+</tbody></table></div>
+<div class="warn">
+<p><strong>Important</strong> — une recette <strong>figée</strong> est en lecture seule. Une correction crée
+une <strong>nouvelle version</strong> ; les fournées déjà produites gardent la version utilisée.</p>
+</div>
+<hr>
+<h2 id="s2"><span class="n">2</span>Se connecter et retrouver son établissement</h2>
+<h3>2.1 Connexion</h3>
+<ol>
+<li>Ouvrir l&#39;adresse de la console fournie par votre administrateur.</li>
+<li>Sur la page d&#39;accueil, cliquer sur <strong>Connexion</strong>.</li>
+<li>Saisir l&#39;<strong>adresse email</strong> du compte, puis <strong>Continuer</strong>.</li>
+<li>La console affiche l&#39;établissement retrouvé. Saisir le <strong>mot de passe</strong>, puis
+<strong>Se connecter</strong>.</li>
+<li>Le <strong>tableau de bord</strong> s&#39;ouvre.</li>
+</ol>
+<p>Si l&#39;email n&#39;est pas reconnu, utiliser le lien de <strong>saisie manuelle de
+l&#39;identifiant de l&#39;établissement</strong> et coller l&#39;UUID fourni par l&#39;administrateur.</p>
+<h3>2.2 Vérifier le bon établissement</h3>
+<p>Le nom de l&#39;établissement est affiché dans l&#39;en-tête. Toutes les données créées
+sont rattachées à cet établissement. Si ce n&#39;est pas le bon, se déconnecter puis
+se reconnecter avec le compte correspondant.</p>
+<h3>2.3 En cas de session expirée</h3>
+<p>Le jeton de connexion expire après quelques minutes. Si les actions échouent avec
+un message d&#39;authentification, recharger la page, se reconnecter, puis reprendre.</p>
+<hr>
+<h2 id="s3"><span class="n">3</span>Vue d&#39;ensemble du menu Boulangerie</h2>
+<p>Le menu latéral contient trois groupes :</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Groupe</th>
+<th>Entrées</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Boulangerie · Produits</strong></td>
+<td>Produits, Fiches recette, Gammes, Catégories</td>
+</tr>
+<tr>
+<td><strong>Boulangerie · Production</strong></td>
+<td>Plans de production, Fournées</td>
+</tr>
+<tr>
+<td><strong>Boulangerie · Approvisionnement</strong></td>
+<td>Fournisseurs, Besoins d&#39;appro., Commandes d&#39;achat, Réceptions</td>
+</tr>
+</tbody></table></div>
+<p>Ordre de mise en place recommandé :</p>
+<ol>
+<li>Gammes et catégories.</li>
+<li>Produits.</li>
+<li>Fiches recette et ingrédients.</li>
+<li>Fournisseurs.</li>
+<li>Plans de production.</li>
+<li>Fournées.</li>
+<li>Besoins, commandes et réceptions.</li>
+</ol>
+<hr>
+<h2 id="s4"><span class="n">4</span>Gammes et catégories</h2>
+<h3>4.1 Gammes</h3>
+<p><strong>Menu : Boulangerie · Produits → Gammes</strong></p>
+<p>Une gamme regroupe des produits de même famille commerciale.</p>
+<ol>
+<li>Cliquer sur <strong>Nouvelle gamme</strong>.</li>
+<li>Renseigner :</li>
+</ol>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Champ</th>
+<th>Obligatoire</th>
+<th>Exemple</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Code</td>
+<td>Oui</td>
+<td><code>PAIN</code></td>
+</tr>
+<tr>
+<td>Libellé</td>
+<td>Oui</td>
+<td>Pains</td>
+</tr>
+<tr>
+<td>Ordre</td>
+<td>Non</td>
+<td><code>1</code></td>
+</tr>
+<tr>
+<td>Actif</td>
+<td>Non (coché par défaut)</td>
+<td>coché</td>
+</tr>
+</tbody></table></div>
+<ol start="3">
+<li>Valider.</li>
+</ol>
+<p>La liste affiche le code, le libellé, l&#39;ordre et le statut <strong>Actif / Inactif</strong>.</p>
+<h3>4.2 Catégories</h3>
+<p><strong>Menu : Boulangerie · Produits → Catégories</strong></p>
+<p>Même principe, avec un classement plus fin :</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Champ</th>
+<th>Obligatoire</th>
+<th>Exemple</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Code</td>
+<td>Oui</td>
+<td><code>BAGUETTE</code></td>
+</tr>
+<tr>
+<td>Libellé</td>
+<td>Oui</td>
+<td>Baguettes</td>
+</tr>
+<tr>
+<td>Ordre</td>
+<td>Non</td>
+<td><code>1</code></td>
+</tr>
+<tr>
+<td>Actif</td>
+<td>Non (coché par défaut)</td>
+<td>coché</td>
+</tr>
+</tbody></table></div>
+<div class="warn">
+<p>Les écrans Gammes et Catégories servent uniquement à <strong>créer</strong> et <strong>consulter</strong> :
+il n&#39;y a ni modification ni suppression. Le statut <strong>Actif</strong> est choisi à la
+création et ne peut plus être changé depuis la console. Créer une nouvelle
+entrée avec un autre code si un autre statut ou libellé est nécessaire.</p>
+</div>
+<hr>
+<h2 id="s5"><span class="n">5</span>Produits</h2>
+<p><strong>Menu : Boulangerie · Produits → Produits</strong></p>
+<h3>5.1 Créer un produit</h3>
+<ol>
+<li>Cliquer sur <strong>Nouveau produit</strong>.</li>
+<li>Renseigner les champs :</li>
+</ol>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Champ</th>
+<th>Obligatoire</th>
+<th>Exemple</th>
+<th>Remarque</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Code</td>
+<td>Oui</td>
+<td><code>BAG-TRAD</code></td>
+<td>Identifiant court et stable.</td>
+</tr>
+<tr>
+<td>Désignation</td>
+<td>Oui</td>
+<td>Baguette tradition</td>
+<td>Nom affiché.</td>
+</tr>
+<tr>
+<td>Gamme</td>
+<td>Non</td>
+<td><code>PAIN</code></td>
+<td>Choix dans la liste.</td>
+</tr>
+<tr>
+<td>Catégorie</td>
+<td>Non</td>
+<td><code>BAGUETTE</code></td>
+<td>Choix dans la liste.</td>
+</tr>
+<tr>
+<td>Unité de vente</td>
+<td>Oui</td>
+<td><code>PIECE</code></td>
+<td>Voir la liste ci-dessous.</td>
+</tr>
+<tr>
+<td>Prix de vente HT</td>
+<td>Oui (<code>0</code> accepté)</td>
+<td><code>1.20</code></td>
+<td>Prix hors taxe.</td>
+</tr>
+<tr>
+<td>Taux TVA (%)</td>
+<td>Oui (<code>0</code> accepté)</td>
+<td><code>16</code></td>
+<td>Taux appliqué au produit.</td>
+</tr>
+<tr>
+<td>Poids unitaire (g)</td>
+<td>Non</td>
+<td><code>250</code></td>
+<td>Poids d&#39;une unité.</td>
+</tr>
+<tr>
+<td>DLC (heures)</td>
+<td>Non</td>
+<td><code>24</code></td>
+<td>Durée de vie après production.</td>
+</tr>
+<tr>
+<td>Article (stock)</td>
+<td>Non</td>
+<td><code>ART-BAG-TRAD</code></td>
+<td>Code logique pour le stock.</td>
+</tr>
+<tr>
+<td>Code-barres</td>
+<td>Non</td>
+<td><code>…</code></td>
+<td>Code EAN/UPC si disponible.</td>
+</tr>
+<tr>
+<td>Allergènes</td>
+<td>Non</td>
+<td><code>GLUTEN</code></td>
+<td>Plusieurs valeurs possibles.</td>
+</tr>
+<tr>
+<td>Vendable au détail</td>
+<td>Non (coché par défaut)</td>
+<td>coché</td>
+<td>Autorise la vente à l&#39;unité.</td>
+</tr>
+</tbody></table></div>
+<ol start="3">
+<li>Valider. Le produit apparaît dans la liste.</li>
+</ol>
+<p><strong>Unités de vente disponibles</strong> : <code>PIECE</code>, <code>LOT</code>, <code>KG</code>, <code>GRAMME</code>, <code>TRANCHE</code>,
+<code>SACHET</code>, <code>PLATEAU</code>.</p>
+<p><strong>Allergènes disponibles</strong> : <code>GLUTEN</code>, <code>LACTOSE</code>, <code>OEUF</code>, <code>ARACHIDE</code>, <code>SOJA</code>,
+<code>NOIX</code>, <code>POISSON</code>, <code>CRUSTACE</code>, <code>SESAME</code>, <code>SULFITE</code>.</p>
+<h3>5.2 Consulter un produit</h3>
+<p>Cliquer sur le code du produit ou sur <strong>Détail</strong>. La fiche affiche :</p>
+<ul>
+<li>le code, la gamme, la catégorie et l&#39;article de stock ;</li>
+<li>le prix HT, la TVA, le <strong>prix TTC calculé</strong> ;</li>
+<li>le poids, la DLC, le code-barres et les allergènes ;</li>
+<li>les badges <strong>Actif / Inactif</strong>, <strong>Fabricable / Non fabricable</strong> et
+<strong>Vente au détail</strong> ;</li>
+<li>la liste des <strong>fiches recette</strong> liées au produit.</li>
+</ul>
+<p>Un produit devient <strong>Fabricable</strong> lorsqu&#39;au moins une de ses recettes est active.</p>
+<h3>5.3 Activer ou désactiver</h3>
+<p>Sur la liste ou la fiche, utiliser <strong>Activer</strong> ou <strong>Désactiver</strong>. Un produit
+inactif reste consultable mais ne doit plus être utilisé pour de nouvelles
+ventes ou productions.</p>
+<div class="warn">
+<p>Il n&#39;y a pas de modification ni de suppression d&#39;un produit dans cette
+version. Pour changer un prix ou une caractéristique, créer un nouveau produit
+avec un nouveau code, puis désactiver l&#39;ancien.</p>
+</div>
+<hr>
+<h2 id="s6"><span class="n">6</span>Fiches recette</h2>
+<p><strong>Menu : Boulangerie · Produits → Fiches recette</strong></p>
+<h3>6.1 Créer une recette</h3>
+<ol>
+<li>Cliquer sur <strong>Nouvelle recette</strong>.</li>
+<li>Renseigner :</li>
+</ol>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Champ</th>
+<th>Obligatoire</th>
+<th>Exemple</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Code</td>
+<td>Oui</td>
+<td><code>REC-BAG-TRAD</code></td>
+</tr>
+<tr>
+<td>Produit</td>
+<td>Oui</td>
+<td>Baguette tradition</td>
+</tr>
+<tr>
+<td>Libellé</td>
+<td>Oui</td>
+<td>Baguette tradition 250 g</td>
+</tr>
+<tr>
+<td>Rendement (quantité)</td>
+<td>Oui (<code>1</code> par défaut)</td>
+<td><code>1</code></td>
+</tr>
+<tr>
+<td>Unité de rendement</td>
+<td>Oui</td>
+<td><code>PIECE</code></td>
+</tr>
+<tr>
+<td>Préparation (min)</td>
+<td>Oui (<code>0</code> accepté)</td>
+<td><code>30</code></td>
+</tr>
+<tr>
+<td>Cuisson (min)</td>
+<td>Oui (<code>0</code> accepté)</td>
+<td><code>18</code></td>
+</tr>
+<tr>
+<td>Température cuisson (°C)</td>
+<td>Non</td>
+<td><code>240</code></td>
+</tr>
+<tr>
+<td>Instructions</td>
+<td>Non</td>
+<td>Pétrissage, pointage, façonnage…</td>
+</tr>
+</tbody></table></div>
+<ol start="3">
+<li>Valider. La recette est créée en <strong>version 1</strong>, inactive.</li>
+</ol>
+<h3>6.2 Ajouter des ingrédients</h3>
+<p>Ouvrir la recette, puis dans la carte <strong>Ingrédients</strong> :</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Champ</th>
+<th>Obligatoire</th>
+<th>Exemple</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Article</td>
+<td>Oui</td>
+<td><code>ART-FARINE-T55</code></td>
+</tr>
+<tr>
+<td>Libellé</td>
+<td>Non</td>
+<td>Farine T55</td>
+</tr>
+<tr>
+<td>Quantité</td>
+<td>Oui</td>
+<td><code>1</code></td>
+</tr>
+<tr>
+<td>Unité</td>
+<td>Non</td>
+<td><code>KG</code></td>
+</tr>
+<tr>
+<td>Taux de perte</td>
+<td>Non</td>
+<td><code>0.02</code></td>
+</tr>
+<tr>
+<td>Ordre</td>
+<td>Non</td>
+<td><code>1</code></td>
+</tr>
+<tr>
+<td>Coût</td>
+<td>Non (coché)</td>
+<td>coché</td>
+</tr>
+</tbody></table></div>
+<p>Cliquer sur <strong>Ajouter</strong>. La ligne affiche la quantité nette, la quantité brute
+(calculée avec le taux de perte) et si l&#39;ingrédient entre dans le coût.</p>
+<p>Le taux de perte est une <strong>fraction</strong> : <code>0.02</code> correspond à 2 %.</p>
+<p>Répéter pour chaque ingrédient. L&#39;ordre permet de présenter la recette dans
+l&#39;ordre de fabrication.</p>
+<div class="warn">
+<p>Les ingrédients ne peuvent plus être ajoutés lorsque la recette est figée.</p>
+</div>
+<h3>6.3 Calculer les besoins matières</h3>
+<p>Dans la carte <strong>Besoins matières</strong>, saisir la <strong>quantité produite</strong> (par exemple
+<code>20</code>), puis <strong>Calculer</strong>. Le tableau affiche pour chaque article :</p>
+<ul>
+<li>la quantité nette ;</li>
+<li>la quantité brute ;</li>
+<li>l&#39;unité.</li>
+</ul>
+<p>Le calcul n&#39;est pas enregistré : il est recalculé à la demande.</p>
+<h3>6.4 Calculer le coût de revient</h3>
+<p>Dans la carte <strong>Coût de revient</strong>, saisir un <strong>prix moyen</strong> pour chaque ingrédient
+comptabilisé, puis <strong>Calculer le coût</strong>. Le résultat affiche :</p>
+<ul>
+<li>le <strong>coût matière</strong> ;</li>
+<li>le <strong>coût de revient</strong> ;</li>
+<li>un indicateur <strong>Complet / Incomplet</strong> selon les prix disponibles.</li>
+</ul>
+<p>Les prix sont saisis manuellement dans cette version : le stock et les prix
+moyens ne sont pas encore connectés à la console boulangerie.</p>
+<h3>6.5 Activer, figer, versionner</h3>
+<ul>
+<li><strong>Activer</strong> : rend la recette utilisable et le produit <strong>Fabricable</strong>.</li>
+<li><strong>Figer</strong> : verrouille la recette en lecture seule. Les ingrédients et coûts ne
+sont plus modifiables.</li>
+<li><strong>Nouvelle version</strong> : créer une nouvelle recette avec <strong>le même code</strong>. Le
+système attribue automatiquement la version suivante (<code>v2</code>, <code>v3</code>…).</li>
+<li>La précédente version reste consultable et les fournées passées conservent
+leur version d&#39;origine.</li>
+</ul>
+<div class="warn">
+<p>Ne pas figer une recette avant d&#39;avoir vérifié ses ingrédients et son
+rendement. Une recette figée ne se corrige pas : il faut créer une nouvelle
+version.</p>
+</div>
+<hr>
+<h2 id="s7"><span class="n">7</span>Plans de production</h2>
+<p><strong>Menu : Boulangerie · Production → Plans de production</strong></p>
+<p>Le plan de production organise la journée : quelles recettes, quelles quantités,
+sur quel four, pour quel atelier.</p>
+<h3>7.1 Créer un plan</h3>
+<ol>
+<li>Cliquer sur <strong>Nouveau plan</strong>.</li>
+<li>Renseigner la <strong>date</strong> (obligatoire) et l&#39;<strong>atelier</strong> (facultatif).</li>
+<li>Ajouter <strong>au moins une ligne</strong> :</li>
+</ol>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Champ</th>
+<th>Obligatoire</th>
+<th>Exemple</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Recette</td>
+<td>Oui</td>
+<td><code>REC-BAG-TRAD</code></td>
+</tr>
+<tr>
+<td>Produit</td>
+<td>Non</td>
+<td>Baguette tradition</td>
+</tr>
+<tr>
+<td>Four</td>
+<td>Non</td>
+<td><code>FOUR-1</code></td>
+</tr>
+<tr>
+<td>Quantité prévue</td>
+<td>Oui (&gt; 0)</td>
+<td><code>120</code></td>
+</tr>
+</tbody></table></div>
+<ol start="4">
+<li>Utiliser <strong>Ajouter une ligne</strong> pour compléter, puis <strong>Créer le plan</strong>.</li>
+</ol>
+<p>Un plan est créé au statut <strong>BROUILLON</strong>.</p>
+<h3>7.2 Consulter et faire avancer un plan</h3>
+<p>Ouvrir le plan via <strong>Détail</strong>. L&#39;écran affiche les lignes et les <strong>besoins
+matières agrégés</strong> (quantités nettes et brutes par article).</p>
+<p>Cycle de vie :</p>
+<pre><code class="language-text">BROUILLON → VALIDE → LANCE → CLOTURE
+</code></pre>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Action</th>
+<th>Condition</th>
+<th>Effet</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Valider</strong></td>
+<td>Statut <code>BROUILLON</code></td>
+<td>Le plan est confirmé pour la production.</td>
+</tr>
+<tr>
+<td><strong>Lancer</strong></td>
+<td>Statut <code>VALIDE</code></td>
+<td>La production démarre.</td>
+</tr>
+<tr>
+<td><strong>Clôturer</strong></td>
+<td>Statut <code>LANCE</code></td>
+<td>La journée de production est terminée.</td>
+</tr>
+</tbody></table></div>
+<p>Un plan ne se modifie ni ne s&#39;annule pas dans cette version. Vérifier les lignes
+avant de le valider.</p>
+<hr>
+<h2 id="s8"><span class="n">8</span>Fournées</h2>
+<p><strong>Menu : Boulangerie · Production → Fournées</strong></p>
+<p>Une fournée est la fabrication réelle d&#39;une recette. Elle porte les quantités,
+les consommations de matières, les pertes et le rendement.</p>
+<h3>8.1 Créer une fournée</h3>
+<ol>
+<li>Cliquer sur <strong>Nouvelle fournée</strong>.</li>
+<li>Renseigner :</li>
+</ol>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Champ</th>
+<th>Obligatoire</th>
+<th>Exemple</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Recette</td>
+<td>Oui</td>
+<td><code>REC-BAG-TRAD</code></td>
+</tr>
+<tr>
+<td>Version recette</td>
+<td>Non (<code>1</code> par défaut)</td>
+<td><code>1</code></td>
+</tr>
+<tr>
+<td>Produit</td>
+<td>Non</td>
+<td>Baguette tradition</td>
+</tr>
+<tr>
+<td>Four</td>
+<td>Non</td>
+<td><code>FOUR-1</code></td>
+</tr>
+<tr>
+<td>Quantité prévue</td>
+<td>Non (<code>1</code> par défaut)</td>
+<td><code>120</code></td>
+</tr>
+</tbody></table></div>
+<ol start="3">
+<li>Cliquer sur <strong>Créer la fournée</strong>.</li>
+</ol>
+<p>La fournée est créée au statut <strong>PLANIFIEE</strong>.</p>
+<h3>8.2 Cycle de vie</h3>
+<pre><code class="language-text">PLANIFIEE → EN_COURS → CUITE → VALIDEE
+                    ↘ ANNULEE (avec motif)
+</code></pre>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Action</th>
+<th>Condition</th>
+<th>Effet</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Lancer</strong></td>
+<td><code>PLANIFIEE</code></td>
+<td>Passe en <code>EN_COURS</code>, enregistre le début.</td>
+</tr>
+<tr>
+<td><strong>Enregistrer le rendu</strong></td>
+<td><code>EN_COURS</code></td>
+<td>Saisit la quantité réellement produite (&gt; 0).</td>
+</tr>
+<tr>
+<td><strong>Cuire</strong></td>
+<td><code>EN_COURS</code></td>
+<td>Passe en <code>CUITE</code>.</td>
+</tr>
+<tr>
+<td><strong>Valider</strong></td>
+<td><code>CUITE</code></td>
+<td>Passe en <code>VALIDEE</code>, enregistre la fin.</td>
+</tr>
+<tr>
+<td><strong>Annuler</strong></td>
+<td>Ni <code>VALIDEE</code>, ni <code>ANNULEE</code></td>
+<td>Passe en <code>ANNULEE</code> ; un <strong>motif est obligatoire</strong>.</td>
+</tr>
+</tbody></table></div>
+<p>Une fournée validée ou annulée ne peut plus être modifiée.</p>
+<h3>8.3 Déclarer les consommations</h3>
+<p>Dans la carte <strong>Consommations matières (par lot)</strong> :</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Champ</th>
+<th>Obligatoire</th>
+<th>Exemple</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Article</td>
+<td>Oui</td>
+<td><code>ART-FARINE-T55</code></td>
+</tr>
+<tr>
+<td>Lot</td>
+<td>Non</td>
+<td><code>LOT-FAR-2026-01</code></td>
+</tr>
+<tr>
+<td>Quantité théorique</td>
+<td>Non</td>
+<td><code>60</code></td>
+</tr>
+<tr>
+<td>Quantité réelle</td>
+<td>Oui</td>
+<td><code>61.2</code></td>
+</tr>
+<tr>
+<td>Prix moyen</td>
+<td>Non</td>
+<td><code>0.85</code></td>
+</tr>
+</tbody></table></div>
+<p>Le tableau affiche l&#39;écart entre théorique et réel. L&#39;ajout d&#39;une consommation
+est désactivé dès que la fournée est annulée ou validée.</p>
+<h3>8.4 Déclarer les pertes</h3>
+<p>Dans la carte <strong>Pertes valorisées</strong> :</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Champ</th>
+<th>Obligatoire</th>
+<th>Exemple</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Article</td>
+<td>Oui</td>
+<td><code>PATE-FERMENTEE</code></td>
+</tr>
+<tr>
+<td>Quantité</td>
+<td>Oui (&gt; 0)</td>
+<td><code>2</code></td>
+</tr>
+<tr>
+<td>Type</td>
+<td>Oui</td>
+<td><code>PATE_PERDUE</code></td>
+</tr>
+<tr>
+<td>Motif</td>
+<td>Non</td>
+<td>Fournée interrompue</td>
+</tr>
+<tr>
+<td>Prix moyen</td>
+<td>Non</td>
+<td><code>0.50</code></td>
+</tr>
+</tbody></table></div>
+<p><strong>Types de perte</strong> : <code>PATE_PERDUE</code>, <code>CUISSON_RATEE</code>, <code>CASSE</code>,
+<code>INVENDU_DESTRUCTION</code>, <code>DEMARQUE</code>, <code>ECHANTILLON</code>.</p>
+<p>La <strong>valorisation</strong> est calculée à partir de la quantité et du prix moyen fourni.</p>
+<h3>8.5 Lire les indicateurs</h3>
+<ul>
+<li><strong>Rendement</strong> : pourcentage entre quantité réalisée et quantité prévue.</li>
+<li><strong>Écart matière</strong> : somme des écarts entre quantités théoriques et réelles.</li>
+<li>Les badges signalent une fournée annulée et son motif.</li>
+</ul>
+<hr>
+<h2 id="s9"><span class="n">9</span>Approvisionnement : fournisseurs</h2>
+<p><strong>Menu : Boulangerie · Approvisionnement → Fournisseurs</strong></p>
+<h3>9.1 Créer ou modifier un fournisseur</h3>
+<ol>
+<li>Cliquer sur <strong>Nouveau fournisseur</strong>.</li>
+<li>Renseigner :</li>
+</ol>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Champ</th>
+<th>Obligatoire</th>
+<th>Exemple</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Code</td>
+<td>Oui</td>
+<td><code>FOURN-MOULIN</code></td>
+</tr>
+<tr>
+<td>Raison sociale</td>
+<td>Oui</td>
+<td>Moulins du Congo</td>
+</tr>
+<tr>
+<td>Tiers (code)</td>
+<td>Non</td>
+<td><code>TIER-0001</code></td>
+</tr>
+<tr>
+<td>Délai de livraison (jours)</td>
+<td>Non (<code>0</code> par défaut)</td>
+<td><code>3</code></td>
+</tr>
+<tr>
+<td>Catégorie de produits</td>
+<td>Non</td>
+<td>Farines et céréales</td>
+</tr>
+<tr>
+<td>Conditions de règlement</td>
+<td>Non</td>
+<td>30 jours fin de mois</td>
+</tr>
+<tr>
+<td>Montant mini commande</td>
+<td>Non</td>
+<td><code>500</code></td>
+</tr>
+<tr>
+<td>Actif</td>
+<td>Non (coché par défaut)</td>
+<td>coché</td>
+</tr>
+</tbody></table></div>
+<ol start="3">
+<li>Valider.</li>
+</ol>
+<p>Le fournisseur peut être <strong>modifié</strong> depuis la liste, <strong>désactivé</strong> ou
+<strong>réactivé</strong> depuis sa fiche.</p>
+<h3>9.2 Lire l&#39;évaluation</h3>
+<p>La fiche fournisseur affiche :</p>
+<ul>
+<li>la <strong>fiabilité</strong> (<code>Fiable</code> ou <code>À surveiller</code>) ;</li>
+<li>le <strong>délai moyen constaté</strong> ;</li>
+<li>le nombre de <strong>commandes</strong> ;</li>
+<li>le nombre de <strong>réceptions honorées / refusées</strong>.</li>
+</ul>
+<p>L&#39;évaluation est calculée à partir de l&#39;historique ; elle n&#39;est pas saisie.</p>
+<hr>
+<h2 id="s10"><span class="n">10</span>Besoins d&#39;approvisionnement</h2>
+<p><strong>Menu : Boulangerie · Approvisionnement → Besoins d&#39;appro.</strong></p>
+<p>Cet écran calcule les quantités à recommander. <strong>Aucune donnée n&#39;est stockée</strong> :
+les résultats sont recalculés à la demande. Le calcul est accessible aux comptes
+<code>ADMIN</code> et <code>CUSTOMER</code> car il ne persiste rien.</p>
+<h3>10.1 Saisir les articles suivis</h3>
+<p>Pour chaque article :</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Champ</th>
+<th>Obligatoire</th>
+<th>Exemple</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Article</td>
+<td>Oui</td>
+<td><code>ART-FARINE-001</code></td>
+</tr>
+<tr>
+<td>Libellé</td>
+<td>Non</td>
+<td>Farine T55</td>
+</tr>
+<tr>
+<td>Disponible</td>
+<td>Non (<code>0</code>)</td>
+<td><code>40</code></td>
+</tr>
+<tr>
+<td>Seuil</td>
+<td>Non (<code>0</code>)</td>
+<td><code>100</code></td>
+</tr>
+<tr>
+<td>Consommation prévue</td>
+<td>Non (<code>0</code>)</td>
+<td><code>200</code></td>
+</tr>
+<tr>
+<td>Délai réappro (j)</td>
+<td>Non</td>
+<td><code>5</code></td>
+</tr>
+</tbody></table></div>
+<p>Utiliser <strong>Ajouter un article</strong> pour compléter la liste.</p>
+<h3>10.2 Calculer</h3>
+<ul>
+<li><strong>Calculer les besoins</strong> affiche pour chaque article la <strong>quantité suggérée</strong> et
+l&#39;<strong>urgence</strong>.</li>
+<li><strong>Alertes sous-seuil</strong> affiche uniquement les articles en <code>RUPTURE</code> ou
+<code>HAUTE</code> (disponible nul/négatif ou inférieur au seuil).</li>
+</ul>
+<p>Formule appliquée :</p>
+<pre><code class="language-text">quantité suggérée = max(0, seuil + consommation prévue − disponible)
+</code></pre>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Urgence</th>
+<th>Signification</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>RUPTURE</code></td>
+<td>Disponible nul ou négatif.</td>
+</tr>
+<tr>
+<td><code>HAUTE</code></td>
+<td>Disponible inférieur au seuil.</td>
+</tr>
+<tr>
+<td><code>NORMALE</code></td>
+<td>Disponible suffisant.</td>
+</tr>
+</tbody></table></div>
+<p>Ces résultats aident à préparer une commande ; ils ne créent pas la commande
+automatiquement.</p>
+<hr>
+<h2 id="s11"><span class="n">11</span>Commandes d&#39;achat</h2>
+<p><strong>Menu : Boulangerie · Approvisionnement → Commandes d&#39;achat</strong></p>
+<h3>11.1 Créer une commande</h3>
+<ol>
+<li>Cliquer sur <strong>Nouvelle commande</strong>.</li>
+<li>Renseigner :</li>
+</ol>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Champ</th>
+<th>Obligatoire</th>
+<th>Exemple</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Fournisseur</td>
+<td>Oui</td>
+<td>Moulins du Congo</td>
+</tr>
+<tr>
+<td>Date</td>
+<td>Oui</td>
+<td>date du jour</td>
+</tr>
+<tr>
+<td>Livraison prévue</td>
+<td>Non</td>
+<td>date souhaitée</td>
+</tr>
+<tr>
+<td>Article</td>
+<td>Oui</td>
+<td><code>ART-FARINE-001</code></td>
+</tr>
+<tr>
+<td>Désignation</td>
+<td>Oui (dès la création)</td>
+<td>Farine T55</td>
+</tr>
+<tr>
+<td>Quantité</td>
+<td>Oui (&gt; 0)</td>
+<td><code>100</code></td>
+</tr>
+<tr>
+<td>Prix unitaire HT</td>
+<td>Non (<code>0</code>)</td>
+<td><code>0.80</code></td>
+</tr>
+<tr>
+<td>TVA (%)</td>
+<td>Non (<code>16</code>)</td>
+<td><code>16</code></td>
+</tr>
+</tbody></table></div>
+<ol start="3">
+<li>Ajouter les lignes nécessaires, puis <strong>Créer la commande</strong>.</li>
+</ol>
+<p>La commande est créée en <strong>BROUILLON</strong> avec un numéro <code>CMD-…</code>. La désignation
+doit être renseignée dès la création du brouillon ; elle est également contrôlée
+lors de la <strong>validation</strong>.</p>
+<h3>11.2 Cycle de vie</h3>
+<pre><code class="language-text">BROUILLON → VALIDEE → ENVOYEE → PARTIELLE / RECEPTIONNEE → FACTUREE
+                            ↘ ANNULEE (avec motif)
+</code></pre>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Action</th>
+<th>Condition</th>
+<th>Effet</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Valider</strong></td>
+<td><code>BROUILLON</code></td>
+<td>La commande est confirmée.</td>
+</tr>
+<tr>
+<td><strong>Envoyer</strong></td>
+<td><code>VALIDEE</code></td>
+<td>La commande est transmise au fournisseur.</td>
+</tr>
+<tr>
+<td><strong>Annuler</strong></td>
+<td>Hors <code>RECEPTIONNEE</code>, <code>FACTUREE</code>, <code>ANNULEE</code></td>
+<td>Annulation avec <strong>motif obligatoire</strong>.</td>
+</tr>
+<tr>
+<td><strong>Réceptions</strong></td>
+<td><code>ENVOYEE</code> ou <code>PARTIELLE</code></td>
+<td>Les réceptions font évoluer la commande.</td>
+</tr>
+</tbody></table></div>
+<p><code>PARTIELLE</code>, <code>RECEPTIONNEE</code> et <code>FACTUREE</code> sont pilotés par les réceptions et la
+facturation. La facture fournisseur relève de la phase finance.</p>
+<h3>11.3 Lire la fiche commande</h3>
+<p>La fiche affiche :</p>
+<ul>
+<li>le statut, les dates, les montants <strong>HT / TVA / TTC</strong> et le <strong>reste à recevoir</strong> ;</li>
+<li>les lignes avec quantité commandée, quantité reçue, reste, prix unitaire et
+montant HT ;</li>
+<li>le motif d&#39;annulation s&#39;il existe ;</li>
+<li>le <strong>rapprochement commande ↔ réceptions</strong>.</li>
+</ul>
+<h3>11.4 Rapprochement</h3>
+<p>Cliquer sur <strong>Vérifier</strong> dans la carte de rapprochement. Le résultat indique :</p>
+<ul>
+<li><strong>Concordant</strong> ou <strong>Écart détecté</strong> ;</li>
+<li>le montant commandé TTC et le montant des réceptions TTC ;</li>
+<li>les écarts par article : quantité commandée, quantité reçue, prix commande,
+prix d&#39;achat et écart de prix.</li>
+</ul>
+<p>Un écart de prix ou de quantité n&#39;empêche pas la réception : il est signalé pour
+analyse.</p>
+<hr>
+<h2 id="s12"><span class="n">12</span>Réceptions</h2>
+<p><strong>Menu : Boulangerie · Approvisionnement → Réceptions</strong></p>
+<h3>12.1 Créer une réception</h3>
+<ol>
+<li>Cliquer sur <strong>Nouvelle réception</strong>.</li>
+<li>Renseigner :</li>
+</ol>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Champ</th>
+<th>Obligatoire</th>
+<th>Exemple</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Commande</td>
+<td>Oui</td>
+<td><code>CMD-00001</code></td>
+</tr>
+<tr>
+<td>Date</td>
+<td>Oui</td>
+<td>date de livraison</td>
+</tr>
+<tr>
+<td>Bon de livraison</td>
+<td>Non</td>
+<td><code>BL-2026-001</code></td>
+</tr>
+<tr>
+<td>Article</td>
+<td>Oui</td>
+<td><code>ART-FARINE-001</code></td>
+</tr>
+<tr>
+<td>Quantité reçue</td>
+<td>Oui (&gt; 0)</td>
+<td><code>100</code></td>
+</tr>
+<tr>
+<td>Prix d&#39;achat</td>
+<td>Non (<code>0</code>)</td>
+<td><code>0.82</code></td>
+</tr>
+<tr>
+<td>Lot</td>
+<td>Non</td>
+<td><code>LOT-FAR-001</code></td>
+</tr>
+<tr>
+<td>Conforme</td>
+<td>Non (coché)</td>
+<td>coché</td>
+</tr>
+<tr>
+<td>Motif non-conformité</td>
+<td>Si non conforme</td>
+<td>DLC trop courte</td>
+</tr>
+</tbody></table></div>
+<ol start="3">
+<li>Créer la réception. Elle est au statut <strong>ATTENDUE</strong>.</li>
+</ol>
+<div class="warn">
+<p>La commande doit être au statut <strong>ENVOYEE</strong> ou <strong>PARTIELLE</strong> ; une commande
+encore en brouillon ou seulement validée ne peut pas être réceptionnée.</p>
+<p>Chaque ligne non conforme exige un <strong>motif</strong>. Sans motif, la création est
+refusée. La quantité reçue ne peut pas dépasser le <strong>reste à recevoir</strong> sur la
+commande.</p>
+</div>
+<h3>12.2 Contrôler, accepter ou refuser</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Action</th>
+<th>Condition</th>
+<th>Effet</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Contrôler</strong></td>
+<td><code>ATTENDUE</code></td>
+<td>Passe en <code>EN_CONTROLE</code>.</td>
+</tr>
+<tr>
+<td><strong>Accepter</strong></td>
+<td><code>EN_CONTROLE</code> et toutes les lignes conformes</td>
+<td>Passe en <code>ACCEPTEE</code> ou <code>PARTIELLE</code>.</td>
+</tr>
+<tr>
+<td><strong>Refuser</strong></td>
+<td><code>EN_CONTROLE</code></td>
+<td>Passe en <code>REFUSEE</code> ; <strong>motif obligatoire</strong>.</td>
+</tr>
+</tbody></table></div>
+<p>Le bouton <strong>Refuser</strong> apparaît aussi au statut <code>ATTENDUE</code>, mais l&#39;action
+n&#39;est acceptée qu&#39;après <strong>Contrôler</strong> (sinon <strong>409</strong>).</p>
+<p>Si une ligne est non conforme, l&#39;acceptation est refusée (<strong>409</strong>). Il faut
+d&#39;abord contrôler puis refuser la réception, et enfin créer une nouvelle
+réception conforme. Une réception ne se modifie pas dans cette version.</p>
+<h3>12.3 Effets sur la commande</h3>
+<p>Une réception acceptée met à jour :</p>
+<ul>
+<li>la quantité reçue et le <strong>reste à recevoir</strong> de la commande ;</li>
+<li>le statut de la commande : <code>PARTIELLE</code> ou <code>RECEPTIONNEE</code> ;</li>
+<li>les entrées de stock, sous forme d&#39;<strong>intentions de mouvement</strong> transmises aux
+événements. Le stock lui-même n&#39;est pas encore affiché dans cette console.</li>
+</ul>
+<h3>12.4 Lire la fiche réception</h3>
+<p>La fiche affiche le numéro, la commande liée, la date, le bon de livraison, le
+statut, la conformité globale, le motif de refus et les lignes reçues avec lot,
+péremption, conformité et motif de non-conformité.</p>
+<hr>
+<h2 id="s13"><span class="n">13</span>Scénario complet d&#39;une journée</h2>
+<p>Cet exemple reprend les valeurs d&#39;une boulangerie fictive.</p>
+<h3>Étape 1 — Référentiels</h3>
+<ol>
+<li>Créer la gamme <code>PAIN</code> / « Pains ».</li>
+<li>Créer la catégorie <code>BAGUETTE</code> / « Baguettes ».</li>
+</ol>
+<h3>Étape 2 — Produit</h3>
+<p>Créer le produit :</p>
+<ul>
+<li>code <code>BAG-TRAD</code>, désignation « Baguette tradition » ;</li>
+<li>gamme <code>PAIN</code>, catégorie <code>BAGUETTE</code>, unité <code>PIECE</code> ;</li>
+<li>prix HT <code>1.20</code>, TVA <code>16</code>, poids <code>250</code>, DLC <code>24</code> ;</li>
+<li>allergène <code>GLUTEN</code>, vendable au détail.</li>
+</ul>
+<h3>Étape 3 — Recette</h3>
+<p>Créer <code>REC-BAG-TRAD</code> pour le produit <code>BAG-TRAD</code>, rendement <code>1 PIECE</code>, cuisson
+<code>18 min</code> à <code>240 °C</code>.</p>
+<p>Ajouter :</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Article</th>
+<th>Libellé</th>
+<th align="right">Quantité</th>
+<th>Unité</th>
+<th align="right">Perte</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>ART-FARINE-T55</code></td>
+<td>Farine T55</td>
+<td align="right">1</td>
+<td>KG</td>
+<td align="right">0.02</td>
+</tr>
+<tr>
+<td><code>ART-EAU</code></td>
+<td>Eau</td>
+<td align="right">0.65</td>
+<td>L</td>
+<td align="right">0</td>
+</tr>
+<tr>
+<td><code>ART-SEL</code></td>
+<td>Sel</td>
+<td align="right">0.018</td>
+<td>KG</td>
+<td align="right">0</td>
+</tr>
+<tr>
+<td><code>ART-LEVURE</code></td>
+<td>Levure</td>
+<td align="right">0.01</td>
+<td>KG</td>
+<td align="right">0</td>
+</tr>
+</tbody></table></div>
+<p>Calculer les besoins pour <code>120</code> pièces, puis calculer le coût avec les prix
+moyens. <strong>Activer</strong> la recette, puis la <strong>figer</strong> après validation.</p>
+<h3>Étape 4 — Fournisseur</h3>
+<p>Créer <code>FOURN-MOULIN</code> / « Moulins du Congo », délai <code>3</code> jours, catégorie
+« Farines et céréales », minimum <code>500</code>.</p>
+<h3>Étape 5 — Plan</h3>
+<p>Créer un plan pour aujourd&#39;hui, atelier <code>ATELIER-1</code>, avec :</p>
+<ul>
+<li>recette <code>REC-BAG-TRAD</code>, produit <code>BAG-TRAD</code>, four <code>FOUR-1</code>, quantité <code>120</code>.</li>
+</ul>
+<p>Valider puis lancer le plan.</p>
+<h3>Étape 6 — Fournée</h3>
+<p>Créer une fournée pour <code>REC-BAG-TRAD</code>, version <code>1</code>, four <code>FOUR-1</code>, quantité
+prévue <code>120</code>.</p>
+<ol>
+<li><strong>Lancer</strong> la fournée.</li>
+<li>Déclarer la consommation : farine <code>120</code> théorique / <code>122.4</code> réelle, lot
+<code>LOT-FAR-2026-01</code>.</li>
+<li>Déclarer une perte de <code>2</code> unités de <code>PATE-FERMENTEE</code>, type <code>PATE_PERDUE</code>.</li>
+<li>Enregistrer le rendu : <code>118</code>.</li>
+<li><strong>Cuire</strong>, puis <strong>Valider</strong>.</li>
+</ol>
+<h3>Étape 7 — Approvisionnement</h3>
+<ol>
+<li>Dans <strong>Besoins</strong>, saisir la farine : disponible <code>40</code>, seuil <code>100</code>,
+consommation prévue <code>200</code>. Le calcul propose <code>260</code> en urgence <code>HAUTE</code>.</li>
+<li>Créer une commande pour <code>FOURN-MOULIN</code>, article <code>ART-FARINE-T55</code>, quantité
+<code>100</code>, prix <code>0.80</code>, TVA <code>16</code>.</li>
+<li><strong>Valider</strong> puis <strong>Envoyer</strong> la commande.</li>
+<li>À la livraison, créer une réception liée à la commande, lot <code>LOT-FAR-001</code>,
+quantité <code>100</code>, prix <code>0.82</code>, conforme.</li>
+<li><strong>Contrôler</strong>, puis <strong>Accepter</strong>.</li>
+<li>Ouvrir la commande et <strong>Vérifier</strong> le rapprochement.</li>
+</ol>
+<hr>
+<h2 id="s14"><span class="n">14</span>Statuts et règles</h2>
+<h3>Produits et recettes</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Objet</th>
+<th>Statuts</th>
+<th>Règle</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Produit</td>
+<td>Actif / Inactif</td>
+<td>Un produit actif peut être utilisé.</td>
+</tr>
+<tr>
+<td>Produit</td>
+<td>Fabricable / Non fabricable</td>
+<td>Devient fabricable dès qu&#39;une recette est active.</td>
+</tr>
+<tr>
+<td>Recette</td>
+<td>Active / Inactive</td>
+<td>Utiliser de préférence une recette active pour la production ; la liste de choix n&#39;est pas encore filtrée.</td>
+</tr>
+<tr>
+<td>Recette</td>
+<td>Modifiable / Figée</td>
+<td>Une recette figée est en lecture seule.</td>
+</tr>
+</tbody></table></div>
+<h3>Production</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Objet</th>
+<th>Statuts</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Plan</td>
+<td><code>BROUILLON</code>, <code>VALIDE</code>, <code>LANCE</code>, <code>CLOTURE</code></td>
+</tr>
+<tr>
+<td>Fournée</td>
+<td><code>PLANIFIEE</code>, <code>EN_COURS</code>, <code>CUITE</code>, <code>VALIDEE</code>, <code>ANNULEE</code></td>
+</tr>
+</tbody></table></div>
+<h3>Approvisionnement</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Objet</th>
+<th>Statuts</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Commande d&#39;achat</td>
+<td><code>BROUILLON</code>, <code>VALIDEE</code>, <code>ENVOYEE</code>, <code>PARTIELLE</code>, <code>RECEPTIONNEE</code>, <code>FACTUREE</code>, <code>ANNULEE</code></td>
+</tr>
+<tr>
+<td>Réception</td>
+<td><code>ATTENDUE</code>, <code>EN_CONTROLE</code>, <code>ACCEPTEE</code>, <code>REFUSEE</code>, <code>PARTIELLE</code></td>
+</tr>
+<tr>
+<td>Urgence besoin</td>
+<td><code>RUPTURE</code>, <code>HAUTE</code>, <code>NORMALE</code></td>
+</tr>
+</tbody></table></div>
+<h3>Règles à retenir</h3>
+<ul>
+<li>Une fournée validée ou annulée est figée.</li>
+<li>Une réception non conforme ne peut pas être acceptée.</li>
+<li>Un refus de réception et une annulation de commande ou de fournée exigent un
+motif.</li>
+<li>Une recette figée ne se corrige que par une nouvelle version.</li>
+<li>Les calculs de besoins et de coût ne sont pas stockés.</li>
+<li>Les mouvements de stock sont émis comme intentions vers le domaine finance,
+mais ne sont pas affichés dans cette console.</li>
+</ul>
+<hr>
+<h2 id="s15"><span class="n">15</span>Erreurs fréquentes</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Message / symptôme</th>
+<th>Cause probable</th>
+<th>Solution</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>403 Accès refusé</strong></td>
+<td>Compte <code>CUSTOMER</code> sur une action d&#39;écriture</td>
+<td>Utiliser un compte <code>ADMIN</code>.</td>
+</tr>
+<tr>
+<td><strong>400 / 401 au chargement</strong></td>
+<td>Session expirée ou établissement non sélectionné</td>
+<td>Recharger, se reconnecter, vérifier l&#39;établissement.</td>
+</tr>
+<tr>
+<td><strong>409 Transition invalide</strong></td>
+<td>Action non permise depuis le statut courant</td>
+<td>Recharger la fiche et suivre l&#39;ordre des statuts.</td>
+</tr>
+<tr>
+<td><strong>409 Réception non conforme</strong></td>
+<td>Une ligne est marquée non conforme</td>
+<td>Contrôler, refuser, puis créer une réception conforme.</td>
+</tr>
+<tr>
+<td><strong>Motif obligatoire</strong></td>
+<td>Annulation ou refus sans motif</td>
+<td>Saisir un motif explicite.</td>
+</tr>
+<tr>
+<td><strong>Désignation obligatoire</strong></td>
+<td>Ligne de commande sans désignation</td>
+<td>Renseigner la désignation dès la création de la ligne.</td>
+</tr>
+<tr>
+<td><strong>400 Quantité supérieure au reste</strong></td>
+<td>Réception plus grande que le reste à recevoir</td>
+<td>Ajuster la quantité ou vérifier les réceptions précédentes.</td>
+</tr>
+<tr>
+<td><strong>Quantité invalide</strong></td>
+<td>Quantité nulle ou négative</td>
+<td>Saisir une quantité strictement positive.</td>
+</tr>
+<tr>
+<td><strong>Recette non modifiable</strong></td>
+<td>Recette figée</td>
+<td>Créer une nouvelle version avec le même code.</td>
+</tr>
+<tr>
+<td><strong>Produit non fabricable</strong></td>
+<td>Aucune recette active</td>
+<td>Activer une recette liée au produit.</td>
+</tr>
+<tr>
+<td><strong>Aucun besoin calculé</strong></td>
+<td>Aucun article saisi ou quantités à zéro</td>
+<td>Renseigner au moins un code article.</td>
+</tr>
+<tr>
+<td><strong>Rapprochement non concordant</strong></td>
+<td>Écart de quantité ou de prix</td>
+<td>Analyser les lignes signalées ; la réception reste possible.</td>
+</tr>
+<tr>
+<td><strong>Service indisponible (503)</strong></td>
+<td>Événement non publié, Kafka indisponible</td>
+<td>Prévenir l&#39;administrateur ; ne pas recréer la donnée en boucle.</td>
+</tr>
+<tr>
+<td><strong>Données absentes</strong></td>
+<td>Mauvais établissement</td>
+<td>Se reconnecter avec le bon compte.</td>
+</tr>
+</tbody></table></div>
+<hr>
+<h2 id="s16"><span class="n">16</span>Limites connues</h2>
+<p>Cette version couvre les <strong>lots 1 à 3</strong> de la boulangerie.</p>
+<ul>
+<li><strong>Pas d&#39;écran de vente/caisse</strong> : l&#39;API du lot 4 existe, mais le menu ne
+l&#39;expose pas encore.</li>
+<li><strong>Pas de stock visible</strong> : les entrées, sorties, pertes et consommations sont
+émises comme intentions vers le domaine finance ; aucun écran de stock n&#39;est livré.</li>
+<li><strong>Pas de facture fournisseur</strong> : la facturation relève de la phase finance.</li>
+<li><strong>Pas de modification</strong> pour les produits, plans, fournées, commandes et
+réceptions. Les fournisseurs, gammes, catégories et recettes ont leurs propres
+règles de création ou de cycle de vie.</li>
+<li><strong>Pas de suppression</strong> : désactiver ou versionner plutôt que supprimer.</li>
+<li><strong>Prix de revient manuel</strong> : les prix moyens ne sont pas encore lus depuis le
+stock.</li>
+<li><strong>Besoins non persistés</strong> : les calculs sont à la demande.</li>
+<li><strong>Clients et personnel boulangerie</strong> ne sont pas encore livrés.</li>
+<li><strong>Hôpital et finance</strong> ne sont pas encore implémentés.</li>
+</ul>
+<hr>
+<h2 id="s17"><span class="n">17</span>Checklist de prise en main</h2>
+<ul>
+<li><input disabled="" type="checkbox"> Gammes créées.</li>
+<li><input disabled="" type="checkbox"> Catégories créées.</li>
+<li><input disabled="" type="checkbox"> Produits créés avec prix, TVA, allergènes et unité de vente.</li>
+<li><input disabled="" type="checkbox"> Recettes créées avec rendement, cuisson et ingrédients.</li>
+<li><input disabled="" type="checkbox"> Besoins matières calculés et cohérents.</li>
+<li><input disabled="" type="checkbox"> Coût de revient vérifié.</li>
+<li><input disabled="" type="checkbox"> Recette activée, puis figée.</li>
+<li><input disabled="" type="checkbox"> Fournisseurs créés avec délai et minimum de commande.</li>
+<li><input disabled="" type="checkbox"> Plan de production créé, validé et lancé.</li>
+<li><input disabled="" type="checkbox"> Fournée lancée, consommations et pertes déclarées, rendu enregistré,
+cuisson et validation effectuées.</li>
+<li><input disabled="" type="checkbox"> Besoins d&#39;approvisionnement calculés.</li>
+<li><input disabled="" type="checkbox"> Commande créée, validée et envoyée.</li>
+<li><input disabled="" type="checkbox"> Réception contrôlée et acceptée.</li>
+<li><input disabled="" type="checkbox"> Rapprochement commande/réceptions vérifié.</li>
+</ul>
+<hr>
+<p><em>NexusGesti — Guide Boulangerie. Document autonome destiné aux utilisateurs de
+la console. Les intitulés, champs et règles correspondent aux écrans livrés pour
+les lots 1 à 3.</em></p>
+
+  <div class="foot">
+    NexusGesti — Guide Boulangerie · Produits, production et approvisionnement (lots 1 à 3).
+    Document autonome destiné aux utilisateurs de la console.
+  </div>
+
+</div>
+</body>
+</html>

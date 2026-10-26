@@ -88,10 +88,10 @@
   <section class="cover">
     <p class="kicker">Documentation utilisateur</p>
     <h1>Guide d'utilisation<br>NexusGesti</h1>
-    <p>De l'ouverture de session aux écrans de gestion scolaire — un mode d'emploi pas-à-pas, avec toutes les définitions.</p>
+    <p>De l'ouverture de session aux écrans de gestion scolaire et de boulangerie — un mode d'emploi pas-à-pas, avec toutes les définitions.</p>
     <div class="meta">
-      Domaine couvert : Socle + Pédagogie (Structure, Personnes, Inscriptions, Assiduité, Évaluations, Examens, Frais)<br>
-      Console : <strong>http://localhost:3001</strong> &nbsp;·&nbsp; Version du guide : 1.2
+      Domaines couverts : Socle + Pédagogie + Boulangerie (lots 1 à 3)<br>
+      Console : <strong>http://localhost:3001</strong> &nbsp;·&nbsp; Version du guide : 1.3
     </div>
   </section>
 
@@ -123,16 +123,18 @@
     <tbody>
       <tr><td><strong>Socle</strong></td><td>Réglages de l'établissement, années scolaires, grilles, référentiels, utilisateurs, audit, rapports</td><td>Disponible</td></tr>
       <tr><td><strong>Pédagogie</strong></td><td>Structure, Personnes, Inscriptions (UE, groupes, admissions), Assiduité (séances, appels), Évaluations (notes, bulletins), Examens (sessions, délibérations), Frais (grilles, avis, paiements)</td><td>Disponible</td></tr>
+      <tr><td><strong>Boulangerie</strong></td><td>Produits et recettes, plans de production, fournées, fournisseurs, besoins, commandes d'achat, réceptions</td><td>Lots 1 à 3 disponibles (vente/caisse : API seulement)</td></tr>
       <tr><td><strong>Hôpital</strong></td><td>Patients, rendez-vous, consultations, pharmacie</td><td>À venir</td></tr>
       <tr><td><strong>Finance</strong></td><td>Comptabilité OHADA / SYSCOHADA (RDC)</td><td>À venir</td></tr>
     </tbody>
   </table>
+  <p><strong>Guides spécialisés :</strong> <a href="guide-boulangerie.html">Guide Boulangerie</a> (produits, recettes, production, approvisionnement) · <a href="../backend/infrastructure/deploiement/README.md">Guide de déploiement en production</a> (VPS, PostgreSQL, Keycloak, Nginx, sauvegardes).</p>
   <p>Il existe <strong>deux profils d'utilisateur</strong> :</p>
   <ul>
     <li><span class="badge admin">ADMIN</span> &nbsp; peut tout voir <strong>et</strong> tout modifier.</li>
     <li><span class="badge customer">CUSTOMER</span> &nbsp; peut <strong>consulter</strong> les données (lecture seule).</li>
   </ul>
-  <p>Depuis votre navigateur, la plateforme s'ouvre sur une <strong>page d'accueil publique</strong> qui présente les trois domaines. Elle propose deux points d'entrée : <strong>Connexion</strong> (compte existant, §5) et <strong>Créer mon établissement</strong> (inscription en libre-service, §6).</p>
+  <p>Depuis votre navigateur, la plateforme s'ouvre sur une <strong>page d'accueil publique</strong> qui présente les domaines. Elle propose deux points d'entrée : <strong>Connexion</strong> (compte existant, §5) et <strong>Créer mon établissement</strong> (inscription en libre-service, §6).</p>
 
   <!-- ================= 2 ================= -->
   <h1 id="s2">2. Démarrage</h1>
@@ -144,7 +146,7 @@
       <code>./scripts/front-up.sh</code> &nbsp;ou&nbsp; <code>./scripts/front-up.ps1</code></li>
   </ol>
   <div class="callout">
-    Au premier lancement, le backend compile puis démarre <strong>14 services</strong> et l'infrastructure
+    Au premier lancement, le backend compile puis démarre <strong>4 applications</strong> (socle, pédagogie, boulangerie, passerelle) et l'infrastructure
     (base PostgreSQL, Redis, Kafka, Keycloak, Prometheus, Grafana, Vault). Comptez quelques minutes.
     Quand les scripts affichent « UP », ouvrez le navigateur.
   </div>
@@ -178,7 +180,7 @@
     <thead><tr><th style="width:26%">Terme</th><th>Définition</th></tr></thead>
     <tbody>
       <tr><td><strong>Établissement (tenant)</strong></td><td>L'école ou l'université. Chaque établissement est un « locataire » isolé. On change d'établissement via le sélecteur de tenant en haut de l'écran.</td></tr>
-      <tr><td><strong>Profil d'établissement</strong></td><td>Type d'école : <code>PRIMAIRE</code>, <code>SECONDAIRE</code> ou <code>UNIVERSITAIRE</code>. Il active ou non certains modules (ECTS, délibération par UE…).</td></tr>
+      <tr><td><strong>Profil d'établissement</strong></td><td>Type d'activité : <code>PRIMAIRE</code>, <code>SECONDAIRE</code>, <code>UNIVERSITAIRE</code> ou <code>BOULANGERIE</code>. Il active ou non certains modules (ECTS, délibération par UE…).</td></tr>
       <tr><td><strong>Année scolaire</strong></td><td>Période de référence (ex. 2025-2026). Contient des <em>périodes</em> (trimestres, semestres). Peut être <em>prévue</em>, <em>ouverte</em> puis <em>clôturée</em>.</td></tr>
       <tr><td><strong>Grille</strong></td><td>Jeu de règles versionnées (notes, stock, conformité). S'<em>active</em>, se <em>fige</em> (figement = modification interdite) et se <em>duplique</em>.</td></tr>
       <tr><td><strong>Référentiel</strong></td><td>Liste de valeurs de référence (types de frais, motifs d'absence, mentions…). Un établissement possède 23 référentiels créés automatiquement à sa création.</td></tr>
@@ -252,7 +254,7 @@
   <p>Pas besoin de passer par un administrateur pour ouvrir un établissement. Depuis la <strong>page d'accueil</strong> (<code>http://localhost:3001</code>), le bouton <strong>Créer mon établissement</strong> ouvre le formulaire d'inscription (page <code>/signup</code>).</p>
   <ol class="step">
     <li>Renseignez <strong>votre compte</strong> : prénom, nom, adresse email, téléphone au format international (ex. <code>+243810000000</code>), code pays sur 2 lettres (ex. <code>CD</code>), mot de passe (au moins 12 caractères, avec majuscule, minuscule, chiffre et caractère spécial) et acceptez les conditions.</li>
-    <li>Renseignez <strong>votre établissement</strong> : <strong>dénomination</strong>, <strong>code</strong> et <strong>profil</strong> (<code>PRIMAIRE</code>, <code>SECONDAIRE</code> ou <code>UNIVERSITAIRE</code>).</li>
+    <li>Renseignez <strong>votre établissement</strong> : <strong>dénomination</strong>, <strong>code</strong> et <strong>profil</strong> (<code>PRIMAIRE</code>, <code>SECONDAIRE</code>, <code>UNIVERSITAIRE</code> ou <code>BOULANGERIE</code>).</li>
     <li>Validez. Le compte administrateur et l'espace de l'établissement sont créés, puis vous êtes <strong>automatiquement connecté</strong> et redirigé vers le <strong>Tableau de bord</strong>.</li>
   </ol>
   <div class="callout">
@@ -430,7 +432,7 @@
   </ol>
 
   <footer>
-    NexusGesti — Guide utilisateur v1.1 · Socle + Pédagogie (Structure, Personnes, Inscriptions, Assiduité, Évaluations, Examens, Frais) ·
+    NexusGesti — Guide utilisateur v1.3 · Socle + Pédagogie + Boulangerie (lots 1 à 3) ·
     Console locale : http://localhost:3001
   </footer>
 </div>

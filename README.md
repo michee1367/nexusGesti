@@ -2,6 +2,12 @@
 
 Plateforme de gestion SaaS multi-tenant pour **établissements scolaires**, **hôpitaux**, **boulangeries / pâtisseries** et **cabinets de gestion financière OHADA**.
 
+## Documentation
+
+- [Guide utilisateur](docs/guide-utilisateur.md) — socle, pédagogie et prise en main de la console.
+- [Guide Boulangerie](docs/guide-boulangerie.md) — produits, recettes, production et approvisionnement (lots 1 à 3).
+- [Guide de déploiement en production](backend/infrastructure/deploiement/README.md) — VPS, PostgreSQL, Keycloak, Nginx, sauvegardes, mise à jour.
+
 ## Modélisation
 
 Toute la conception est en **PlantUML** (`.puml`) : classes, cas d'utilisation, séquences.
@@ -15,7 +21,7 @@ docs/
 │   ├── finance/      6 modèles + 6 cas d'utilisation
 │   ├── boulangerie/  6 modèles + 6 cas d'utilisation
 │   ├── sequences/    9 diagrammes de séquence des flux critiques
-│   └── rendu/        SVG générés
+│   └── rendu/        sortie des SVG (dossier vide)
 └── architecture.md
 ```
 
@@ -31,7 +37,7 @@ docs/
 
 ## Implémentation actuelle
 
-La modélisation décrit 31 services ; l'implémentation les regroupe en **3 applications par domaine** pour réduire l'empreinte mémoire, avec un schéma PostgreSQL par domaine et la même isolation RLS :
+La modélisation décrit 31 services ; l'implémentation les regroupe en **3 applications métier (une par domaine)** pour réduire l'empreinte mémoire, avec un schéma PostgreSQL par domaine et la même isolation RLS :
 
 | Application | Services regroupés | Port | Schéma |
 |---|---|---|---|
